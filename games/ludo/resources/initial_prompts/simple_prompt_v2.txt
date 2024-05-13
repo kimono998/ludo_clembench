@@ -1,25 +1,26 @@
-Welcome to ludogame! Your task is to move a from start to end across the grid. I will give you a grid with empty positions. An empty position is marked like this □.
-Your token is marked with X. You token X counts as an occupied position. The total number of positions remains unchanged throughout the game.
+Welcome to ludogame! Your task is to move a from start to end across the grid. I will give you a grid with empty fields. An empty field is marked like this □.
+Your token is marked with X. You token X counts as an occupied field. The total number of fields remains unchanged throughout the game.
 
 Movement:
 1) You are only allowed to move if you have a token on the board.
 2) In the beginning of the game, you do not have any tokens on the board.
-3) You are only allowed to add your token when I roll a 6. The token is placed on the 1st position on the grid.
+3) You are only allowed to add your token when I roll a 6. The token is placed on the 1st field on the grid.
 4) If I do not roll a 6, your token cannot be added to the board.
 5) You can only move from left to right.
 6) You are only allowed to move when I roll a die.
-7) You need to move the same number of positions as given by the roll.
-8) You only have one token. Once you move the token, its previous position marked with □.
-9) Positions are counted from left to right.
+7) You need to move the same number of fields as given by the roll.
+8) You only have one token. Once you move the token, the previously occupied field is marked with □.
+9) Fields are counted from left to right.
+10) If you already have a token on the board, you cannot place a new one when I roll 6 again.
 Please note: you need to keep track of your current position, and move N (rolled number) positions from it. It is important that you do that.
 
 Ending the game:
-1) To end the game, you need to finish at the last position on the grid.
-2) If a rolled number is higher than the number of remaining positions, you cannot move.
+1) To end the game, you need to finish at the last field on the grid.
+2) If a rolled number is higher than the number of remaining fields, you cannot move.
 
 General instructions:
 1) Your answers must contain the words "MY MOVE:", followed by the grid.
-2) You must always output the same number of positions as given to you at the beginning. If you output fewer positions than in the beginning state, you lose.
+2) You must always output the same number of fields as given to you at the beginning. If you output fewer fields than in the beginning state, you lose.
 
 Note: The board is updated at every turn. It is one continuous game. You need to memorize your position in the previous turn.
 The game begins when I give you the beginning state and roll the first number.
@@ -27,46 +28,28 @@ Take a deap breath and think through your every step.
 
 Here is an example of what one turn looks like. Let's think step by step.
 
-me:
+Q:
 Beginning state: □ □ □ □ □ □ □ □ □ □ □ □ □ □ □ □ □ □ □ □ □ □ □
 Next turn number: 0,  Roll: 6. Where will you move your token?
-you:
-There are 23 empty positions and 0 occupied position. In total: 23 + 0 = 23 positions. There are no tokens on the position. You have rolled a 6. This allows me to place my token on the board at position 1.
+A:
+There are 23 empty fields and 0 occupied fields. In total: 23 + 0 = 23 fields. Therefore, my output will have 23 fields. There are no tokens on the board. You have rolled a 6. This allows me to place my token on the board at field 1.
 MY MOVE: X □ □ □ □ □ □ □ □ □ □ □ □ □ □ □ □ □ □ □ □ □ □
 
-Here is another example.
-Q:
-Next turn number: 3, Roll: 4. Where will you move your token?
-A:
-There are 22 empty positions and 1 occupied position. In total: 22 + 1 = 23 positions. My token is as position number 2. You have rolled 4. Since 2 + 4 = 6, I need to move my token to position number 6.
-MY MOVE: □ □ □ □ □ X □ □ □ □ □ □ □ □ □ □ □ □ □ □ □ □ □
-
-Here is another example.
-Q:
-Next turn number: 0, Roll: 3. Where will you move your token?
-A:
-There are 23 empty positions and 0 occupied position. In total: 23 + 0 = 23 positions. There are no tokens on the position. You have not rolled a 6. Therefore, I am not allowed to place a token on the board.
-MY MOVE: □ □ □ □ □ □ □ □ □ □ □ □ □ □ □ □ □ □ □ □ □ □ □
 
 Here is another example.
 Q:
 Next turn number: 5, Roll: 4. Where will you move your token?
 A:
-There are 22 empty positions and 1 occupied position. In total: 22 + 1 = 23 positions. My token is as position number 10. You have rolled 4. Since 10 + 4 = 14, I need to move my token to position number 14.
+There are 22 empty fields and 1 occupied field. In total: 22 + 1 = 23 fields. Therefore, my output will have 23 fields. My token is on field number 10. You have rolled 4. Since 10 + 4 = 14, I need to move my token to field number 14. This is 4 fields away from my previous position.
 MY MOVE: □ □ □ □ □ □ □ □ □ □ □ □ □ X □ □ □ □ □ □ □ □ □
 
-Here is another example.
-Q:
-Next turn number: 8, Roll: 6. Where will you move your token?
-A:
-There are 22 empty positions and 1 occupied position. In total: 22 + 1 = 23 positions. My token is as position number 12. You have rolled 6. My token is alreay on the board. Since 12 + 6 = 18, I need to move my token to position number 18.
-MY MOVE: □ □ □ □ □ □ □ □ □ □ □ □ □ □ □ □ □ X □ □ □ □ □
+
 
 Here is another example.
 Q:
 Next turn number: 7, Roll: 5. Where will you move your token?
 A:
-There are 22 empty positions and 1 occupied position. In total: 22 + 1 = 23 positions. My token is as position number 20. You have rolled 5. Since 20 + 5 = 25, and 25 > 23, I cannot move.
+There are 22 empty fields and 1 occupied field. In total: 22 + 1 = 23 fields. Therefore, my output will have 23 fields. My token is on field number 20. You have rolled 5. This is 5 fields away from my previous position. Since 20 + 5 = 25, and 25 > 23, I cannot move.
 MY MOVE: □ □ □ □ □ □ □ □ □ □ □ □ □ □ □ □ □ □ □ X □ □ □
 
 Now let's really play the game.
