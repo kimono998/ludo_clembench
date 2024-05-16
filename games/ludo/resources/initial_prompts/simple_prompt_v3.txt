@@ -20,6 +20,7 @@ Ending the game:
 General instructions:
 1) Your answers must contain the words "MY MOVE:", followed by the grid.
 2) You must always output the same number of fields as given to you at the beginning. If you output fewer fields than in the beginning state, you lose.
+3) It is strictly forbidden to return a board with more than one token X.
 
 Note: The board is updated at every turn. It is one continuous game. You need to memorize your position in the previous turn.
 The game begins when I give you the beginning state and roll the first number.
@@ -31,29 +32,25 @@ Q:
 Beginning state: □ □ □ □ □ □ □ □ □ □ □ □ □ □ □ □ □ □ □ □ □ □ □
 Next turn number: 0,  Roll: 6. Where will you move your token?
 A:
-There are 23 empty fields and 0 occupied fields. In total: 23 + 0 = 23 fields. Therefore, my output will have 23 fields. There are no tokens on the board. You have rolled a 6. This allows me to place my token on the board at field 1.
+There are 23 empty fields and 0 occupied fields. In total: 23 + 0 = 23 fields. Therefore, my move will have 23 fields. There are no tokens on the board. You have rolled a 6. This allows me to place my token on the board at field 1.
 MY MOVE: X □ □ □ □ □ □ □ □ □ □ □ □ □ □ □ □ □ □ □ □ □ □
 
-Here is another example.
-Q:
-Next turn number: 3, Roll: 4. Where will you move your token?
-A:
-There are 22 empty fields and 1 occupied field. In total: 22 + 1 = 23 fields. Therefore, my output will have 23 fields. My token is on field number 2. You have rolled 4. Since 2 + 4 = 6, I need to move my token to field number 6.
-MY MOVE: □ □ □ □ □ X □ □ □ □ □ □ □ □ □ □ □ □ □ □ □ □ □
-
-Here is another example.
-Q:
-Next turn number: 0, Roll: 3. Where will you move your token?
-A:
-There are 23 empty fields and 0 occupied fields. In total: 23 + 0 = 23 fields. Therefore, my output will have 23 fields. There are no tokens on the board. You have not rolled a 6. Therefore, I am not allowed to place a token on the board.
-MY MOVE: □ □ □ □ □ □ □ □ □ □ □ □ □ □ □ □ □ □ □ □ □ □ □
 
 Here is another example.
 Q:
 Next turn number: 5, Roll: 4. Where will you move your token?
 A:
-There are 22 empty fields and 1 occupied field. In total: 22 + 1 = 23 fields. Therefore, my output will have 23 fields. My token is on field number 10. You have rolled 4. Since 10 + 4 = 14, I need to move my token to field number 14.
+There are 22 empty fields and 1 occupied field. In total: 22 + 1 = 23 fields. Therefore, my move will have 23 fields. My token is on field number 10. You have rolled 4. Since 10 + 4 = 14, I need to move my token to field number 14. This is 4 fields away from my previous position.
 MY MOVE: □ □ □ □ □ □ □ □ □ □ □ □ □ X □ □ □ □ □ □ □ □ □
+
+
+
+Here is another example.
+Q:
+Next turn number: 7, Roll: 5. Where will you move your token?
+A:
+There are 22 empty fields and 1 occupied field. In total: 22 + 1 = 23 fields. Therefore, my move will have 23 fields. My token is on field number 20. You have rolled 5. This is 5 fields away from my previous position. Since 20 + 5 = 25, and 25 > 23, I cannot move.
+MY MOVE: □ □ □ □ □ □ □ □ □ □ □ □ □ □ □ □ □ □ □ X □ □ □
 
 Here is another example.
 Q:
@@ -62,11 +59,12 @@ A:
 There are 22 empty fields and 1 occupied field. In total: 22 + 1 = 23 fields. Therefore, my output will have 23 fields. My token is on field number 12. You have rolled 6. My token is already on the board. Since 12 + 6 = 18, I need to move my token to field number 18.
 MY MOVE: □ □ □ □ □ □ □ □ □ □ □ □ □ □ □ □ □ X □ □ □ □ □
 
-Here is another example.
+
+Wrong example: (DO NOT DO THIS)
 Q:
-Next turn number: 7, Roll: 5. Where will you move your token?
+Next turn number: 5, Roll: 4. Where will you move your token?
 A:
-There are 22 empty fields and 1 occupied field. In total: 22 + 1 = 23 fields. Therefore, my output will have 23 fields. My token is on field number 20. You have rolled 5. Since 20 + 5 = 25, and 25 > 23, I cannot move.
-MY MOVE: □ □ □ □ □ □ □ □ □ □ □ □ □ □ □ □ □ □ □ X □ □ □
+There are 22 empty fields and 1 occupied field. In total: 22 + 1 = 23 fields. Therefore, my move will have 23 fields. My token is on field number 10. You have rolled 4. Since 10 + 4 = 14, I need to move my token to field number 14. This is 4 fields away from my previous position.
+MY MOVE: □ □ □ □ □ □ □ □ □ X □ □ □ X □ □ □ □ □ □ □ □ □
 
 Now let's really play the game.
