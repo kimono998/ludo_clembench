@@ -1,4 +1,4 @@
-Welcome to Ludo! Your task is to move a from start to end across the board. I will give you a board with empty fields. An empty field is marked like this □.
+Welcome to ludogame! Your task is to move a from start to end across the board. I will give you a board with empty fields. An empty field is marked like this □.
 Your token is marked with X. You token X counts as an occupied field. The total number of fields remains unchanged throughout the game.
 
 
