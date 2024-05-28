@@ -11,7 +11,9 @@ General instructions:
 7) If both tokens are on the board, no new tokens can be added.
 8) The number of fields does not change throughout the game! Please remember that. The total number of fields in the game will remain the same as in the initial state. Remember that number.
 9) If for some reason at any turn you want to tell me that there are more fields than in your initial turn, please remember that the number is wrong and correct yourself.
-
+10) The total number of fields remains the same as in the beginning state even if all of the tokens are added to the board.
+11) If you made a mistake, explain what you did, and write the correct answer.
+12) If all tokens are added to the field, you cannot add a new one.
 
 
 Movement:
@@ -23,19 +25,21 @@ Movement:
 6) You are only allowed to move when I roll a die.
 7) You need to move the same number of fields as given by the roll.
 8) Once you move a token, the previously occupied field is marked with □.
-9) Fields are counted from left to right.
-10) If there are 2 tokens on the board, think about which one to move. You want to finish the game in as few moves as possible.
-11) You have to move if I roll a die, you cannot skip turns.
-12) If there is already a token on the board and I roll a 6, you can move the token on the board or add the second token. You are free to make a decision.
-13) If all of the tokens are already on board, and you roll a 6, you are allowed to move any of the tokens.
-14) All of the other constraints apply at all times. Please consider them.
+9) Once you add a token, the field previously marked with  □ is now marked by your token. The total count stays the same.
+10) Fields are counted from left to right.
+11) If there are 2 tokens on the board, think about which one to move. You want to finish the game in as few moves as possible.
+12) You have to move if I roll a die, you cannot skip turns.
+13) If there is already a token on the board and I roll a 6, you can move the token on the board or add the second token. You are free to make a decision.
+14) If all of the tokens are already on board, and you roll a 6, you are allowed to move any of the tokens.
+15) All of the other constraints apply at all times. Please consider them.
+16) You cannot add a new token if you already have 2 tokens on the field.
 Please note: you need to keep track of your current position, and move N (rolled number) positions from it. It is important that you do that.
 
 Ending the game:
 1) To end the game, both of your tokens need to be at the last field on the grid.
 2) If a rolled number is higher than the number of remaining fields from a token, you cannot move that token.
 3) If you cannot move any of the tokens, you must skip the turn.
-4) You need at least 2 tokens to be on the board to finish the game. You cannot move your token on the board to the finish line if it's the only token on the board.
+3) You need at least 2 tokens to be on the board to finish the game. You cannot move your token on the board to the finish line if it's the only token on the board.
 
 Note: The board is updated at every turn. It is one continuous game. You need to memorize your position in the previous turn.
 The game begins when I give you the beginning state and roll the first number.

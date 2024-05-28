@@ -35,11 +35,23 @@ Ending the game:
 1) To end the game, both of your tokens need to be at the last field on the grid.
 2) If a rolled number is higher than the number of remaining fields from a token, you cannot move that token.
 3) If you cannot move any of the tokens, you must skip the turn.
-4) You need at least 2 tokens to be on the board to finish the game. You cannot move your token on the board to the finish line if it's the only token on the board.
+3) You need at least 2 tokens to be on the board to finish the game. You cannot move your token on the board to the finish line if it's the only token on the board.
 
 Note: The board is updated at every turn. It is one continuous game. You need to memorize your position in the previous turn.
 The game begins when I give you the beginning state and roll the first number.
 Think through your every step.
+
+
+How to count tokens?
+
+-Whenever I provide you with a board, you do the following procedure:
+
+Q: Current state: Y □ □ □ □ □ □ □ □ □ □ X □ □ □ □ □ □ □ □ □ □ □
+A:
+Counting tokens: Y-1 □-2 □-3 □-4 □-5 □-6 □-7 □-8 □-9 □-10 □-11 X-12 □-13 □-14 □-15 □-16 □-17 □-18 □-19 □-20 □-21 □-22 □-23
+
+- Once that you respond go over the character count and make sure it is identical to the number of tokens I provided you with.
+
 
 Here is an example of what one turn looks like. Let's think step by step.
 
@@ -48,7 +60,9 @@ Q:
 Beginning state: □ □ □ □ □ □ □ □ □ □ □ □ □ □ □ □ □ □ □ □ □ □ □
 Next turn number: 0,  Roll: 6. Where will you move your token?
 A:
-There are 23 empty fields and 0 occupied fields. In total: 23 + 0 = 23 fields. There are no tokens on the board. You have rolled a 6. This allows me to place my token X on the board at field 1.
+You provided: □ □ □ □ □ □ □ □ □ □ □ □ □ □ □ □ □ □ □ □ □ □ □
+Counting fields: □-1 □-2 □-3 □-4 □-5 □-6 □-7 □-8 □-9 □-10 □-11 □-12 □-13 □-14 □-15 □-16 □-17 □-18 □-19 □-20 □-21 □-22 □-23
+There are 23 empty fields. There are no tokens on the board. You have rolled a 6. This allows me to place my token X on the board at field 1.
 MY MOVE: X -> 1 ; Y -> 0
 
 
@@ -57,6 +71,8 @@ Q:
 Current state: □ □ □ □ □ □ □ □ □ X □ □ □ □ □ □ □ □ □ □ □ □ □
 Next turn number: 5, Roll: 4. Where will you move your token?
 A:
+You provided: □ □ □ □ □ □ □ □ □ X □ □ □ □ □ □ □ □ □ □ □ □ □
+Counting fields: □-1 □-2 □-3 □-4 □-5 □-6 □-7 □-8 □-9 X-10 □-11 □-12 □-13 □-14 □-15 □-16 □-17 □-18 □-19 □-20 □-21 □-22 □-23
 There are 22 empty fields and 1 occupied field. In total: 22 + 1 = 23 fields. My token X is on field number 10 and token Y is not on the board. You have rolled 4. This is 4 fields away from my previous position. Since only token X is on the board, I can try to move token X. Since 10 + 4 = 14, I can move my token X to field number 14.
 MY MOVE: X -> 14 ; Y -> 0
 
@@ -66,6 +82,8 @@ Q:
 Current state: □ □ □ □ □ □ □ □ □ □ □ □ □ □ □ □ □ □ □ X □ □ □
 Next turn number: 7, Roll: 5. Where will you move your token?
 A:
+You provided: □ □ □ □ □ □ □ □ □ □ □ □ □ □ □ □ □ □ □ X □ □ □
+Counting fields: □-1 □-2 □-3 □-4 □-5 □-6 □-7 □-8 □-9 □-10 □-11 □-12 □-13 □-14 □-15 □-16 □-17 □-18 □-19 X-20 □-21 □-22 □-23
 There are 22 empty fields and 1 occupied field. In total: 22 + 1 = 23 fields. My token X is on field number 20 and token Y is not on the board. You have rolled 5. This is 5 fields away from my previous position. Since only token X is on the board, I can try to move token X. Since 20 + 5 = 25, and 25 > 23, I cannot move.
 MY MOVE: X -> 20 ; Y -> 0
 
@@ -75,6 +93,8 @@ Q:
 Current state: □ □ □ □ □ □ □ □ □ □ □ X □ □ □ □ □ □ □ □ □ □ □
 Next turn number: 8, Roll: 6. Where will you move your token?
 A:
+You provided: □ □ □ □ □ □ □ □ □ □ □ X □ □ □ □ □ □ □ □ □ □ □
+Counting fields: □-1 □-2 □-3 □-4 □-5 □-6 □-7 □-8 □-9 □-10 □-11 X-12 □-13 □-14 □-15 □-16 □-17 □-18 □-19 □-20 □-21 □-22 □-23
 There are 22 empty fields and 1 occupied field. In total: 22 + 1 = 23 fields. I have token X on field number 12. and Y is not on the board. You have rolled 6. Therefore, I can decide to move or put another token on the board.  I decide to put another token on the board. This allows me to place my token Y on the board at field 1.
 MY MOVE: X -> 12 ; Y -> 1
 
@@ -83,6 +103,8 @@ Q:
 Beginning state: □ □ □ □ □ □ □ □ □ □ □ □ □ □ □ □ □ □ □ □ □ □ □
 Next turn number: 0,  Roll: 5. Where will you move your token?
 A:
+You provided: □ □ □ □ □ □ □ □ □ □ □ □ □ □ □ □ □ □ □ □ □ □ □
+Counting fields: □-1 □-2 □-3 □-4 □-5 □-6 □-7 □-8 □-9 □-10 □-11 □-12 □-13 □-14 □-15 □-16 □-17 □-18 □-19 □-20 □-21 □-22 □-23
 There are 23 empty fields and 0 occupied fields. In total: 23 + 0 = 23 fields. There are no tokens on the board. Since you have not rolled a 6, I cannot place a token on the board.
 MY MOVE: X -> 0 ; Y -> 0
 
@@ -91,6 +113,8 @@ Q:
 Current state: Y □ □ □ □ □ □ □ □ □ □ X □ □ □ □ □ □ □ □ □ □ □
 Next turn number: 6, Roll: 3. Where will you move your token?
 A:
+You provided: Y □ □ □ □ □ □ □ □ □ □ X □ □ □ □ □ □ □ □ □ □ □
+Counting fields: Y-1 □-2 □-3 □-4 □-5 □-6 □-7 □-8 □-9 □-10 □-11 X-12 □-13 □-14 □-15 □-16 □-17 □-18 □-19 □-20 □-21 □-22 □-23
 There are 22 empty fields and 2 occupied fields. In total: 21 + 2 = 23 fields. I have token X on field 12 and token Y on field 1. You have rolled 3. This is 3 fields away from my previous position. Since both tokens are on the field, I can try to move any of them. I decide to move my token Y. Since 1 + 3 = 4, I need to move my token to field number 4.
 MY MOVE: X -> 12 ; Y -> 4
 
@@ -99,6 +123,8 @@ Q:
 Current state: □ □ □ □ Y □ □ □ □ □ □ □ □ □ □ □ □ □ □ □ □ X □
 Next turn number: 7, Roll: 4. Where will you move your token?
 A:
+You provided: □ □ □ □ Y □ □ □ □ □ □ □ □ □ □ □ □ □ □ □ □ X □
+Counting fields: □-1 □-2 □-3 □-4 Y-5 □-6 □-7 □-8 □-9 □-10 □-11 □-12 □-13 □-14 □-15 □-16 □-17 □-18 □-19 □-20 □-21 X-22 □-23
 There are 21 empty fields and 2 occupied fields. In total: 21 + 2 = 23 fields. I have token X on field 22 and token Y on field 5. You have rolled 4. This is 4 fields away from my previous position. Since both tokens are on the field, I can try to move any of them. I decide to move my token X. Since 22 + 4 = 26, and 26 > 23, I cannot move token X. Therefore, I will move token Y. Since 5 + 4 = 9, I need to move token Y to field number 9.
 MY MOVE: X -> 22 ; Y -> 9
 
@@ -108,9 +134,7 @@ Q:
 Current state: □ □ □ □ □ □ □ □ □ □ □ □ □ □ □ □ □ □ □ □ Y X □
 Next turn number: 7, Roll: 4. Where will you move your token?
 A:
+You provided: □ □ □ □ □ □ □ □ □ □ □ □ □ □ □ □ □ □ □ □ Y X □
+Counting fields: □-1 □-2 □-3 □-4 □-5 □-6 □-7 □-8 □-9 □-10 □-11 □-12 □-13 □-14 □-15 □-16 □-17 □-18 □-19 □-20 Y-21 X-22 □-23
 There are 21 empty fields and 2 occupied fields. In total: 21 + 2 = 23 fields. I have token X on field 22 and token Y on field 21. You have rolled 4. This is 4 fields away from my previous position. Since both tokens are on the field, I can try to move any of them. I decide to move my token Y. Since 21 + 4 = 25, I cannot move token Y. Therefore, I will try token X. Since 22 + 4 = 26, and 26 > 23, I cannot move token X.
 MY MOVE: X -> 22 ; Y -> 21
-
-
-
-Now let's really play the game.
