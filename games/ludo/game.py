@@ -1,5 +1,3 @@
-<<<<<<< Updated upstream
-=======
 """
 Module description
 """
@@ -69,4 +67,3 @@ def main() -> None:
 
 if __name__ == "__main__":
     main()
->>>>>>> Stashed changes

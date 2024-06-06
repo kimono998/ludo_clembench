@@ -1,13 +1,8 @@
-<<<<<<< Updated upstream
-import random
-import numpy
-
-=======
 import numpy as np
 from clemgame.clemgame import GameInstanceGenerator
 
 
-GAME_NAME = "Ludo"
+GAME_NAME = "ludo"
 RADNOM_SEED = 42
 
 class LudoInstanceGenerator(GameInstanceGenerator):
@@ -20,13 +15,28 @@ class LudoInstanceGenerator(GameInstanceGenerator):
     def check_sequence(self, board_size, rolls):
         N = board_size  # Total number of fields
         memo = {}  # Memorized moves
->>>>>>> Stashed changes
 
+        def dp(posX, posY, roll_index):
+            if posX == N and posY == N:
+                return 0, []
+            if roll_index >= len(rolls):
+                return float('inf'), []
+            if (posX, posY, roll_index) in memo:
+                return memo[(posX, posY, roll_index)]
 
+            roll = rolls[roll_index]
+            next_roll_index = roll_index + 1
+            moves = float('inf')
+            best_move_seq = []
 
+            if posX != 0:
+                new_posX = posX + roll if posX + roll <= N else posX
+                if new_posX != posY or new_posX == N:
+                    next_moves, move_seq = dp(new_posX, posY, next_roll_index)
+                    if 1 + next_moves < moves:
+                        moves = 1 + next_moves
+                        best_move_seq = [f"Move X from {posX} to {new_posX}"] + move_seq
 
-<<<<<<< Updated upstream
-=======
             if posY != 0:
                 new_posY = posY + roll if posY + roll <= N else posY
                 if new_posY != posX or new_posY == N:
@@ -57,7 +67,7 @@ class LudoInstanceGenerator(GameInstanceGenerator):
         return result, move_sequence
 
     def generate_instance(self, board_size, m, n):
-        np.random.seed(RADNOM_SEED)
+        np.random.seed(self.RANDOM_SEED)
         instances = {}
         i = 0
         while i < m:
@@ -68,9 +78,7 @@ class LudoInstanceGenerator(GameInstanceGenerator):
                 i += 1
         return instances
 
-
 if __name__ == "__main__":
     generator = LudoInstanceGenerator()
     move_dict = generator.generate_instance(23, 10, 50)  # Generate 10 instances with 50 rolls each
     print(move_dict)
->>>>>>> Stashed changes
