@@ -2,16 +2,22 @@
 Module description
 """
 
-import re
 import sys
 
 sys.path.append('../../clemgame')  # Path to clemgame module
 sys.path.append('../../')  # Path to the parent directory which contains backends
 
+from backends import Model, get_model_for, load_model_registry
 from clemgame.clemgame import GameBenchmark, GameMaster
+from game import Game
 
 
 GAME_NAME: str = "ludo"
+THIS_MODEL: dict = {
+    "model_id": "gpt-3.5-turbo-1106",
+    "backend": "openai",
+    "model_name": "gpt-3.5-turbo-1106"
+}
 
 class LudoGameMaster(GameMaster):
     """
@@ -19,6 +25,7 @@ class LudoGameMaster(GameMaster):
     """
     def __init__(
             self,
+            llm: Model,
             experiment: dict,
             system_prompt: str,
             task_description: str
@@ -27,22 +34,28 @@ class LudoGameMaster(GameMaster):
         Method description
 
         Args:
+            llm (Model):
             experiment (dict):
             system_prompt (str):
             task_description (str):
         """
         super().__init__(GAME_NAME)
+        self.llm: Model = llm
         self.experiment: dict = experiment
         self.system_prompt: str = system_prompt
         self.task_description: str = task_description
+        self.playing: bool = True
 
     def setup(self) -> None:
         """
         Initializes all relevant conversation, board, token, and turn
         attributes.
         """
-        # Conversation attributes
-        self.context: list = []
+        self.game: Game = Game(
+            self.llm,
+            self.system_prompt,
+            self.task_description
+        )
         
         # Board attributes
         self.rolls: list = self.experiment["rolls"]
@@ -63,10 +76,28 @@ class LudoGameMaster(GameMaster):
     # TODO Implement gameplay loop
     def play(self) -> None:
         """
-        Method description
+        Handles the basic gameplay loop.
         """
-        while self.turn < self.turn_limit:
-            pass
+        while self.playing and self.turn < self.turn_limit:
+            # Makes move
+            move, output_text = self.game.make_move(
+                self.turn,
+                self.rolls[self.turn],
+                self.current_state
+            )
+
+            # Checks if move is valid
+            if self._check_move(move, self.rolls[self.turn]):
+                self.game.add_message(output_text, role="assistant")
+                for token in move.keys():
+                    self.tokens[token]["inplay"] = move[token] > 0
+                    self.tokens[token]["current_position"] = move[token]
+                self._update_board(move)
+                self.turn += 1
+            
+            # Ends game if not
+            else:
+                self.playing = False
 
     # TODO Implement evaluation procedure -- metrics TBD
     def compute_score(self) -> None:
@@ -75,21 +106,6 @@ class LudoGameMaster(GameMaster):
         """
         pass
 
-    def _add_message(self, message: str, role: str = "user") -> None:
-        """
-        Adds a message to the conversation context. If it is the first message
-        being added, the system prompt is added to the beginning.
-
-        Args:
-            message (str): to be added to the conversation context
-            role (str): either 'system', 'assistant', or 'user'
-        """
-        if not self.context:
-            self.context = [{"role": "system", "content": self.system_prompt}]
-
-        self.context.append({"role": role, "content": message})
-
-    # TODO Implement check_move function
     def _check_move(self, move: dict[str: int], roll: int) -> bool:
         """
         Checks the validity of the move, given the current state of the board
@@ -196,36 +212,6 @@ class LudoGameMaster(GameMaster):
             else:
                 return None
 
-    @staticmethod
-    def _parse_text(text: str) -> dict[str: int]:
-        """
-        Parses the input text according to an expected input format in order to
-        extract per token moves.
-
-        Args:
-            text (str): raw input text
-
-        Returns:
-            dict[str: int]: contains token-position pairs
-
-        Raises:
-            ValueError: raises when the text does not match the expected
-                        format; prints a preview of the non-conforming text
-        """
-        matches: re.Match = re.search(r"MY MOVE: X -> (\d+) ; Y -> (\d+)", text)
-
-        if not matches:
-            raise ValueError(f"Invalid text format: {text[:20]}")
-        
-        return {"X": int(matches.group(1)), "Y": int(matches.group(2))}
-    
-    # TODO Implement reprompting functionality
-    def _reprompt(self) -> None:
-        """
-        Method description
-        """
-        pass
-
     def _setup_board(self) -> str:
         """
         Sets the board to its initial blank state.
@@ -265,7 +251,9 @@ def register_benchmark():
 
 
 def main() -> None:
-    pass
+    load_model_registry()
+    llm: Model = get_model_for(THIS_MODEL)
+    llm.set_gen_args(temperature=0.0, max_tokens=400)
 
 
 if __name__ == "__main__":
