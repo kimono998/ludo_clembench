@@ -31,11 +31,9 @@ class LudoGameMaster(GameMaster):
     evaluation procedures.
     """
     def __init__(
-            self,
-            llm: Model,
-            experiment: dict[str: dict],
-            system_prompt: str,
-            task_description: str
+        self, llm: Model,
+        experiment: dict[str: dict],
+        initial_prompt: str
     ) -> None:
         """
         Initializes attributes from the passed in arguments, as well as
@@ -43,20 +41,14 @@ class LudoGameMaster(GameMaster):
 
         Args:
             llm (Model): the LLM partaking in the game
-            experiment (dict[str: dict]): contains multiple game instances
-            system_prompt (str): the loaded system prompt, which is the first
-                                 message passed to the LLM
-            task_description (str): the loaded task description, which is the
-                                    second message passed to the LLM, both
-                                    detailing the scope and constraints of the
-                                    game and giving relevant expamples to
-                                    gameplay mechanics
+            experiment (dict[str: dict]): id-instance pairs, each containing
+                                          details for a game instance
+            initial_prompt (str): initial prompt sent to the LLM
         """
         super().__init__(GAME_NAME, experiment)
         self.llm: Model = llm
         self.experiment: dict[str: dict] = experiment
-        self.system_prompt: str = system_prompt
-        self.task_description: str = task_description
+        self.initial_prompt: str = initial_prompt
         self.history: dict[str: dict] = {}
 
     # TODO Adapt to allow for iterating over experiment
@@ -64,11 +56,7 @@ class LudoGameMaster(GameMaster):
         """
         Initializes all relevant game, board, token, and turn attributes.
         """
-        self.game: Game = Game(
-            self.llm,
-            self.system_prompt,
-            self.task_description
-        )
+        self.game: Game = Game(self.llm, self.initial_prompt)
         self.playing: bool = True
         
         # Board attributes
@@ -227,13 +215,14 @@ class LudoGameMaster(GameMaster):
             else:
                 return None
 
+    # TODO Finish
     def _restart_game(self) -> None:
         """
         Method description
         """
         self.current_state = self._set_up_board()
         self.turn = 0
-        
+
         for token in self.tokens.keys():
             self.tokens[token]["inplay"] = False
             self.tokens[token]["current_position"] = 0
@@ -270,31 +259,28 @@ class LudoGameBenchmark(GameBenchmark):
     """
     def __init__(
         self,
-        instance_filepath: Path,
-        resource_filepath: Path,
+        experiment_filename: str = 'instances.json',
+        initial_prompt_filename: str = 'initial_prompt.template',
         is_single_player: bool = False
     ):
         """
-        Passes along the game name, then loads the experiment, the system
-        prompt, and the task description.
+        Passes along the game name and allows for the creation of the game
+        master.
 
         Args:
-            instance_filepath (Path): points to the directory containing the
-                                      instances
-            resource_directory_filepath (Path): points to the directory
-                                                containing the resources
+            experiment_filename (str): name of the experiment file, set to
+                                       'instances.json' by default
+            initial_prompt_filename (str): name of the initial prompt file, set
+                                           to 'initial_prompt.template' by
+                                           default
             is_single_player (bool): True if the game is set in single-player
                                      mode, False otherwise; set by default to
                                      False
         """
         super().__init__(GAME_NAME)
-        self.experiment: dict = self._load_experiment(instance_filepath)
-        self.system_prompt: str = self._load_file(
-            resource_filepath / "system_prompts" / "system_prompt.txt"
-        )
-        self.task_description: str = self._load_file(
-            resource_filepath / "task_descriptions" / "multitoken_v1_pace.txt"
-        )
+        self.experiment: dict = self.load_json(experiment_filename)
+        self.initial_prompt: str = self.load_template(initial_prompt_filename)
+        self.is_single_player: bool = is_single_player
 
     def get_description(self) -> str:
         """
@@ -310,22 +296,15 @@ class LudoGameBenchmark(GameBenchmark):
 
     def create_game_master(self, llm: Model) -> LudoGameMaster:
         """
-        Given an instantiated LLM Model object, creates a custom GameMaster
-        using the loaded experiment, system prompt, and task description.
+        Given an instantiated LLM Model object, creates a custom GameMaster.
 
         Args:
             llm (Model): loaded LLM which will participate in the game
 
         Returns:
-            LudoGameMaster: instantiated LudoGameMaster object with loaded
-                            experiment, system prompt, and task description
+            LudoGameMaster: instantiated LudoGameMaster object
         """
-        return LudoGameMaster(
-            llm,
-            self.experiment,
-            self.system_prompt,
-            self.task_description
-        )
+        return LudoGameMaster(llm, self.experiment, self.initial_prompt)
 
     def is_single_player(self) -> bool:
         """
@@ -336,53 +315,6 @@ class LudoGameBenchmark(GameBenchmark):
             bool: True if single-player, False otherwise
         """
         return self.is_single_player
-
-    def _load_experiment(self, filepath: Path) -> dict[dict]:
-        """
-        Given a filepath leading to the directory containing the instance .json
-        files, iterates through the directory and loads the instances into
-        dictionaries and loads all dictionaries into one dictionary.
-
-        Args:
-            filepath (Path): points to the instance directory
-
-        Returns:
-            dict[dict]: contains id-instance pairs
-        """
-        experiment: dict = {}
-        for instance in filepath.iterdir():
-            experiment[instance.stem[-3:]] = self._load_file(instance)
-
-        return experiment
-
-    @staticmethod
-    def _load_file(filepath: Path) -> str | dict:
-        """
-        Loads the specified file, intended to be either a .json or .txt file,
-        to either a string or a dictionary.
-
-        Args:
-            filepath (Path): points to the file to be loaded
-
-        Returns:
-            str | dict: contents of the loaded file
-
-        Raises:
-            TypeError: raised if an invalid filepath is introduced
-        """
-        if not filepath.exists():
-            raise TypeError(f"The following file could not be found: {filepath}")
-
-        with open(filepath, "r") as file:
-            match filepath.suffix:
-                case ".json":
-                    return json.load(file)
-
-                case ".txt":
-                    return file.read()
-
-                case _:
-                    raise TypeError(f"Attempted to load an invalid file type: {filepath.suffix}")
 
 
 def register_benchmark():
@@ -396,22 +328,22 @@ def main() -> None:
     llm.set_gen_args(temperature=0.0, max_tokens=400)
 
     # Generates game instances
-    instance_generator: LudoInstanceGenerator = LudoInstanceGenerator()
+    instance_generator: LudoInstanceGenerator = LudoInstanceGenerator() # TODO
     
     # Locates game instances and resources
-    instance_filepath: Path = Path(__file__).parent / "in" / "basic"
-    resource_filepath: Path = Path(__file__).parent / "resources"
+    experiment_filename: str = "in/instances.json"
+    initial_prompt_filename: str = "resources/initial_prompt.template"
 
     # Instantiates game master
-    game_benchmark: LudoGameBenchmark = LudoGameBenchmark(instance_filepath, resource_filepath)
+    game_benchmark: LudoGameBenchmark = LudoGameBenchmark(experiment_filename, initial_prompt_filename)
     game_master: LudoGameMaster = game_benchmark.create_game_master(llm)
     game_master.setup()
 
     # Begins gameplay loop
-    game_master.play()
+    game_master.play() # TODO
 
     # Evaluates LLM performance
-    game_master.compute_score()
+    game_master.compute_score() # TODO
 
 
 if __name__ == "__main__":

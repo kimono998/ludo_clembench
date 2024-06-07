@@ -3,6 +3,11 @@ Module description
 """
 
 import re
+import sys
+from pathlib import Path
+
+sys.path.append(str(Path(__file__).parent.parent.parent))
+
 from backends import Model
 
 
@@ -11,28 +16,19 @@ class Game:
     A class which handles the game behavior of Ludo, namely prompting the model
     to make its next move given the current game state.
     """
-    def __init__(
-            self,
-            llm: Model,
-            system_prompt: str,
-            task_description: str
-    ) -> None:
+    def __init__(self, llm: Model, initial_prompt: str) -> None:
         """
         Initializes chat-based attributes.
 
         Args:
             llm (Model): a loaded LLM
-            system_prompt (str): the loaded system prompt, which is the first
-                                 message passed to the LLM
-            task_description (str): the loaded task description, which is the
-                                    second message passed to the LLM, both
-                                    detailing the scope and constraints of the
-                                    game and giving relevant expamples to
-                                    gameplay mechanics
+            initial_prompt (str): contains both the system prompt and the task
+                                  description for Ludo, the latter of which
+                                  details intructions and constraints for the
+                                  gameplay, as well as examples
         """
         self.llm: Model = llm
-        self.system_prompt: str = system_prompt
-        self.task_description: str = task_description
+        self.initial_prompt: str = initial_prompt
         self.context: list = []
 
     def make_move(
@@ -82,8 +78,14 @@ class Game:
         """
         if not self.context:
             self.context = [
-                {"role": "system", "content": self.system_prompt},
-                {"role": "user", "content": self.task_description}
+                {
+                    "role": "system",
+                    "content": self.initial_prompt.partition("\n")[0]
+                },
+                {
+                    "role": "user",
+                    "content": "".join(self.initial_prompt.partition("\n")[2])
+                }
             ]
 
         self.context.append({"role": role, "content": message})

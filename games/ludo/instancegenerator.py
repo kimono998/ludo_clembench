@@ -1,4 +1,9 @@
+import sys
 import numpy as np
+from pathlib import Path
+
+sys.path.append(str(Path(__file__).parent.parent.parent))
+
 from clemgame.clemgame import GameInstanceGenerator
 
 
