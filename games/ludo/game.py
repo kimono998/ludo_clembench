@@ -18,7 +18,17 @@ class Game:
             task_description: str
     ) -> None:
         """
-        Method description
+        Initializes chat-based attributes.
+
+        Args:
+            llm (Model): a loaded LLM
+            system_prompt (str): the loaded system prompt, which is the first
+                                 message passed to the LLM
+            task_description (str): the loaded task description, which is the
+                                    second message passed to the LLM, both
+                                    detailing the scope and constraints of the
+                                    game and giving relevant expamples to
+                                    gameplay mechanics
         """
         self.llm: Model = llm
         self.system_prompt: str = system_prompt
