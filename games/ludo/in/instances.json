@@ -1,27 +1,44 @@
 {
-    "in001": {
-        "board_size": 23,
-        "rolls": [6, 5, 4, 5, 6, 6, 2, 3, 6, 5, 1, 2, 5, 3, 4],
-        "turn_limit": 40
-    },
-    "in002": {
-        "board_size": 23,
-        "rolls": [6, 5, 4, 5, 6, 6, 2, 3, 6, 5, 1, 2, 5, 3, 4],
-        "turn_limit": 40
-    },
-    "in003": {
-        "board_size": 23,
-        "rolls": [6, 5, 4, 5, 6, 6, 2, 3, 6, 5, 1, 2, 5, 3, 4],
-        "turn_limit": 40
-    },
-    "in004": {
-        "board_size": 23,
-        "rolls": [6, 5, 4, 5, 6, 6, 2, 3, 6, 5, 1, 2, 5, 3, 4],
-        "turn_limit": 40
-    },
-    "in005": {
-        "board_size": 23,
-        "rolls": [6, 5, 4, 5, 6, 6, 2, 3, 6, 5, 1, 2, 5, 3, 4],
-        "turn_limit": 40
-    }
+    "experiments": [
+        {
+            "name": "basic",
+            "game_instances": [
+                {
+                    "game_id": "in001",
+                    "initial_prompt": "",
+                    "n_fields": 23,
+                    "rolls": [6, 5, 4, 5, 6, 6, 2, 3, 6, 5, 1, 2, 5, 3, 4],
+                    "turn_limit": 40
+                },
+                {
+                    "game_id": "in002",
+                    "initial_prompt": "",
+                    "n_fields": 23,
+                    "rolls": [6, 5, 4, 5, 6, 6, 2, 3, 6, 5, 1, 2, 5, 3, 4],
+                    "turn_limit": 40
+                },
+                {
+                    "game_id": "in003",
+                    "initial_prompt": "",
+                    "n_fields": 23,
+                    "rolls": [6, 5, 4, 5, 6, 6, 2, 3, 6, 5, 1, 2, 5, 3, 4],
+                    "turn_limit": 40
+                },
+                {
+                    "game_id": "in004",
+                    "initial_prompt": "",
+                    "n_fields": 23,
+                    "rolls": [6, 5, 4, 5, 6, 6, 2, 3, 6, 5, 1, 2, 5, 3, 4],
+                    "turn_limit": 40
+                },
+                {
+                    "game_id": "in005",
+                    "initial_prompt": "",
+                    "n_fields": 23,
+                    "rolls": [6, 5, 4, 5, 6, 6, 2, 3, 6, 5, 1, 2, 5, 3, 4],
+                    "turn_limit": 40
+                }
+            ]
+        }
+    ]
 }

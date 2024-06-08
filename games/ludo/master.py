@@ -12,6 +12,8 @@ from backends import Model, get_model_for, load_model_registry
 from clemgame.clemgame import GameBenchmark, GameMaster
 from game import Game
 from instancegenerator import LudoInstanceGenerator, GAME_NAME
+from player import LudoPlayer
+from scoring import LudoGameScorer
 
 
 THIS_MODEL: dict = {
@@ -31,38 +33,41 @@ class LudoGameMaster(GameMaster):
     evaluation procedures.
     """
     def __init__(
-        self, llm: Model,
+        self,
         experiment: dict[str: dict],
-        initial_prompt: str
+        player_models: list[Model] | None = None
     ) -> None:
         """
         Initializes attributes from the passed in arguments, as well as
         attributes related to evaluation.
 
         Args:
-            llm (Model): the LLM partaking in the game
             experiment (dict[str: dict]): id-instance pairs, each containing
                                           details for a game instance
-            initial_prompt (str): initial prompt sent to the LLM
+            TODO player_models (list[Model] | None): 
         """
         super().__init__(GAME_NAME, experiment)
-        self.llm: Model = llm
-        self.experiment: dict[str: dict] = experiment
-        self.initial_prompt: str = initial_prompt
-        self.history: dict[str: dict] = {}
+        self.player_models: list[Model] | None = None # TODO Adjust to allow for player model(s)
 
-    # TODO Adapt to allow for iterating over experiment
-    def setup(self) -> None:
+    # TODO Adjust for **kwargs
+    def setup(**kwargs) -> None:
         """
-        Initializes all relevant game, board, token, and turn attributes.
+        Reads the specifications of a game instance, then initializes the
+        attributes related to the game, the board, the tokens, and the turns.
+
+        Args:
+            game_id (str): an identifying string for each game instance
+            initial_prompt (str): the first message sent to the LLM
+            n_fields (int): the number of fields on the board
+            rolls (list[int]): the specific die rolls for each turn
+            turn_limit (int): the maximum number of allowed turns
         """
-        self.game: Game = Game(self.llm, self.initial_prompt)
-        self.playing: bool = True
+        self.game: Game = Game(self.llm, initial_prompt) # TODO Adjust to allow for player model(s)
+        self.playing: bool = True # TODO Reconsider for loop
         
         # Board attributes
-        self.rolls: list = self.experiment["rolls"] # TODO Adapt to set of instances
-        self.n_fields: int = self.experiment["n_fields"] # TODO Adapt to set of instances
-        self.board: str = self._set_up_board()
+        self.rolls: list = rolls
+        self.n_fields: int = n_fields
         self.current_state: str = self._set_up_board()
 
         # Token attributes
@@ -73,7 +78,7 @@ class LudoGameMaster(GameMaster):
         
         # Turn attributes
         self.turn: int = 0
-        self.turn_limit: int = self.experiment["turn_limit"] # TODO Adapt to set of instances
+        self.turn_limit: int = turn_limit
 
     # TODO Adapt to allow for iterating over experiment
     def play(self) -> None:
@@ -102,12 +107,12 @@ class LudoGameMaster(GameMaster):
             else:
                 self.playing = False
 
-    # TODO Implement evaluation procedure -- metrics TBD
-    def compute_score(self) -> None:
+    # TODO Implement evaluation procedure, decide on metrics, consider GameScorer
+    def compute_score(self, results_directory: str | None = None) -> None:
         """
         Method description
         """
-        pass
+        self.scorer
 
     def _check_move(self, move: dict[str: int], roll: int) -> bool:
         """
@@ -226,7 +231,6 @@ class LudoGameMaster(GameMaster):
         for token in self.tokens.keys():
             self.tokens[token]["inplay"] = False
             self.tokens[token]["current_position"] = 0
-        
 
     def _set_up_board(self) -> str:
         """
@@ -255,7 +259,7 @@ class LudoGameMaster(GameMaster):
 
 class LudoGameBenchmark(GameBenchmark):
     """
-    Organizes the running of an experiment of the game Ludo.
+    Organizes the running of an experiment of the game 'Ludo'.
     """
     def __init__(
         self,
@@ -270,17 +274,16 @@ class LudoGameBenchmark(GameBenchmark):
         Args:
             experiment_filename (str): name of the experiment file, set to
                                        'instances.json' by default
-            initial_prompt_filename (str): name of the initial prompt file, set
-                                           to 'initial_prompt.template' by
-                                           default
             is_single_player (bool): True if the game is set in single-player
                                      mode, False otherwise; set by default to
                                      False
         """
         super().__init__(GAME_NAME)
         self.experiment: dict = self.load_json(experiment_filename)
-        self.initial_prompt: str = self.load_template(initial_prompt_filename)
         self.is_single_player: bool = is_single_player
+
+        # Include filenames to be used, others will be ignored
+        self.filter_experiment: list = []
 
     def get_description(self) -> str:
         """
@@ -304,7 +307,7 @@ class LudoGameBenchmark(GameBenchmark):
         Returns:
             LudoGameMaster: instantiated LudoGameMaster object
         """
-        return LudoGameMaster(llm, self.experiment, self.initial_prompt)
+        return LudoGameMaster(llm, self.experiment)
 
     def is_single_player(self) -> bool:
         """
@@ -315,10 +318,6 @@ class LudoGameBenchmark(GameBenchmark):
             bool: True if single-player, False otherwise
         """
         return self.is_single_player
-
-
-def register_benchmark():
-    return {'ludo': LudoGameBenchmark}
 
 
 def main() -> None:
@@ -332,10 +331,9 @@ def main() -> None:
     
     # Locates game instances and resources
     experiment_filename: str = "in/instances.json"
-    initial_prompt_filename: str = "resources/initial_prompt.template"
 
     # Instantiates game master
-    game_benchmark: LudoGameBenchmark = LudoGameBenchmark(experiment_filename, initial_prompt_filename)
+    game_benchmark: LudoGameBenchmark = LudoGameBenchmark(experiment_filename)
     game_master: LudoGameMaster = game_benchmark.create_game_master(llm)
     game_master.setup()
 
