@@ -2,6 +2,7 @@
 Describes custom behavior for human and programmatic participants in 'Ludo'.
 """
 
+import re
 import sys
 from pathlib import Path
 
@@ -75,8 +76,7 @@ class ProgrammaticPlayer(Player):
         """
         parsed_messages: list[dict[str: int]] = self._parse_messages(messages)
 
-    @staticmethod
-    def _parse_messages(messages: list[dict]) -> list[dict[str: int]]:
+    def _parse_messages(self, messages: list[dict]) -> list[dict[str: int]]:
         """
         Given a list of player-message pairs detailing all interactions that
         have occured thus far, parses each of the messages at each time step,
@@ -92,13 +92,12 @@ class ProgrammaticPlayer(Player):
                                   -parsed message pairs
         """
         return {
-            parsed_messages[index]: self._parse_turn(turn)
-            for index, turn in enumerate(messages)
+            turn: self._parse_turn(message)
+            for turn, message in enumerate(messages)
         }
 
    # TODO Replace "player_1" and "player_2" with real keys
-    @staticmethod
-    def _parse_turn(turn: dict) -> dict[dict[str: int]]:
+    def _parse_turn(self, turn: dict) -> dict[dict[str: int]]:
         """
         Parses the input text according to an expected input format in order to
         extract per token moves.

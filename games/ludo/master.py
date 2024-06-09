@@ -2,7 +2,6 @@
 TODO Module description
 """
 
-import json
 import sys
 from pathlib import Path
 
@@ -365,7 +364,10 @@ class LudoGameBenchmark(GameBenchmark):
 
 def main() -> None:
     from clemgame import benchmark
-    from scripts.cli import read_gen_args, read_model_specs
+    from scripts.cli import read_model_specs
+
+    # TODO Test instance generator
+    instance_generator: LudoInstanceGenerator = LudoInstanceGenerator()
 
     game_name: str = "ludo"
     model_specs: list[str] = ["gpt-3.5-turbo-1106", "programmatic"]

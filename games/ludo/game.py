@@ -8,7 +8,6 @@ from pathlib import Path
 
 sys.path.append(str(Path(__file__).parent.parent.parent))
 
-from backends import Model
 from clemgame.clemgame import Player
 from player import HumanPlayer, ProgrammaticPlayer
 
@@ -36,8 +35,8 @@ class Game:
                                   details intructions and constraints for the
                                   gameplay, as well as examples
         """
-        self.player_1: LudoPlayer = player_1
-        self.player_2: LudoPlayer = player_2
+        self.player_1: Player = player_1
+        self.player_2: HumanPlayer | ProgrammaticPlayer = player_2
         self.initial_prompt: str = initial_prompt
         self.context: list = []
 
