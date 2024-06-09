@@ -1,5 +1,5 @@
 """
-Module description
+Describes custom behavior for human and programmatic participants in 'Ludo'.
 """
 
 import sys
@@ -7,59 +7,140 @@ from pathlib import Path
 
 sys.path.append(str(Path(__file__).parent.parent.parent))
 
-from backends import CustomResponseModel, HumanModel, Model, get_model_for, \
-    load_model_registry
+from backends import CustomResponseModel, HumanModel
 from clemgame.clemgame import Player
 
-class LudoPlayer(Player):
+
+# TODO Determine if the HumanPlayer class is necessary; is the inbuilt _terminal_response method sufficient?
+class HumanPlayer(Player):
     """
-    Class description
+    A human participant in the game 'Ludo'. Its custom response behavior is
+    described in self._terminal_response.
     """
-    def __init__(self, model: Model) -> None:
+    def __init__(self, model: HumanModel) -> None:
         """
-        Method description
+        Passes along the input HumanModel object to the parent class.
 
         Args:
-            model (Model): the configured model, being either a Model object
-                           for the LLM Player or either a CustomResponseModel
-                           for a programmatic Player or a HumanModel for the
-                           game variations which allow for a human Player
+            model (HumanModel): the instantiated HumanModel
         """
         super().__init__(model)
 
-    # TODO Determine programmatic player behavior
-    def _custom_response(self) -> None:
-        """
-        Method description
-        """
-        if isinstance(self.model, CustomResponseModel):
-            pass
-
     # TODO Determine human player behavior
-    def _terminal_response(self) -> None:
+    def _terminal_response(self, messages: list[dict], turn_idx: int) -> str:
         """
-        Method description
+        Describes the behavior of the human second player, given the
+        conversation history and the current turn index, ultimately producing
+        and returning its response.
+
+        Args:
+            messages (list[dict]): contains the conversation history up to and
+                                   including the current turn
+            turn_idx (int): the current turn index
+
+        Returns:
+            str: human player's response
         """
         pass
 
 
-def main() -> None:
-    # LLM setup
-    THIS_MODEL: dict = {
-        "model_id": "gpt-3.5-turbo-1106",
-        "backend": "openai",
-        "model_name": "gpt-3.5-turbo-1106"
-    }
-    load_model_registry()
-    
-    # Model instantiation
-    llm: Model = get_model_for(THIS_MODEL)
-    programmatic_player: CustomResponseModel = CustomResponseModel()
-    human_player: HumanModel = HumanModel() # Can be used in place of programmatic_player in game variation
+class ProgrammaticPlayer(Player):
+    """
+    A programmatic participant in the game 'Ludo'. Its custom response behavior
+    is described in self._custom_response.
+    """
+    def __init__(self, model: CustomResponseModel) -> None:
+        """
+        Passes along the input CustomResponseModel object to the parent class.
 
-    # Player instantiation
-    player_1: LudoPlayer = LudoPlayer(llm)
-    player_2: LudoPlayer = LudoPlayer(programmatic_player)
+        Args:
+            model (CustomResponseModel): the instantiated CustomResponseModel
+        """
+        super().__init__(model)
+
+    # TODO Determine programmatic player behavior
+    def _custom_response(self, messages: list[dict], turn_idx: int) -> str:
+        """
+        Describes the behavior of the programmatic second player, given the
+        conversation history and the current turn index, ultimately producing
+        and returning its response.
+
+        Args:
+            messages (list[dict]): contains the conversation history up to and
+                                   including the current turn
+            turn_idx (int): the current turn index
+
+        Returns:
+            str: programmatic player's response
+        """
+        parsed_messages: list[dict[str: int]] = self._parse_messages(messages)
+
+    @staticmethod
+    def _parse_messages(messages: list[dict]) -> list[dict[str: int]]:
+        """
+        Given a list of player-message pairs detailing all interactions that
+        have occured thus far, parses each of the messages at each time step,
+        stores them in a dictionary of player name-parsed message pairs, then
+        returns a list of all the turns.
+        
+        Args:
+            messages (list[dict]): contains all the messages in the
+                                   conversation thus far
+        
+        Returns:
+            list[dict[str: int]]: contains dictionaries containing turn number
+                                  -parsed message pairs
+        """
+        return {
+            parsed_messages[index]: self._parse_turn(turn)
+            for index, turn in enumerate(messages)
+        }
+
+   # TODO Replace "player_1" and "player_2" with real keys
+    @staticmethod
+    def _parse_turn(turn: dict) -> dict[dict[str: int]]:
+        """
+        Parses the input text according to an expected input format in order to
+        extract per token moves.
+
+        Args:
+            turn (dict): contains raw input messages in player-message pairs
+
+        Returns:
+            dict[dict[str: int]]: contains parsed messages in the form of
+                                  token-position pairs for each player
+        """
+        return {
+            "player_1": self._parse_text(turn["player_1"]),
+            "player_2": self._parse_text(turn["player_2"])
+        }
+
+    @staticmethod
+    def _parse_text(text: str) -> dict[str: int]:
+        """
+        Parses the input text according to an expected input format in order to
+        extract per token moves.
+
+        Args:
+            text (str): raw input text
+
+        Returns:
+            dict[str: int]: contains token-position pairs
+
+        Raises:
+            ValueError: raises when the text does not match the expected
+                        format; prints a preview of the non-conforming text
+        """
+        matches: re.Match = re.search(r"MY MOVE: X -> (\d+) ; Y -> (\d+)", text)
+
+        if not matches:
+            raise ValueError(f"Invalid text format: {text[:20]}")
+        
+        return {"X": int(matches.group(1)), "Y": int(matches.group(2))}
+
+
+def main() -> None:
+    pass
 
 
 if __name__ == '__main__':

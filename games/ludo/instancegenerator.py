@@ -1,3 +1,7 @@
+"""
+TODO Module description
+"""
+
 import sys
 import numpy as np
 from pathlib import Path
@@ -7,17 +11,35 @@ sys.path.append(str(Path(__file__).parent.parent.parent))
 from clemgame.clemgame import GameInstanceGenerator
 
 
-GAME_NAME = "ludo"
-RADNOM_SEED = 42
+GAME_NAME: str = "ludo"
+RANDOM_SEED: int = 42
 
+
+# TODO Determine how GameInstanceGenerator is used -- not instantiated or called anywhere
 class LudoInstanceGenerator(GameInstanceGenerator):
+    """
+    TODO Class description
+    """
     def __init__(self):
+        """
+        TODO Method description
+        """
         super().__init__(GAME_NAME)
 
-    def on_generate(self) -> None:
+    # TODO Implement main logic of LudoInstanceGenerator here
+    def on_generate(self, **kwargs) -> None:
+        """
+        TODO Method description
+
+        Args:
+            TODO
+
+        Returns:
+            TODO
+        """
         pass
 
-    def check_sequence(self, board_size, rolls):
+    def _check_sequence(self, board_size, rolls):
         N = board_size  # Total number of fields
         memo = {}  # Memorized moves
 
@@ -71,19 +93,80 @@ class LudoInstanceGenerator(GameInstanceGenerator):
             return -1, []
         return result, move_sequence
 
-    def generate_instance(self, board_size, m, n):
-        np.random.seed(self.RANDOM_SEED)
-        instances = {}
-        i = 0
-        while i < m:
-            rolls = [np.random.randint(1, 7) for _ in range(n)]
-            min_moves, _ = self.check_sequence(board_size, rolls)
-            if min_moves != -1:
-                instances[i] = {'sequence': rolls, 'min': min_moves}
-                i += 1
-        return instances
+    # TODO Determine if dialogue_partners is necessary at the instance level; useful for game variant specification?
+    def _generate_experiment(
+        self,
+        experiment_name: str,
+        n_instances: int,
+        initial_prompt: str,
+        n_fields: int,
+        turn_limit: int,
+        dialogue_partners: list[tuple[str, str]] | None = None
+    ) -> None:
+        """
+        TODO Method description
+        
+        Args:
+            TODO experiment_name (str):
+            TODO n_instances (int):
+            TODO initial_prompt (str):
+            TODO n_fields (int):
+            TODO turn_limit (int):
+            TODO dialogue_partners (list[tuple[str, str]] | None): 
+        """
+        # Creates an experiment
+        experiment: dict = self.add_experiment(experiment_name, dialogue_partners)
+        
+        # Generates and attaches game instances to the experiment
+        for index in range(n_instances):
+            game_id: str = f"in{index + 1:03}"
+            self._generate_instance(
+                experiment,
+                game_id,
+                initial_prompt,
+                n_fields,
+                turn_limit
+            )
+    
+    def _generate_instance(
+        self,
+        experiment: dict,
+        game_id: int,
+        initial_prompt: str,
+        n_fields: int,
+        turn_limit: int
+    ) -> None:
+        """
+        Given an instantiated experiment dictionary and the various arguments
+        that describe the instance configurations, randomly generates die
+        rolls, checks to make sure the sequence of die rolls results in a
+        solvable game, then attaches the instance to the experiment, and
+        configures the instance.
+        
+        Args:
+            experiment (dict): where the instance will be attached
+            game_id (dict): the identifying marker for the game instance
+            initial_prompt (str): the initial prompt passed to the LLM
+            n_fields (int): the size of the board
+            turn_limit (int): the maximum number of turns
+        """
+        # Generates rolls and checks their viability
+        np.random.seed(RANDOM_SEED)
+        rolls: list[int] = [np.random.randint(1, 7) for _ in range(turn_limit)]
+        min_moves, _ = self._check_sequence(n_fields, rolls)
+        
+        # Attaches game instance to the experiment
+        if min_moves != -1:
+            game_instance: dict = self.add_game_instance(experiment, game_id)
+            game_instance["initial_prompt"] = initial_prompt
+            game_instance["n_fields"] = n_fields
+            game_instance["rolls"] = rolls
+            game_instance["turn_limit"] = turn_limit
 
-if __name__ == "__main__":
-    generator = LudoInstanceGenerator()
-    move_dict = generator.generate_instance(23, 10, 50)  # Generate 10 instances with 50 rolls each
-    print(move_dict)
+
+def main() -> None:
+    pass
+
+
+if __name__ == '__main__':
+    main()

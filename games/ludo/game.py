@@ -1,5 +1,5 @@
 """
-Module description
+TODO Module description
 """
 
 import re
@@ -9,6 +9,8 @@ from pathlib import Path
 sys.path.append(str(Path(__file__).parent.parent.parent))
 
 from backends import Model
+from clemgame.clemgame import Player
+from player import HumanPlayer, ProgrammaticPlayer
 
 
 class Game:
@@ -16,21 +18,30 @@ class Game:
     A class which handles the game behavior of Ludo, namely prompting the model
     to make its next move given the current game state.
     """
-    def __init__(self, llm: Model, initial_prompt: str) -> None:
+    def __init__(
+        self,
+        player_1: Player,
+        player_2: HumanPlayer | ProgrammaticPlayer,
+        initial_prompt: str
+    ) -> None:
         """
         Initializes chat-based attributes.
 
         Args:
-            llm (Model): a loaded LLM
+            player_1 (LudoPlayer): represents the LLM player
+            player_1 (LudoPlayer): represents either the programmatic or human
+                                   player, depending on the game variation
             initial_prompt (str): contains both the system prompt and the task
                                   description for Ludo, the latter of which
                                   details intructions and constraints for the
                                   gameplay, as well as examples
         """
-        self.llm: Model = llm
+        self.player_1: LudoPlayer = player_1
+        self.player_2: LudoPlayer = player_2
         self.initial_prompt: str = initial_prompt
         self.context: list = []
 
+    # TODO Adjust for player 2
     def make_move(
             self,
             turn: int,
@@ -62,10 +73,11 @@ class Game:
         self.add_message(message)
 
         # Generates and parses LLM's response
-        _, _, output_text = self.llm.generate_response(self.context)
+        _, _, output_text = self.player_1.model.generate_response(self.context)
 
         return self._parse_text(output_text), output_text
     
+    # TODO Adjust for player 2
     def add_message(self, message: str, role: str = "user") -> None:
         """
         Adds a message to the conversation context. If it is the first message
@@ -117,7 +129,7 @@ class Game:
     # TODO Implement reprompting functionality
     def _reprompt(self) -> None:
         """
-        Method description
+        TODO Method description
         """
         pass
 

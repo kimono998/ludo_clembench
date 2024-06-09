@@ -1,5 +1,5 @@
 """
-Module description
+TODO Module description
 """
 
 import sys
@@ -9,6 +9,8 @@ sys.path.append(str(Path(__file__).parent.parent.parent))
 
 from clemgame.clemgame import GameScorer
 
+
+GAME_NAME: str = "ludo"
 
 class LudoGameScorer(GameScorer):
     """
@@ -34,7 +36,7 @@ class LudoGameScorer(GameScorer):
         TODO Method description
 
         Args:
-            episodic_interactions (dict):
+            TODO episodic_interactions (dict):
         """
         # E.g., score LLM performance against optimal decision at each turn,
         # given the information available at that turn. Then, add this
@@ -42,10 +44,22 @@ class LudoGameScorer(GameScorer):
         pass
 
     # TODO Determine final bench score calculation and logging destination
-    def log_main_score(self) -> None:
+    def log_main_score(self, episodic_interactions: dict) -> None:
         """
         TODO Method description
+
+        Args:
+            TODO episodic_interactions (dict):
         """
         # Replace this function call with a function that logs your main score
         # aka BENCH_SCORE
         pass
+
+
+    def main() -> None:
+        pass
+    
+    
+    if __name__ == '__main__':
+        main()
+    

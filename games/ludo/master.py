@@ -1,5 +1,5 @@
 """
-Module description
+TODO Module description
 """
 
 import json
@@ -8,21 +8,16 @@ from pathlib import Path
 
 sys.path.append(str(Path(__file__).parent.parent.parent))
 
-from backends import Model, get_model_for, load_model_registry
-from clemgame.clemgame import GameBenchmark, GameMaster
+from backends import CustomResponseModel, HumanModel, Model
+from clemgame.clemgame import GameBenchmark, GameMaster, Player
 from game import Game
-from instancegenerator import LudoInstanceGenerator, GAME_NAME
-from player import LudoPlayer
+from instancegenerator import LudoInstanceGenerator
+from player import HumanPlayer, ProgrammaticPlayer
 from scoring import LudoGameScorer
 
 
-THIS_MODEL: dict = {
-    "model_id": "gpt-3.5-turbo-1106",
-    "backend": "openai",
-    "model_name": "gpt-3.5-turbo-1106"
-}
+GAME_NAME: str = "ludo"
 
-# TODO Add in logger functionality for each stage of the game
 class LudoGameMaster(GameMaster):
     """
     In carrying out the game 'Ludo' with a LLM, this class controls the general
@@ -35,7 +30,7 @@ class LudoGameMaster(GameMaster):
     def __init__(
         self,
         experiment: dict[str: dict],
-        player_models: list[Model] | None = None
+        player_models: list[Model]
     ) -> None:
         """
         Initializes attributes from the passed in arguments, as well as
@@ -44,13 +39,15 @@ class LudoGameMaster(GameMaster):
         Args:
             experiment (dict[str: dict]): id-instance pairs, each containing
                                           details for a game instance
-            TODO player_models (list[Model] | None): 
+            player_models (list[Model]): contains instantiated Model objects,
+                                         representing each of the players
         """
-        super().__init__(GAME_NAME, experiment)
-        self.player_models: list[Model] | None = None # TODO Adjust to allow for player model(s)
+        super().__init__(GAME_NAME, experiment, player_models)
+        self.player_models: list[Model] = player_models
 
     # TODO Adjust for **kwargs
-    def setup(**kwargs) -> None:
+    # TODO Adjust for player 2
+    def setup(self, **kwargs) -> None:
         """
         Reads the specifications of a game instance, then initializes the
         attributes related to the game, the board, the tokens, and the turns.
@@ -62,13 +59,21 @@ class LudoGameMaster(GameMaster):
             rolls (list[int]): the specific die rolls for each turn
             turn_limit (int): the maximum number of allowed turns
         """
-        self.game: Game = Game(self.llm, initial_prompt) # TODO Adjust to allow for player model(s)
+        # Logs and instantiates the player models
+        self._load_players()
+        self.log_players({"player_1": self.player_1, "player_2": self.player_2})
+
+        self.game: Game = Game(
+            self.player_1,
+            self.player_2,
+            kwargs.get("initial_prompt")
+        )
         self.playing: bool = True # TODO Reconsider for loop
         
         # Board attributes
-        self.rolls: list = rolls
-        self.n_fields: int = n_fields
-        self.current_state: str = self._set_up_board()
+        self.rolls: list = kwargs.get("rolls")
+        self.n_fields: int = kwargs.get("n_fields")
+        self.current_state: str = self._reset_board()
 
         # Token attributes
         self.tokens: dict[str[dict]] = {
@@ -78,7 +83,7 @@ class LudoGameMaster(GameMaster):
         
         # Turn attributes
         self.turn: int = 0
-        self.turn_limit: int = turn_limit
+        self.turn_limit: int = kwargs.get("turn_limit")
 
     # TODO Adapt to allow for iterating over experiment
     def play(self) -> None:
@@ -92,7 +97,6 @@ class LudoGameMaster(GameMaster):
                 self.rolls[self.turn],
                 self.current_state
             )
-            self.history[self.turn] = move
 
             # Checks if move is valid
             if self._check_move(move, self.rolls[self.turn]):
@@ -105,14 +109,8 @@ class LudoGameMaster(GameMaster):
             
             # Ends game if not
             else:
+                # TODO Allow for reprompting
                 self.playing = False
-
-    # TODO Implement evaluation procedure, decide on metrics, consider GameScorer
-    def compute_score(self, results_directory: str | None = None) -> None:
-        """
-        Method description
-        """
-        self.scorer
 
     def _check_move(self, move: dict[str: int], roll: int) -> bool:
         """
@@ -220,21 +218,52 @@ class LudoGameMaster(GameMaster):
             else:
                 return None
 
+    def _load_players(self) -> None:
+        """
+        Given the list of player models, loads the models according to their
+        model type to appropriate player objects.
+
+        Raises:
+            TypeError: raised if player 2's model does not match one of the
+                       two expected model types (HumanModel and 
+                       CustomResponseModel)
+        """
+        # Loads player 1
+        self.player_1: Player = Player(self.player_models[0])
+
+        # Loads player 2 depending on player 2 model type
+        player_2_type: str = type(player_2_model := self.player_models[1])
+        
+        if player_2_type is HumanModel:
+            self.player_2: HumanPlayer = HumanPlayer(player_2_model)
+
+        elif player_2_type is CustomResponseModel:
+            self.player_2: ProgrammaticPlayer = ProgrammaticPlayer(player_2_model)
+
+        else:
+            raise TypeError(
+                "Player 2 must be either a HumanModel or a " +
+                f"CustomResponseModel, got {player_2_type} instead."
+            )
+
     # TODO Finish
     def _restart_game(self) -> None:
         """
-        Method description
+        TODO Method description
         """
-        self.current_state = self._set_up_board()
+        self.current_state = self._reset_board()
         self.turn = 0
 
         for token in self.tokens.keys():
             self.tokens[token]["inplay"] = False
             self.tokens[token]["current_position"] = 0
 
-    def _set_up_board(self) -> str:
+    def _reset_board(self) -> str:
         """
         Sets the board to its initial blank state.
+
+        Returns:
+            str: a representation of the board in its initial blank state
         """
         return " ".join(["□"] * self.n_fields).strip()
 
@@ -261,53 +290,67 @@ class LudoGameBenchmark(GameBenchmark):
     """
     Organizes the running of an experiment of the game 'Ludo'.
     """
-    def __init__(
-        self,
-        experiment_filename: str = 'instances.json',
-        initial_prompt_filename: str = 'initial_prompt.template',
-        is_single_player: bool = False
-    ):
+    def __init__(self):
         """
         Passes along the game name and allows for the creation of the game
         master.
-
-        Args:
-            experiment_filename (str): name of the experiment file, set to
-                                       'instances.json' by default
-            is_single_player (bool): True if the game is set in single-player
-                                     mode, False otherwise; set by default to
-                                     False
         """
         super().__init__(GAME_NAME)
-        self.experiment: dict = self.load_json(experiment_filename)
-        self.is_single_player: bool = is_single_player
 
-        # Include filenames to be used, others will be ignored
-        self.filter_experiment: list = []
+    def create_game_master(
+        self,
+        experiment: dict,
+        player_models: list[Model]
+    ) -> LudoGameMaster:
+        """
+        Instantiates a Ludo-specific GameMaster that handles the running and
+        checking of the game on an instance level.
+
+        Args:
+            experiment (dict): contains the specifications for a number of game
+                               instances
+            player_models (list[Model]): contains two player models, being of
+                                         different child classes depending on
+                                         the game variant
+
+        Returns:
+            LudoGameMaster: instantiated LudoGameMaster object
+        """
+        return LudoGameMaster(experiment, player_models)
+
+    def create_game_scorer(
+        self,
+        experiment: dict,
+        game_instance: dict
+    ) -> LudoGameScorer:
+        """
+        Instantiates a Ludo-specific GameScorer that handles the ultimate
+        scoring of the game performance on an episodic and overall level.
+
+        Args:
+            experiment (dict): contains the specifications for a number of game
+                               instances
+            player_models (list[Model]): contains two player models, being of
+                                         different child classes depending on
+                                         the game variant
+
+        Returns:
+            LudoGameScorer: instantiated LudoGameScorer object
+        """
+        return LudoGameScorer(experiment, game_instance)
 
     def get_description(self) -> str:
         """
         Returns a short description of the Ludo game benchmark.
 
         Returns:
-            str: benchmark description
+            str: a short description of the game 'Ludo' and what it seeks to
+                 evaluate
         """
         return (
             "Benchmark for the Ludo game designed to challenge and " + 
             "evaluate strategic model behavior."
         )
-
-    def create_game_master(self, llm: Model) -> LudoGameMaster:
-        """
-        Given an instantiated LLM Model object, creates a custom GameMaster.
-
-        Args:
-            llm (Model): loaded LLM which will participate in the game
-
-        Returns:
-            LudoGameMaster: instantiated LudoGameMaster object
-        """
-        return LudoGameMaster(llm, self.experiment)
 
     def is_single_player(self) -> bool:
         """
@@ -317,31 +360,38 @@ class LudoGameBenchmark(GameBenchmark):
         Returns:
             bool: True if single-player, False otherwise
         """
-        return self.is_single_player
+        return False
 
 
 def main() -> None:
-    # Instantiates and configures model
-    load_model_registry()
-    llm: Model = get_model_for(THIS_MODEL)
-    llm.set_gen_args(temperature=0.0, max_tokens=400)
+    from clemgame import benchmark
+    from scripts.cli import read_gen_args, read_model_specs
 
-    # Generates game instances
-    instance_generator: LudoInstanceGenerator = LudoInstanceGenerator() # TODO
-    
-    # Locates game instances and resources
-    experiment_filename: str = "in/instances.json"
+    game_name: str = "ludo"
+    model_specs: list[str] = ["gpt-3.5-turbo-1106", "programmatic"]
+    gen_args: dict[str: str] = {"temperature": "0.0", "max_tokens": 400}
+    experiment_name: str | None = None
+    instances_name: str = "instances"
+    results_dir: str = "results"
 
-    # Instantiates game master
-    game_benchmark: LudoGameBenchmark = LudoGameBenchmark(experiment_filename)
-    game_master: LudoGameMaster = game_benchmark.create_game_master(llm)
-    game_master.setup()
-
-    # Begins gameplay loop
-    game_master.play() # TODO
-
-    # Evaluates LLM performance
-    game_master.compute_score() # TODO
+    benchmark.run(
+        game_name=game_name,
+        model_specs=read_model_specs(model_specs),
+        gen_args=gen_args,
+        experiment_name=experiment_name,
+        instances_name=instances_name,
+        results_dir=results_dir
+    )
+    benchmark.score(
+        game_name=game_name,
+        experiment_name=experiment_name,
+        results_dir=results_dir
+    )
+    benchmark.transcripts(
+        game_name=game_name,
+        experiment_name=experiment_name,
+        results_dir=results_dir
+    )
 
 
 if __name__ == "__main__":
