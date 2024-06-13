@@ -296,6 +296,19 @@ class LudoGameBenchmark(GameBenchmark):
         """
         super().__init__(GAME_NAME)
 
+    # TODO
+    def compute_scores(self) -> None:
+        """
+        TODO Method description
+        
+        Args:
+            TODO
+        
+        Returns:
+            TODO
+        """
+        pass
+
     def create_game_master(
         self,
         experiment: dict,

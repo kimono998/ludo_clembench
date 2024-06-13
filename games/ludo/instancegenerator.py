@@ -93,7 +93,6 @@ class LudoInstanceGenerator(GameInstanceGenerator):
             return -1, []
         return result, move_sequence
 
-    # TODO Determine if dialogue_partners is necessary at the instance level; useful for game variant specification?
     def _generate_experiment(
         self,
         experiment_name: str,
@@ -101,18 +100,24 @@ class LudoInstanceGenerator(GameInstanceGenerator):
         initial_prompt: str,
         n_fields: int,
         turn_limit: int,
-        dialogue_partners: list[tuple[str, str]] | None = None
+        dialogue_partners: list[tuple[str, str]]
     ) -> None:
         """
-        TODO Method description
+        Given experiment specifications, generates an experiment as well as a
+        number of game instances, then attaches the game instances to the
+        experiment.
         
         Args:
-            TODO experiment_name (str):
-            TODO n_instances (int):
-            TODO initial_prompt (str):
-            TODO n_fields (int):
-            TODO turn_limit (int):
-            TODO dialogue_partners (list[tuple[str, str]] | None): 
+            experiment_name (str): name of the experiment, which matches the
+                                   game variant
+            n_instances (int): the number of instances to be generated and
+                               attached to the experiment
+            initial_prompt (str): the prompt associated with the desired game
+                                  variant
+            n_fields (int): the size of the board in the game
+            turn_limit (int): the maximum number of turns allowed
+            dialogue_partners (list[tuple[str, str]]): the players in the game
+                                                       variant
         """
         # Creates an experiment
         experiment: dict = self.add_experiment(experiment_name, dialogue_partners)
