@@ -8,7 +8,7 @@ from pathlib import Path
 
 sys.path.append(str(Path(__file__).parent.parent.parent))
 
-from backends import CustomResponseModel, HumanModel
+from backends import CustomResponseModel, HumanModel, Model
 from clemgame.clemgame import Player
 
 
@@ -43,14 +43,22 @@ class HumanPlayer(LudoPlayer):
     A human participant in the game 'Ludo'. Its custom response behavior is
     described in self._terminal_response.
     """
-    def __init__(self, model: HumanModel) -> None:
+    def __init__(self, model: HumanModel, tokens: dict) -> None:
         """
         Passes along the input HumanModel object to the parent class.
 
         Args:
             model (HumanModel): the instantiated HumanModel
         """
-        super().__init__(model)
+        super().__init__(model, tokens)
+        self.tokens['A'] = {
+            "in_play": False,
+            "position": 0}
+
+        self.tokens['B'] = {
+            "in_play": False,
+            "position": 0}
+
 
     # TODO Determine human player behavior
     def _terminal_response(self, messages: list[dict], turn_idx: int) -> str:
@@ -67,6 +75,22 @@ class HumanPlayer(LudoPlayer):
         Returns:
             str: human player's response
         """
+
+        #get current game state
+        #get the last move by the model.
+        #type in the move
+        #check
+        #validate
+        #continue
+
+        print(messages)
+        print('What is your next move?')
+        user_input = input(f"Your response as {self.__class__.__name__}:\n")
+
+
+
+
+
         pass
 
 
@@ -75,14 +99,23 @@ class ProgrammaticPlayer(LudoPlayer):
     A programmatic participant in the game 'Ludo'. Its custom response behavior
     is described in self._custom_response.
     """
-    def __init__(self, model: CustomResponseModel) -> None:
+    def __init__(self, model: CustomResponseModel, tokens: dict) -> None:
         """
         Passes along the input CustomResponseModel object to the parent class.
 
         Args:
             model (CustomResponseModel): the instantiated CustomResponseModel
         """
-        super().__init__(model)
+        super().__init__(model, tokens)
+        self.tokens['A'] = {
+            "in_play": False,
+            "position": 0}
+
+        self.tokens['B'] = {
+            "in_play": False,
+            "position": 0}
+
+
 
     # TODO Determine programmatic player behavior
     def _custom_response(self, messages: list[dict], turn_idx: int) -> str:
@@ -122,7 +155,6 @@ class ProgrammaticPlayer(LudoPlayer):
         }
 
     # TODO Replace "player_1" and "player_2" with real keys
-    @staticmethod
     def _parse_turn(self, turn: dict) -> dict[dict[str: int]]:
         """
         Parses the input text according to an expected input format in order to
@@ -141,7 +173,7 @@ class ProgrammaticPlayer(LudoPlayer):
         }
 
 
-def parse_text(text: str) -> dict[str: int]:
+def parse_text(text: str, player) -> dict[str: int]:
     """
     Parses the input text according to an expected input format in order to
     extract per token moves.
@@ -156,7 +188,9 @@ def parse_text(text: str) -> dict[str: int]:
         ValueError: raises when the text does not match the expected
                     format; prints a preview of the non-conforming text
     """
-    matches: re.Match = re.search(r"MY MOVE: X -> (\d+) ; Y -> (\d+)", text)
+
+    tokens = ['X', 'Y'] if type(player) is LudoPlayer else ['A', 'B']
+    matches: re.Match = re.search(rf"MY MOVE: {tokens[0]} -> (\d+) ; {tokens[1]} -> (\d+)", text)
 
     if not matches:
         raise ValueError(f"Invalid text format: {text[:20]}")
