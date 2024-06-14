@@ -41,6 +41,7 @@ class Game:
         # Conversation attributes
         self.initial_prompt: str = initial_prompt
         self.context: list[str] = []
+        self.reprompt_attempts: int = 0
         
         # Game mechanic attributes
         self.turn_limit: int = len(rolls)
@@ -67,15 +68,30 @@ class Game:
 
         self.context.append({"role": role, "message": message})
 
-    # TODO Implement reprompting functionality
-    def reprompt(self, error_type: str) -> None:
+    def reprompt(self, error_type: str, token: str | None = None) -> None:
         """
-        TODO Method description
+        Specifies the error, then asks the player to submit a new move.
 
         Args:
-            TODO error_type (str):
+            error_type (str): one of four error types, specifying to the player
+                              in which way they erred when making their move
         """
-        reprompt_message: str = ""
+        message: str = "INVALID MOVE: "
+
+        match error_type:
+            case "simultaneous_move":
+                message += "Both of your in-play tokens were moved simultaneously. "
+            case "not_moved_to_board":
+                message += f"Token {token} can be played to the board but wasn't. "
+            case "not_moved":
+                message += f"Token {token} can be moved but wasn't. "
+            case "incorrect_move":
+                message += f"Token {token} was moved incorrectly. "
+
+        message += "Please try again."
+
+        self.add_message(message)
+        self.reprompt_attempts += 1
 
     def update_board(self, player: LudoPlayer, move: dict[str: int]) -> None:
         """
@@ -110,9 +126,9 @@ class Game:
 
         if len(player_models) > 1:
             match type(player_models[1]):
-                case HumanModel:
+                case HumanModel():
                     self.player_2: LudoPlayer = HumanPlayer(player_models[1])
-                case CustomResponseModel:
+                case CustomResponseModel():
                     self.player_2: LudoPlayer = ProgrammaticPlayer(player_models[1])
                 case _:
                     self.player_2: None = None

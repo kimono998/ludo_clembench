@@ -15,7 +15,6 @@ GAME_NAME: str = "ludo"
 RANDOM_SEED: int = 42
 
 
-# TODO Determine how GameInstanceGenerator is used -- not instantiated or called anywhere
 class LudoInstanceGenerator(GameInstanceGenerator):
     """
     TODO Class description
@@ -38,92 +37,6 @@ class LudoInstanceGenerator(GameInstanceGenerator):
             TODO
         """
         pass
-
-    @staticmethod
-    def _check_sequence(
-        n_fields: int,
-        rolls: list[int]
-    ) -> tuple[int, list[str]]:
-        """
-        TODO Description
-        
-        Args:
-            TODO n_fields (int):
-            TODO rolls (list[int]):
-        
-        Returns:
-            TODO tuple[int, list[str]]:
-        """
-        memorized_moves: dict = {}
-
-        def datapace(X: int, Y: int, roll_index: int) -> tuple[int, list[str]]:
-            """
-            TODO Description
-            
-            Args:
-                X (int): position of the token 'X' in terms of the field
-                         number it is currently occupying
-                Y (int): position of the token 'Y' in terms of the field
-                         number it is currently occupying
-                roll_index (int): the index of the current roll being
-                                  considered
-            
-            Returns:
-                tuple[int, list[str]]: contains the minimum number of moves
-                                       required to solve the sequence, as well
-                                       as the optimal moves it takes to do so
-            """
-            if X == n_fields and Y == n_fields:
-                return 0, []
-            if roll_index >= len(rolls):
-                return float('inf'), []
-            if (X, Y, roll_index) in memorized_moves:
-                return memorized_moves[(X, Y, roll_index)]
-
-            roll: int = rolls[roll_index]
-            next_roll_index: int = roll_index + 1
-            moves = float('inf')
-            best_move_seq: list[str] = []
-
-            if X != 0:
-                new_X: int = X + roll if X + roll <= n_fields else X
-                if new_X != Y or new_X == n_fields:
-                    next_moves, move_seq = datapace(new_X, Y, next_roll_index)
-                    if 1 + next_moves < moves:
-                        moves = 1 + next_moves
-                        best_move_seq: list[str] = [f"Move X from {X} to {new_X}"] + move_seq
-
-            if Y != 0:
-                new_Y: int = Y + roll if Y + roll <= n_fields else Y
-                if new_Y != X or new_Y == n_fields:
-                    next_moves, move_seq = datapace(X, new_Y, next_roll_index)
-                    if 1 + next_moves < moves:
-                        moves = 1 + next_moves
-                        best_move_seq = [f"Move Y from {Y} to {new_Y}"] + move_seq
-
-            if roll == 6:
-                if X == 0 and 1 != Y:
-                    next_moves, move_seq = datapace(1, Y, next_roll_index)
-                    if 1 + next_moves < moves:
-                        moves = 1 + next_moves
-                        best_move_seq: list[str] = ["Place X on 1"] + move_seq
-                if Y == 0 and 1 != X:
-                    next_moves, move_seq = datapace(X, 1, next_roll_index)
-                    if 1 + next_moves < moves:
-                        moves = 1 + next_moves
-                        best_move_seq: list[str] = ["Place Y on 1"] + move_seq
-
-            memorized_moves[(X, Y, roll_index)] = (moves, best_move_seq)
-
-            return moves, best_move_seq
-
-        initial_X, initial_Y = 0, 0
-        result, move_sequence = datapace(initial_X, initial_Y, 0)
-        
-        if result == float('inf'):
-            return -1, []
-        
-        return result, move_sequence
 
     def _generate_experiment(
         self,
@@ -185,7 +98,7 @@ class LudoInstanceGenerator(GameInstanceGenerator):
         # Generates rolls and checks their viability
         np.random.seed(RANDOM_SEED)
         rolls: list[int] = [np.random.randint(1, 7) for _ in range(turn_limit)]
-        min_moves, _ = self._check_sequence(n_fields, rolls)
+        min_moves, _ = check_sequence(n_fields, rolls)
         
         # Attaches game instance to the experiment
         if min_moves != -1:
@@ -193,6 +106,92 @@ class LudoInstanceGenerator(GameInstanceGenerator):
             game_instance["initial_prompt"] = initial_prompt
             game_instance["n_fields"] = n_fields
             game_instance["rolls"] = rolls
+
+
+def check_sequence(
+    n_fields: int,
+    rolls: list[int]
+) -> tuple[int, list[str]]:
+    """
+    TODO Description
+    
+    Args:
+        TODO n_fields (int):
+        TODO rolls (list[int]):
+    
+    Returns:
+        TODO tuple[int, list[str]]:
+    """
+    memorized_moves: dict = {}
+
+    def datapace(X: int, Y: int, roll_index: int) -> tuple[int, list[str]]:
+        """
+        TODO Description
+        
+        Args:
+            X (int): position of the token 'X' in terms of the field
+                        number it is currently occupying
+            Y (int): position of the token 'Y' in terms of the field
+                        number it is currently occupying
+            roll_index (int): the index of the current roll being
+                                considered
+        
+        Returns:
+            tuple[int, list[str]]: contains the minimum number of moves
+                                    required to solve the sequence, as well
+                                    as the optimal moves it takes to do so
+        """
+        if X == n_fields and Y == n_fields:
+            return 0, []
+        if roll_index >= len(rolls):
+            return float('inf'), []
+        if (X, Y, roll_index) in memorized_moves:
+            return memorized_moves[(X, Y, roll_index)]
+
+        roll: int = rolls[roll_index]
+        next_roll_index: int = roll_index + 1
+        moves = float('inf')
+        best_move_seq: list[str] = []
+
+        if X != 0:
+            new_X: int = X + roll if X + roll <= n_fields else X
+            if new_X != Y or new_X == n_fields:
+                next_moves, move_seq = datapace(new_X, Y, next_roll_index)
+                if 1 + next_moves < moves:
+                    moves = 1 + next_moves
+                    best_move_seq: list[str] = [f"Move X from {X} to {new_X}"] + move_seq
+
+        if Y != 0:
+            new_Y: int = Y + roll if Y + roll <= n_fields else Y
+            if new_Y != X or new_Y == n_fields:
+                next_moves, move_seq = datapace(X, new_Y, next_roll_index)
+                if 1 + next_moves < moves:
+                    moves = 1 + next_moves
+                    best_move_seq = [f"Move Y from {Y} to {new_Y}"] + move_seq
+
+        if roll == 6:
+            if X == 0 and 1 != Y:
+                next_moves, move_seq = datapace(1, Y, next_roll_index)
+                if 1 + next_moves < moves:
+                    moves = 1 + next_moves
+                    best_move_seq: list[str] = ["Place X on 1"] + move_seq
+            if Y == 0 and 1 != X:
+                next_moves, move_seq = datapace(X, 1, next_roll_index)
+                if 1 + next_moves < moves:
+                    moves = 1 + next_moves
+                    best_move_seq: list[str] = ["Place Y on 1"] + move_seq
+
+        memorized_moves[(X, Y, roll_index)] = (moves, best_move_seq)
+
+        return moves, best_move_seq
+
+    initial_X, initial_Y = 0, 0
+    result, move_sequence = datapace(initial_X, initial_Y, 0)
+    
+    if result == float('inf'):
+        return -1, []
+    
+    return result, move_sequence
 
 
 def main() -> None:

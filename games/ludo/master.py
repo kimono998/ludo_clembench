@@ -66,12 +66,11 @@ class LudoGameMaster(GameMaster):
             self.players_dic["player_2"] = self.game.player_2
         self.log_players(self.players_dic)
 
-    # TODO Write
     def play(self) -> None:
         """
         Handles the basic gameplay loop.
         """
-        while self.game.turn < self.game.turn_limit:
+        while self.game.turn < self.game.turn_limit:            
             roll: int = self.game.rolls[self.game.turn]
             
             # Prompt for player 1
@@ -80,30 +79,32 @@ class LudoGameMaster(GameMaster):
             message += "Where will you move your token?"
             self.game.add_message(message)
 
-            # Gets each player's move
             for player in self.players_dic.values():
-                _, _, response_text = player(self.game.context)
-                move: dict[str: int] = parse_text(response_text)
+                while self.game.reprompt_attempts < 3:
+                    _, _, response_text = player(self.game.context)
+                    move: dict[str: int] = parse_text(response_text)
 
-                # If the player's move is valid, update game attributes
-                if self._check_move(player.tokens, move):
-                    match type(player):
-                        case LudoPlayer:
-                            self.game.add_message(response_text, role="assistant")
-                        case ProgrammaticPlayer:
-                            self.game.add_message(response_text)
+                    # Updates game attributes if move is valid
+                    if self._check_move(player.tokens, move, roll, n_fields):
+                        self.game.add_message(
+                            response_text,
+                            role="assistant" if type(player) is LudoPlayer()
+                            else "user"
+                        )
 
-                    for token in move.keys():
-                        player.tokens["in_play"] = move[token] > 0
-                        player.tokens["position"] = move[token]
+                        for token in move.keys():
+                            player.tokens["in_play"] = move[token] > 0
+                            player.tokens["position"] = move[token]
 
-                    self.game.update_board(player, move)
-                    self.game.turn += 1
+                        self.game.update_board(player, move)
+                        self.game.reprompt_attempts = 0
 
-                # Reprompt the player if not
-                else:
-                    # TODO Reprompting gets called here
-                    pass
+                    # Reprompt the player if not
+                    else:
+                        self.game.reprompt(self.reprompt_error)
+                        self.reprompt_error = None
+
+            self.game.turn += 1
 
     def _check_move(
         self,
@@ -131,7 +132,8 @@ class LudoGameMaster(GameMaster):
             ValueError: raised if the move is invalid, explaining why
         """
         if self._check_both_tokens_moved(move):
-            raise ValueError("Both in-play tokens were moved simultaneously.")
+            self.reprompt_error: str = "simultaneous_move"
+            return False
         
         moved_token: str = self._get_moved_token(self._check_token_moved(move))
 
@@ -145,7 +147,8 @@ class LudoGameMaster(GameMaster):
                         check_list.append(True)
                         continue
                     else:
-                        raise ValueError(f"Token {token} can be played to the board but wasn't.")
+                        self.reprompt_error: str = "not_moved_to_board"
+                        return False
 
                 # Token wasn't moved but has been played to the board
                 case [False, True]:
@@ -153,7 +156,8 @@ class LudoGameMaster(GameMaster):
                         check_list.append(True)
                         continue
                     else:
-                        raise ValueError(f"Token {token} can be moved but wasn't.")
+                        self.reprompt_error: str = "not_moved"
+                        return False
 
                 # Token was played and has been played to the board
                 case [True, True]:
@@ -164,7 +168,9 @@ class LudoGameMaster(GameMaster):
                         check_list.append(True)
                         continue
                     else:
-                        raise ValueError(f"Token {token} was not moved appropriately.")
+                        self.reprompt_error: str = "incorrect_move"
+                        return False
+
                     
         if all(check_list):
             return True
@@ -185,8 +191,8 @@ class LudoGameMaster(GameMaster):
             ) else False
         )
 
-    @staticmethod
     def _check_token_moved(
+        self,
         tokens: dict[str: dict],
         move: dict[str: int]
     ) -> dict[str: bool]:
@@ -208,8 +214,7 @@ class LudoGameMaster(GameMaster):
             for token, position in move.items()
         }
     
-    @staticmethod
-    def _get_moved_token(tokens_moved: dict[str: bool]) -> str | None:
+    def _get_moved_token(self, tokens_moved: dict[str: bool]) -> str | None:
         """
         Given token-bool pairs, where the boolean value is True if the token
         was moved, retrieves the token if it was moved.
@@ -326,7 +331,6 @@ def main() -> None:
     from clemgame import benchmark
     from scripts.cli import read_model_specs
 
-    # TODO Test instance generator
     instance_generator: LudoInstanceGenerator = LudoInstanceGenerator()
 
     game_name: str = "ludo"
