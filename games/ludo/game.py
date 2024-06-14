@@ -8,6 +8,7 @@ from pathlib import Path
 
 sys.path.append(str(Path(__file__).parent.parent.parent))
 
+from backends import Model
 from player import HumanPlayer, LudoPlayer, ProgrammaticPlayer
 
 
@@ -42,15 +43,15 @@ class Game:
         self.initial_prompt: str = initial_prompt
         self.context: list[str] = []
         self.reprompt_attempts: int = 0
-        
+
         # Game mechanic attributes
         self.turn_limit: int = len(rolls)
         self.turn: int = 0
         self.rolls: list[int] = rolls
-        
+
         # Player attributes
         self._initialize_players(player_models)
-    
+
     def add_message(self, message: str, role: str = "user") -> None:
         """
         Adds a message to the conversation context. If it is the first message

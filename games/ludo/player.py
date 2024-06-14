@@ -8,7 +8,7 @@ from pathlib import Path
 
 sys.path.append(str(Path(__file__).parent.parent.parent))
 
-from backends import CustomResponseModel, HumanModel
+from backends import CustomResponseModel, HumanModel, Model
 from clemgame.clemgame import Player
 
 
@@ -160,7 +160,7 @@ def parse_text(text: str) -> dict[str: int]:
 
     if not matches:
         raise ValueError(f"Invalid text format: {text[:20]}")
-    
+
     return {"X": int(matches.group(1)), "Y": int(matches.group(2))}
 
 
