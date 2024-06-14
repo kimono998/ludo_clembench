@@ -12,8 +12,33 @@ from backends import CustomResponseModel, HumanModel
 from clemgame.clemgame import Player
 
 
+class LudoPlayer(Player):
+    """
+    Custom child class of Player which adds player-specific gameplay attributes.
+    """
+    def __init__(self, model: Model) -> None:
+        """
+        Passes along the Model object to the parent class and initializes
+        player-specific attributes.
+        
+        Args:
+            model (Model): associated Model object, or a child class thereof
+        """
+        super().__init__(model)
+        self.tokens: dict[str: dict] = {
+            "X": {
+                "in_play": False,
+                "position": 0
+            },
+            "Y": {
+                "in_play": False,
+                "position": 0
+            }
+        }
+
+
 # TODO Determine if the HumanPlayer class is necessary; is the inbuilt _terminal_response method sufficient?
-class HumanPlayer(Player):
+class HumanPlayer(LudoPlayer):
     """
     A human participant in the game 'Ludo'. Its custom response behavior is
     described in self._terminal_response.
@@ -45,7 +70,7 @@ class HumanPlayer(Player):
         pass
 
 
-class ProgrammaticPlayer(Player):
+class ProgrammaticPlayer(LudoPlayer):
     """
     A programmatic participant in the game 'Ludo'. Its custom response behavior
     is described in self._custom_response.
@@ -96,7 +121,8 @@ class ProgrammaticPlayer(Player):
             for turn, message in enumerate(messages)
         }
 
-   # TODO Replace "player_1" and "player_2" with real keys
+    # TODO Replace "player_1" and "player_2" with real keys
+    @staticmethod
     def _parse_turn(self, turn: dict) -> dict[dict[str: int]]:
         """
         Parses the input text according to an expected input format in order to
@@ -110,32 +136,32 @@ class ProgrammaticPlayer(Player):
                                   token-position pairs for each player
         """
         return {
-            "player_1": self._parse_text(turn["player_1"]),
-            "player_2": self._parse_text(turn["player_2"])
+            "player_1": parse_text(turn["player_1"]),
+            "player_2": parse_text(turn["player_2"])
         }
 
-    @staticmethod
-    def _parse_text(text: str) -> dict[str: int]:
-        """
-        Parses the input text according to an expected input format in order to
-        extract per token moves.
 
-        Args:
-            text (str): raw input text
+def parse_text(text: str) -> dict[str: int]:
+    """
+    Parses the input text according to an expected input format in order to
+    extract per token moves.
 
-        Returns:
-            dict[str: int]: contains token-position pairs
+    Args:
+        text (str): raw input text
 
-        Raises:
-            ValueError: raises when the text does not match the expected
-                        format; prints a preview of the non-conforming text
-        """
-        matches: re.Match = re.search(r"MY MOVE: X -> (\d+) ; Y -> (\d+)", text)
+    Returns:
+        dict[str: int]: contains token-position pairs
 
-        if not matches:
-            raise ValueError(f"Invalid text format: {text[:20]}")
-        
-        return {"X": int(matches.group(1)), "Y": int(matches.group(2))}
+    Raises:
+        ValueError: raises when the text does not match the expected
+                    format; prints a preview of the non-conforming text
+    """
+    matches: re.Match = re.search(r"MY MOVE: X -> (\d+) ; Y -> (\d+)", text)
+
+    if not matches:
+        raise ValueError(f"Invalid text format: {text[:20]}")
+    
+    return {"X": int(matches.group(1)), "Y": int(matches.group(2))}
 
 
 def main() -> None:

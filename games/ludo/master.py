@@ -11,7 +11,7 @@ from backends import CustomResponseModel, HumanModel, Model
 from clemgame.clemgame import GameBenchmark, GameMaster, Player
 from game import Game
 from instancegenerator import LudoInstanceGenerator
-from player import HumanPlayer, ProgrammaticPlayer
+from player import HumanPlayer, ProgrammaticPlayer, parse_text
 from scoring import LudoGameScorer
 
 
@@ -44,81 +44,85 @@ class LudoGameMaster(GameMaster):
         super().__init__(GAME_NAME, experiment, player_models)
         self.player_models: list[Model] = player_models
 
-    # TODO Adjust for **kwargs
-    # TODO Adjust for player 2
     def setup(self, **kwargs) -> None:
         """
-        Reads the specifications of a game instance, then initializes the
-        attributes related to the game, the board, the tokens, and the turns.
+        Reads the specifications of a game instance, then passes them, along
+        with the player models, to the instance-specific Game object.
 
         Args:
             game_id (str): an identifying string for each game instance
             initial_prompt (str): the first message sent to the LLM
             n_fields (int): the number of fields on the board
             rolls (list[int]): the specific die rolls for each turn
-            turn_limit (int): the maximum number of allowed turns
         """
-        # Logs and instantiates the player models
-        self._load_players()
-        self.log_players({"player_1": self.player_1, "player_2": self.player_2})
-
         self.game: Game = Game(
-            self.player_1,
-            self.player_2,
-            kwargs.get("initial_prompt")
+            kwargs.get("initial_prompt"),
+            kwargs.get("n_fields"),
+            kwargs.get("rolls"),
+            self.player_models
         )
-        self.playing: bool = True # TODO Reconsider for loop
-        
-        # Board attributes
-        self.rolls: list = kwargs.get("rolls")
-        self.n_fields: int = kwargs.get("n_fields")
-        self.current_state: str = self._reset_board()
+        self.players_dic: dict[str: LudoPlayer] = {"player_1": self.game.player_1}
+        if self.game.player_2:
+            self.players_dic["player_2"] = self.game.player_2
+        self.log_players(self.players_dic)
 
-        # Token attributes
-        self.tokens: dict[str[dict]] = {
-            "X": {"position": 0, "inplay": False},
-            "Y": {"position": 0, "inplay": False}
-        }
-        
-        # Turn attributes
-        self.turn: int = 0
-        self.turn_limit: int = kwargs.get("turn_limit")
-
-    # TODO Adapt to allow for iterating over experiment
+    # TODO Write
     def play(self) -> None:
         """
         Handles the basic gameplay loop.
         """
-        while self.playing and self.turn < self.turn_limit:
-            # Makes move, then storess move for later evaluation
-            move, output_text = self.game.make_move(
-                self.turn,
-                self.rolls[self.turn],
-                self.current_state
-            )
-
-            # Checks if move is valid
-            if self._check_move(move, self.rolls[self.turn]):
-                self.game.add_message(output_text, role="assistant")
-                for token in move.keys():
-                    self.tokens[token]["inplay"] = move[token] > 0
-                    self.tokens[token]["current_position"] = move[token]
-                self._update_board(move)
-                self.turn += 1
+        while self.game.turn < self.game.turn_limit:
+            roll: int = self.game.rolls[self.game.turn]
             
-            # Ends game if not
-            else:
-                # TODO Allow for reprompting
-                self.playing = False
+            # Prompt for player 1
+            message: str = f"Current state: {self.game.current_state}\n"
+            message += f"Turn number: {self.game.turn}, Roll: {roll}. "
+            message += "Where will you move your token?"
+            self.game.add_message(message)
 
-    def _check_move(self, move: dict[str: int], roll: int) -> bool:
+            # Gets each player's move
+            for player in self.players_dic.values():
+                _, _, response_text = player(self.game.context)
+                move: dict[str: int] = parse_text(response_text)
+
+                # If the player's move is valid, update game attributes
+                if self._check_move(player.tokens, move):
+                    match type(player):
+                        case LudoPlayer:
+                            self.game.add_message(response_text, role="assistant")
+                        case ProgrammaticPlayer:
+                            self.game.add_message(response_text)
+
+                    for token in move.keys():
+                        player.tokens["in_play"] = move[token] > 0
+                        player.tokens["position"] = move[token]
+
+                    self.game.update_board(player, move)
+                    self.game.turn += 1
+
+                # Reprompt the player if not
+                else:
+                    # TODO Reprompting gets called here
+                    pass
+
+    def _check_move(
+        self,
+        tokens: dict[str: dict],
+        move: dict[str: int],
+        roll: int,
+        n_fields: int
+    ) -> bool:
         """
         Checks the validity of the move, given the current state of the board
         and the number rolled.
 
         Args:
+            tokens (dict[str: dict]): specifies the positions of the player's
+                                      token and whether or not they are on the
+                                      board
             move (dict[str: int]): contains token-position pairs
-            roll (int): the die roll
+            roll (int): the die roll for the current turn
+            n_fields (int): indicates the size of the board
 
         Returns:
             bool: True if the move is valid
@@ -133,8 +137,8 @@ class LudoGameMaster(GameMaster):
 
         check_list: list = []
         for token in move.keys():
-            current_position: int = self.tokens[token]["position"]
-            match [token == moved_token, self.tokens[token]["inplay"]]:
+            current_position: int = tokens[token]["position"]
+            match [token == moved_token, tokens[token]["inplay"]]:
                 # Token wasn't moved and hasn't been played to the board
                 case [False, False]:
                     if roll != 6:
@@ -145,7 +149,7 @@ class LudoGameMaster(GameMaster):
 
                 # Token wasn't moved but has been played to the board
                 case [False, True]:
-                    if (roll + current_position > self.n_fields):
+                    if (roll + current_position > n_fields):
                         check_list.append(True)
                         continue
                     else:
@@ -181,11 +185,18 @@ class LudoGameMaster(GameMaster):
             ) else False
         )
 
-    def _check_token_moved(self, move: dict[str: int]) -> dict[str: bool]:
+    @staticmethod
+    def _check_token_moved(
+        tokens: dict[str: dict],
+        move: dict[str: int]
+    ) -> dict[str: bool]:
         """
         Given a move, checks for both tokens to see if they have been moved.
 
         Args:
+            tokens (dict[str: dict]): specifies the positions of the player's
+                                      token and whether or not they are on the
+                                      board
             move (dict[str: int]): contains token-position pairs
 
         Returns:
@@ -193,7 +204,7 @@ class LudoGameMaster(GameMaster):
                              token has been moved, False otherwise
         """
         return {
-            token: self.tokens[token]["position"] != position
+            token: tokens[token]["position"] != position
             for token, position in move.items()
         }
     
@@ -217,73 +228,6 @@ class LudoGameMaster(GameMaster):
             else:
                 return None
 
-    def _load_players(self) -> None:
-        """
-        Given the list of player models, loads the models according to their
-        model type to appropriate player objects.
-
-        Raises:
-            TypeError: raised if player 2's model does not match one of the
-                       two expected model types (HumanModel and 
-                       CustomResponseModel)
-        """
-        # Loads player 1
-        self.player_1: Player = Player(self.player_models[0])
-
-        # Loads player 2 depending on player 2 model type
-        player_2_type: str = type(player_2_model := self.player_models[1])
-        
-        if player_2_type is HumanModel:
-            self.player_2: HumanPlayer = HumanPlayer(player_2_model)
-
-        elif player_2_type is CustomResponseModel:
-            self.player_2: ProgrammaticPlayer = ProgrammaticPlayer(player_2_model)
-
-        else:
-            raise TypeError(
-                "Player 2 must be either a HumanModel or a " +
-                f"CustomResponseModel, got {player_2_type} instead."
-            )
-
-    # TODO Finish
-    def _restart_game(self) -> None:
-        """
-        TODO Method description
-        """
-        self.current_state = self._reset_board()
-        self.turn = 0
-
-        for token in self.tokens.keys():
-            self.tokens[token]["inplay"] = False
-            self.tokens[token]["current_position"] = 0
-
-    def _reset_board(self) -> str:
-        """
-        Sets the board to its initial blank state.
-
-        Returns:
-            str: a representation of the board in its initial blank state
-        """
-        return " ".join(["□"] * self.n_fields).strip()
-
-    def _update_board(self, move: dict[str: int]) -> None:
-        """
-        Given the current state of the board and the desired move, updates the
-        board by moving the token to the new position and replacing the
-        previous position with an empty field character.
-
-        Args:
-            move (dict[str: int]): contains the desired position for all tokens
-        """
-        split_board: list[str] = self.current_state.split()
-
-        for token in move.keys():
-            if self.tokens_inplay[token]:
-                split_board[self.current_position[token] - 1] = "□"
-                split_board[move[token]] = token
-
-        self.current_state = " ".join(split_board).strip()
-
 
 class LudoGameBenchmark(GameBenchmark):
     """
@@ -296,18 +240,21 @@ class LudoGameBenchmark(GameBenchmark):
         """
         super().__init__(GAME_NAME)
 
-    # TODO
-    def compute_scores(self) -> None:
+    # TODO Write
+    def compute_scores(self, results_dir: str | None = None) -> None:
         """
         TODO Method description
         
         Args:
-            TODO
-        
+            TODO results_dir (str | None):
+
         Returns:
             TODO
         """
-        pass
+        # TODO Load in results
+        # TODO For each experiment, for each game instance, parse each player's message
+        # TODO Pass parsed message to game scorer
+        # self.create_game_scorer(experiment, game_instance)
 
     def create_game_master(
         self,
