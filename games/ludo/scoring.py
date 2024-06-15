@@ -41,7 +41,8 @@ class LudoGameScorer(GameScorer):
         # E.g., score LLM performance against optimal decision at each turn,
         # given the information available at that turn. Then, add this
         # information to self.scores in the form of turn_number: turn_score
-        pass
+        for turn in episodic_interactions.values():
+            pass
 
     # TODO Determine final bench score calculation and logging destination
     def log_main_score(self, episodic_interactions: dict) -> None:

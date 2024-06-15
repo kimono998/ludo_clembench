@@ -8,7 +8,7 @@ import numpy as np
 
 sys.path.append(str(Path(__file__).parent.parent.parent))
 
-from clemgame.clemgame import GameInstanceGenerator
+from clemgame.clemgame import GameInstanceGenerator, GameResourceLocator
 
 
 GAME_NAME: str = "ludo"
@@ -17,36 +17,41 @@ RANDOM_SEED: int = 42
 
 class LudoInstanceGenerator(GameInstanceGenerator):
     """
-    TODO Class description
+    A 'Ludo'-specific GameInstanceGenerator, intended to be used to generate
+    experiments according to given configurations, then store them in
+    instances.json for further use.
     """
     def __init__(self):
         """
-        TODO Method description
+        Passes along the game name to the parent class.
         """
         super().__init__(GAME_NAME)
 
-    # TODO Implement main logic of LudoInstanceGenerator here
     def on_generate(self, **kwargs) -> None:
         """
-        TODO Method description
+        Given a list of experiment configurations, generates the appropriate
+        amount of instances for each experiment, attaches them, then creates
+        the experiment.
 
         Args:
-            experiment_name (str): name of the experiment, which matches the
-                                   game variant
-            n_instances (int): the number of instances to be generated and
-                               attached to the experiment
-            initial_prompt (str): the prompt associated with the desired game
-                                  variant
-            n_fields (int): the size of the board in the game
-            n_rolls (int): the number of rolls; also the maximum number of
-                           turns
-            dialogue_partners (list[tuple[str, str]]): the players in the game
-                                                       variant
-
-        Returns:
-            TODO
+            experiments (list[dict]): contains a dictionary for each
+                                      experiment, detailing the experiment
+                                      name, the number of instances to be
+                                      generated, the initial prompt, the size
+                                      of the board, the number of rolls to be
+                                      generated, and the intended dialogue
+                                      partners for the experiment
         """
-        pass
+        experiments: list[dict] = kwargs.get("experiments")
+        for experiment in experiments:
+            self._generate_experiment(
+                experiment["experiment_name"],
+                experiment["n_instances"],
+                experiment["initial_prompt"],
+                experiment["n_fields"],
+                experiment["n_rolls"],
+                experiment["dialogue_partners"]
+            )
 
     def _check_sequence(
         self,
@@ -54,14 +59,17 @@ class LudoInstanceGenerator(GameInstanceGenerator):
         rolls: list[int]
     ) -> tuple[int, list[str]]:
         """
-        TODO Description
+        Given the size of the board and a sequence of rolls, checks that the
+        sequence of rolls will result in a game instance that is solvable.
         
         Args:
-            TODO n_fields (int):
-            TODO rolls (list[int]):
+            n_fields (int): the size of the board
+            rolls (list[int]): contains a sequence of die rolls
         
         Returns:
-            TODO tuple[int, list[str]]:
+            tuple[int, list[str]]: contains the minimum number of moves
+                                    required to solve the sequence, as well as
+                                    the optimal moves it takes to do so
         """
         memorized_moves: dict = {}
 
@@ -70,10 +78,10 @@ class LudoInstanceGenerator(GameInstanceGenerator):
             TODO Description
             
             Args:
-                X (int): position of the token 'X' in terms of the field number it
-                        is currently occupying
-                Y (int): position of the token 'Y' in terms of the field number it
-                        is currently occupying
+                X (int): position of the token 'X' in terms of the field
+                         number it is currently occupying
+                Y (int): position of the token 'Y' in terms of the field
+                         number it is currently occupying
                 roll_index (int): the index of the current roll being
                                 considered
             
@@ -200,19 +208,44 @@ class LudoInstanceGenerator(GameInstanceGenerator):
         """
         # Generates rolls and checks their viability
         np.random.seed(RANDOM_SEED)
-        rolls: list[int] = [np.random.randint(1, 7) for _ in range(n_rolls)]
-        min_moves, _ = self._check_sequence(n_fields, rolls)
-
-        # Attaches game instance to the experiment
-        if min_moves != -1:
-            game_instance: dict = self.add_game_instance(experiment, game_id)
-            game_instance["initial_prompt"] = initial_prompt
-            game_instance["n_fields"] = n_fields
-            game_instance["rolls"] = rolls
-
+        
+        # Generates new rolls until finding a viable sequence
+        while True:
+            rolls: list[int] = [np.random.randint(1, 7) for _ in range(n_rolls)]
+            min_moves, _ = self._check_sequence(n_fields, rolls)
+            
+            # Attaches game instance to the experiment
+            if min_moves != -1:
+                game_instance: dict = self.add_game_instance(experiment, game_id)
+                game_instance["initial_prompt"] = initial_prompt
+                game_instance["n_fields"] = n_fields
+                game_instance["rolls"] = rolls
+                break
 
 def main() -> None:
-    pass
+    filepath: Path = str(Path(__file__).parent / "resources" / "initial_prompt.template")
+    resource_locator: GameResourceLocator = GameResourceLocator(GAME_NAME)
+    initial_prompt: str = resource_locator.load_template(filepath)
+    experiments: list[dict] = [
+        {
+            "experiment_name": "basic",
+            "n_instances": 5,
+            "initial_prompt": initial_prompt,
+            "n_fields": 23,
+            "n_rolls": 20,
+            "dialogue_partners": ""
+        },
+        {
+            "experiment_name": "programmatic",
+            "n_instances": 5,
+            "initial_prompt": initial_prompt,
+            "n_fields": 23,
+            "n_rolls": 20,
+            "dialogue_partners": ""
+        }
+    ]
+    instance_generator: LudoInstanceGenerator = LudoInstanceGenerator()
+    instance_generator.generate(experiments=experiments)
 
 
 if __name__ == '__main__':

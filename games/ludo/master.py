@@ -11,7 +11,7 @@ from backends import Model
 from clemgame.clemgame import GameBenchmark, GameMaster
 from game import Game
 from instancegenerator import LudoInstanceGenerator
-from player import LudoPlayer, HumanPlayer, ProgrammaticPlayer, parse_text
+from player import LudoPlayer, parse_text
 from scoring import LudoGameScorer
 
 
@@ -247,22 +247,6 @@ class LudoGameBenchmark(GameBenchmark):
         """
         super().__init__(GAME_NAME)
 
-    # TODO Write
-    def compute_scores(self, results_dir: str | None = None) -> None:
-        """
-        TODO Method description
-        
-        Args:
-            TODO results_dir (str | None):
-
-        Returns:
-            TODO
-        """
-        # TODO Load in results
-        # TODO For each experiment, for each game instance, parse each player's message
-        # TODO Pass parsed message to game scorer
-        # self.create_game_scorer(experiment, game_instance)
-
     def create_game_master(
         self,
         experiment: dict,
@@ -350,16 +334,16 @@ def main() -> None:
         instances_name=instances_name,
         results_dir=results_dir
     )
-    benchmark.score(
-        game_name=game_name,
-        experiment_name=experiment_name,
-        results_dir=results_dir
-    )
-    benchmark.transcripts(
-        game_name=game_name,
-        experiment_name=experiment_name,
-        results_dir=results_dir
-    )
+    # benchmark.score(
+    #     game_name=game_name,
+    #     experiment_name=experiment_name,
+    #     results_dir=results_dir
+    # )
+    # benchmark.transcripts(
+    #     game_name=game_name,
+    #     experiment_name=experiment_name,
+    #     results_dir=results_dir
+    # )
 
 
 if __name__ == "__main__":

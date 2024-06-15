@@ -2,13 +2,12 @@
 TODO Module description
 """
 
-import re
 import sys
 from pathlib import Path
 
 sys.path.append(str(Path(__file__).parent.parent.parent))
 
-from backends import Model
+from backends import CustomResponseModel, HumanModel, Model
 from player import HumanPlayer, LudoPlayer, ProgrammaticPlayer
 
 
