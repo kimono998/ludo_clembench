@@ -84,7 +84,8 @@ class LudoGameMaster(GameMaster):
                     _, _, response_text = player(
                         self.game.context
                         if type(player) is LudoPlayer
-                        else message
+                        else message,
+                        self.game.turn
                     )
                     move: dict[str: int] = parse_text(response_text)
 
@@ -144,7 +145,7 @@ class LudoGameMaster(GameMaster):
         check_list: list = []
         for token in move.keys():
             current_position: int = tokens[token]["position"]
-            match [token == moved_token, tokens[token]["inplay"]]:
+            match [token == moved_token, tokens[token]["in_play"]]:
                 # Token wasn't moved and hasn't been played to the board
                 case [False, False]:
                     if roll != 6:
@@ -317,11 +318,9 @@ def main() -> None:
     from clemgame import benchmark
     from scripts.cli import read_model_specs
 
-    instance_generator: LudoInstanceGenerator = LudoInstanceGenerator()
-
     game_name: str = "ludo"
     model_specs: list[str] = ["gpt-3.5-turbo-1106", "programmatic"]
-    gen_args: dict[str: str] = {"temperature": "0.0", "max_tokens": 400}
+    gen_args: dict[str: str] = {"temperature": 0.0, "max_tokens": 400}
     experiment_name: str | None = None
     instances_name: str = "instances"
     results_dir: str = "results"

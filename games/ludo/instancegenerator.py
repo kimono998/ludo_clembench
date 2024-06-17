@@ -1,5 +1,5 @@
 """
-TODO Module description
+Module focused on generating game instances for the game 'Ludo'.
 """
 
 import sys

@@ -63,10 +63,10 @@ class Game:
         """
         if not self.context:
             split_prompt: list[str]  = self.initial_prompt.split("\n")
-            self.context.append({"role": "system", "message": split_prompt[0]})
-            self.context.append({"role": "user", "message": split_prompt[2:]})
+            self.context.append({"role": "system", "content": split_prompt[0]})
+            self.context.append({"role": "user", "content": split_prompt[2:]})
 
-        self.context.append({"role": role, "message": message})
+        self.context.append({"role": role, "content": message})
 
     def reprompt(self, error_type: str, token: str | None = None) -> None:
         """
