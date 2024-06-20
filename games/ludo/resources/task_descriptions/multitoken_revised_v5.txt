@@ -35,7 +35,7 @@ Ending the game:
 1) To end the game, both of your tokens need to be at the last field on the grid.
 2) If a rolled number is higher than the number of remaining fields from a token, you cannot move that token.
 3) If you cannot move any of the tokens, you must skip the turn.
-3) You need at least 2 tokens to be on the board to finish the game. You cannot move your token on the board to the finish line if it's the only token on the board.
+4) You need at least 2 tokens to be on the board to finish the game. You cannot move your token on the board to the finish line if it's the only token on the board.
 
 Note: The board is updated at every turn. It is one continuous game. You need to memorize your position in the previous turn.
 The game begins when I give you the beginning state and roll the first number.
@@ -110,7 +110,3 @@ Next turn number: 7, Roll: 4. Where will you move your token?
 A:
 There are 21 empty fields and 2 occupied fields. In total: 21 + 2 = 23 fields. I have token X on field 22 and token Y on field 21. You have rolled 4. This is 4 fields away from my previous position. Since both tokens are on the field, I can try to move any of them. I decide to move my token Y. Since 21 + 4 = 25, I cannot move token Y. Therefore, I will try token X. Since 22 + 4 = 26, and 26 > 23, I cannot move token X.
 MY MOVE: X -> 22 ; Y -> 21
-
-
-
-Now let's really play the game.
