@@ -106,8 +106,8 @@ class LudoGameMaster(GameMaster):
 
                     # Reprompt the player if not
                     else:
-                        self.game.reprompt(self.reprompt_error)
-                        self.reprompt_error = None
+                        self.game.reprompt(self.error[0], self.error[1])
+                        self.error = None
 
             self.game.turn += 1
 
@@ -137,7 +137,7 @@ class LudoGameMaster(GameMaster):
             ValueError: raised if the move is invalid, explaining why
         """
         if self._check_both_tokens_moved(tokens, move):
-            self.reprompt_error: str = "simultaneous_move"
+            self.error: str = "simultaneous_move"
             return False
 
         moved_token: str = self._get_moved_token(self._check_token_moved(tokens, move))
@@ -151,7 +151,7 @@ class LudoGameMaster(GameMaster):
                     if roll != 6:
                         check_list.append(True)
                         continue
-                    self.reprompt_error: str = "not_moved_to_board"
+                    self.error: tuple = ("not_moved_to_board", token)
                     return False
 
                 # Token wasn't moved but has been played to the board
@@ -159,7 +159,7 @@ class LudoGameMaster(GameMaster):
                     if roll + current_position > n_fields:
                         check_list.append(True)
                         continue
-                    self.reprompt_error: str = "not_moved"
+                    self.error: tuple = ("not_moved", token)
                     return False
 
                 # Token was played and has been played to the board
@@ -170,7 +170,7 @@ class LudoGameMaster(GameMaster):
                     if current_position + roll == move[token]:
                         check_list.append(True)
                         continue
-                    self.reprompt_error: str = "incorrect_move"
+                    self.error: tuple = ("incorrect_move", token)
                     return False
 
         if all(check_list):
