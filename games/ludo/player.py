@@ -54,13 +54,16 @@ class HumanPlayer(LudoPlayer):
         super().__init__(model)
         self.tokens['A'] = {
             "in_play": False,
-            "position": 0}
-
+            "position": 0
+        }
         self.tokens['B'] = {
             "in_play": False,
-            "position": 0}
+            "position": 0
+        }
 
     # TODO Determine human player behavior
+    # TODO Determine if turn_idx is necessary
+    # TODO Test HumanPlayer
     def _terminal_response(self, messages: list[dict], turn_idx: int) -> str:
         """
         Describes the behavior of the human second player, given the
@@ -75,11 +78,11 @@ class HumanPlayer(LudoPlayer):
         Returns:
             str: human player's response
         """
-        # TODO Verify moves
+        # TODO Write something to verify moves
 
         print(messages)
         print('What is your next move? Please write \nMY MOVE: A -> N ; B -> N')
-        #this probably needs re-working. High likelyhood of user fucking it up.
+        
         while True:
             user_input = input(f"Your response as {self.__class__.__name__}:\n")
             try:
@@ -110,12 +113,12 @@ class ProgrammaticPlayer(LudoPlayer):
         super().__init__(model)
         self.tokens['A'] = {
             "in_play": False,
-            "position": 0}
-
+            "position": 0
+        }
         self.tokens['B'] = {
             "in_play": False,
-            "position": 0}
-
+            "position": 0
+        }
         self.rolls: list[tuple[int, int]] = rolls
 
     # TODO Determine if turn_idx is expected in the output
