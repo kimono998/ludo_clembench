@@ -129,7 +129,7 @@ class Game:
                 case HumanModel():
                     self.player_2: LudoPlayer = HumanPlayer(player_models[1])
                 case CustomResponseModel():
-                    self.player_2: LudoPlayer = ProgrammaticPlayer(player_models[1])
+                    self.player_2: LudoPlayer = ProgrammaticPlayer(player_models[1], self.rolls)
                 case _:
                     self.player_2: None = None
 
