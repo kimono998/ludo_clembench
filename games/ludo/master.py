@@ -13,9 +13,11 @@ from game import Game
 from instancegenerator import LudoInstanceGenerator
 from player import LudoPlayer, parse_text
 from scoring import LudoGameScorer
+from clemgame import get_logger
 
 
 GAME_NAME: str = "ludo"
+logger = get_logger(__name__)
 
 class LudoGameMaster(GameMaster):
     """
@@ -62,55 +64,85 @@ class LudoGameMaster(GameMaster):
             kwargs.get("rolls"),
             self.player_models
         )
-        self.players_dic: dict[str: LudoPlayer] = {"player_1": self.game.player_1}
+        # reference game defines GM in player dict as well.
+        self.players_dic: dict[str: LudoPlayer] = {
+            "GM": 'Game Master for Ludo',
+            "player_1": self.game.player_1
+        }
+
         if self.game.player_2:
             self.players_dic["player_2"] = self.game.player_2
-        self.log_players(self.players_dic)
 
+        self.log_players(self.players_dic)
+        del self.players_dic['GM'] # to preserve the game loop
     def play(self) -> None:
         """
         Handles the basic gameplay loop.
         """
-        while self.game.turn < self.game.turn_limit:            
-            roll: int = self.game.rolls[self.game.turn]
 
-            # Prompt for player 1
-            message: str = f"Current state: {self.game.current_state}\n"
-            message += f"Turn number: {self.game.turn}, Roll: {roll}. "
-            message += "Where will you move your token?"
-            self.game.add_message(message)
+        while self.game.turn < self.game.turn_limit or not self.is_done:
+            logger.info("Game turn: %d", self.game.turn)
+            self.log_next_turn()
 
-            for player in self.players_dic.values():
+            for i, player in enumerate(self.players_dic.keys()):
+                roll: int = self.game.rolls[self.game.turn][i] # rolls needs to be format list[(roll_player_1, roll_player_2),..]
+
+                message: str = f"Current state: {self.game.current_state}\n"
+                message += f"Turn number: {self.game.turn}, Roll: {roll}. "
+                message += "Where will you move your token?"
+                self.game.add_message(message)
+
+                action = {'type': 'send message', 'content': message}
+                self.log_event(from_="GM", to="Player 1", action=action)
+
                 while self.game.reprompt_attempts < 3:
-                    _, _, response_text = player(
+                    _, _, response_text = self.players_dic[player](
                         self.game.context
-                        if type(player) is LudoPlayer
+                        if type(self.players_dic[player]) is LudoPlayer
                         else message,
                         self.game.turn
                     )
-                    move: dict[str: int] = parse_text(response_text)
 
+                    action = {'type': 'get message', 'content': response_text}
+                    self.log_event(from_=f"{player}", to="GM", action=action, call=(message, response_text))
+
+                    move: dict[str: int] = parse_text(response_text)
                     # Updates game attributes if move is valid
-                    if self._check_move(player.tokens, move, roll, self.game.n_fields):
+                    action = {'type': 'parse', 'content': response_text,
+                              'expression': move}
+                    self.log_event(from_="GM", to="GM", action=action)
+
+                    if self._check_move(self.players_dic[player].tokens, move, roll, self.game.n_fields):
                         self.game.add_message(
                             response_text,
-                            role="assistant" if type(player) is LudoPlayer()
+                            role="assistant" if type(self.players_dic[player]) is LudoPlayer()
                             else "user"
                         )
 
                         for token in move.keys():
-                            player.tokens["in_play"] = move[token] > 0
-                            player.tokens["position"] = move[token]
-
-                        self.game.update_board(player, move)
+                            self.players_dic[player].tokens["in_play"] = move[token] > 0
+                            self.players_dic[player].tokens["position"] = move[token]
+                        self.game.update_board(self.players_dic[player], move)
                         self.game.reprompt_attempts = 0
+
+                        action = {'type': 'update_board_state', 'content': response_text}
+                        self.log_event(from_=f"GM", to="GM", action=action)
+
 
                     # Reprompt the player if not
                     else:
+                        value = f'Reprompting attempt: {self.game.reprompt_attempts}'\
+                            if self.game.reprompt_attempts < 3 else 'aborting'
+
+                        action = {'type': f'{self.error[0]}', 'content': value}
+                        self.log_event(from_=f"GM", to="GM", action=action)
+
                         self.game.reprompt(self.error[0], self.error[1])
                         self.error = None
 
             self.game.turn += 1
+
+
 
     def _check_move(
         self,
@@ -236,7 +268,14 @@ class LudoGameMaster(GameMaster):
             if tokens_moved[token]:
                 return token
             return None
+    def is_done(self):
 
+        for player in self.players_dic.values():
+            tlist = ['X', 'Y'] if type(player) is LudoPlayer else ['A', 'B']
+            if player.tokens[tlist[0]]['position'] == self.game.n_fields and player.tokens[tlist[1]]['position'] == self.game.n_fields:
+                return True
+
+        return False
 
 class LudoGameBenchmark(GameBenchmark):
     """

@@ -199,9 +199,9 @@ class ProgrammaticPlayer(LudoPlayer):
         pos: int = move[1]
 
         temp: dict = self.tokens.copy()
-        temp[token] = pos
+        temp[token]['position'] = pos
 
-        return f"MY MOVE: A -> {temp['A']} ; B -> {temp['B']}"
+        return f"MY MOVE: A -> {temp['A']['position']} ; B -> {temp['B']['position']}"
 
     def _make_move(
         self,
