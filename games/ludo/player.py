@@ -5,6 +5,9 @@ Describes custom behavior for human and programmatic participants in 'Ludo'.
 import re
 import sys
 from pathlib import Path
+from math import sqrt, log
+from minimax import GameSim, minimax
+import random
 
 sys.path.append(str(Path(__file__).parent.parent.parent))
 
@@ -75,23 +78,21 @@ class HumanPlayer(LudoPlayer):
         Returns:
             str: human player's response
         """
+        # should probably do all the verifications for user moves here.
 
-        #get current game state
-        #get the last move by the model.
-        #type in the move
-        #check
-        #validate
-        #continue
 
         print(messages)
-        print('What is your next move?')
-        user_input = input(f"Your response as {self.__class__.__name__}:\n")
-
-
-
-
-
-        pass
+        print('What is your next move? Please write \nMY MOVE: A -> N ; B -> N')
+        #this probably needs re-working. High likelyhood of user fucking it up.
+        while True:
+            user_input = input(f"Your response as {self.__class__.__name__}:\n")
+            try:
+                _ = parse_text(user_input)
+            except ValueError:
+                print('Input format not valid! Please try again with the proper format.')
+                print('MY MOVE: A -> N ; B -> N')
+            else:
+                return user_input
 
 
 class ProgrammaticPlayer(LudoPlayer):
@@ -99,7 +100,7 @@ class ProgrammaticPlayer(LudoPlayer):
     A programmatic participant in the game 'Ludo'. Its custom response behavior
     is described in self._custom_response.
     """
-    def __init__(self, model: CustomResponseModel, tokens: dict) -> None:
+    def __init__(self, model: CustomResponseModel, tokens: dict, rolls: list) -> None:
         """
         Passes along the input CustomResponseModel object to the parent class.
 
@@ -115,9 +116,8 @@ class ProgrammaticPlayer(LudoPlayer):
             "in_play": False,
             "position": 0}
 
+        self.rolls = rolls
 
-
-    # TODO Determine programmatic player behavior
     def _custom_response(self, messages: list[dict], turn_idx: int) -> str:
         """
         Describes the behavior of the programmatic second player, given the
@@ -132,45 +132,75 @@ class ProgrammaticPlayer(LudoPlayer):
         Returns:
             str: programmatic player's response
         """
-        parsed_messages: list[dict[str: int]] = self._parse_messages(messages)
+        token_positions, turn_number, board_size = self._parse_messages(messages)
 
-    def _parse_messages(self, messages: list[dict]) -> list[dict[str: int]]:
+        move = self._make_move(token_positions, self.rolls, board_size, turn_number)
+        resp = self._compose_response(move)
+
+        return resp
+
+
+    def _parse_messages(self, input_message: str) -> list[dict, int, int]:
         """
-        Given a list of player-message pairs detailing all interactions that
-        have occured thus far, parses each of the messages at each time step,
-        stores them in a dictionary of player name-parsed message pairs, then
-        returns a list of all the turns.
+        Parse the input message to obtain the state of the board, as well as the current roll.
         
         Args:
-            messages (list[dict]): contains all the messages in the
+            messages (str): contains all the messages in the
                                    conversation thus far
         
         Returns:
-            list[dict[str: int]]: contains dictionaries containing turn number
-                                  -parsed message pairs
-        """
-        return {
-            turn: self._parse_turn(message)
-            for turn, message in enumerate(messages)
-        }
+            list[dict, int]:  list with [Dictionary with token positions, rolled number, board size]
 
-    # TODO Replace "player_1" and "player_2" with real keys
-    def _parse_turn(self, turn: dict) -> dict[dict[str: int]]:
         """
-        Parses the input text according to an expected input format in order to
-        extract per token moves.
 
-        Args:
-            turn (dict): contains raw input messages in player-message pairs
+        # Define the regex pattern
+        pattern = r"Current state:\s*(.*?)\s*Turn number:\s*(\d+),\s*Roll:\s*(\d+)\."
 
-        Returns:
-            dict[dict[str: int]]: contains parsed messages in the form of
-                                  token-position pairs for each player
-        """
-        return {
-            "player_1": parse_text(turn["player_1"]),
-            "player_2": parse_text(turn["player_2"])
-        }
+        # Apply the regex pattern to extract the required information
+        match = re.search(pattern, input_message, re.DOTALL)
+
+        if match:
+            current_state = match.group(1).strip()  # Extract the current state block
+            turn_number = int(match.group(2))  # Extract the turn number (as integer)
+            _ = int(match.group(3))  # Extract the roll (as integer)
+
+            # Identify the positions of tokens (X, Y, A, B) in the current state
+            token_positions = {}
+            tokens = {"X", "Y", "A", "B"}
+            board_size = len(current_state.split())
+
+            for token in tokens:
+                token_positions[token] = 0  # Initialize all tokens to 0
+
+            for index, char in enumerate(current_state.split()):
+                if char in tokens:
+                    token_positions[char] = index + 1  # Store 1-based index
+
+            return token_positions, turn_number, board_size
+
+        else:
+            raise Exception('No match found')
+
+
+    def _compose_response(self, move):
+        # format a response message
+        token = move[0]
+        pos = move[1]
+
+        temp = self.tokens.copy()
+        temp[token] = pos
+
+        return f"MY MOVE: A -> {temp['A']} ; B -> {temp['B']}"
+
+
+    # make a new move as a programmatic player based on the objective.
+    def _make_move(self, token_positions, rolls, board_size, turn_number):
+
+        game = GameSim(board_size, token_positions, rolls, turn_number)
+        _, move = minimax(game, True)
+
+        return move
+
 
 
 def parse_text(text: str, player) -> dict[str: int]:
@@ -196,6 +226,22 @@ def parse_text(text: str, player) -> dict[str: int]:
         raise ValueError(f"Invalid text format: {text[:20]}")
     
     return {"X": int(matches.group(1)), "Y": int(matches.group(2))}
+
+
+# P2 will use MINIMAX, and have access to the instance rolls.
+# 2 objectives to select -> win and eliminate P1. # to be done still
+# once P1 is eliminated, the objective switches to win
+
+
+
+
+
+
+
+
+
+
+
 
 
 def main() -> None:

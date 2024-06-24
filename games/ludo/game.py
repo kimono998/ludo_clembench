@@ -2,12 +2,12 @@
 TODO Module description
 """
 
-import re
 import sys
 from pathlib import Path
 
 sys.path.append(str(Path(__file__).parent.parent.parent))
 
+from backends import CustomResponseModel, HumanModel, Model
 from player import HumanPlayer, LudoPlayer, ProgrammaticPlayer
 
 
@@ -42,15 +42,15 @@ class Game:
         self.initial_prompt: str = initial_prompt
         self.context: list[str] = []
         self.reprompt_attempts: int = 0
-        
+
         # Game mechanic attributes
         self.turn_limit: int = len(rolls)
         self.turn: int = 0
         self.rolls: list[int] = rolls
-        
+
         # Player attributes
         self._initialize_players(player_models)
-    
+
     def add_message(self, message: str, role: str = "user") -> None:
         """
         Adds a message to the conversation context. If it is the first message
@@ -63,10 +63,10 @@ class Game:
         """
         if not self.context:
             split_prompt: list[str]  = self.initial_prompt.split("\n")
-            self.context.append({"role": "system", "message": split_prompt[0]})
-            self.context.append({"role": "user", "message": split_prompt[2:]})
+            self.context.append({"role": "system", "content": split_prompt[0]})
+            self.context.append({"role": "user", "content": split_prompt[2:]})
 
-        self.context.append({"role": role, "message": message})
+        self.context.append({"role": role, "content": message})
 
     def reprompt(self, error_type: str, token: str | None = None) -> None:
         """
