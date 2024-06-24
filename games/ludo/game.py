@@ -143,6 +143,7 @@ class Game:
         return " ".join(["□"] * self.n_fields).strip()
 
 
+
 def main() -> None:
     pass
 
