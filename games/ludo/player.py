@@ -100,12 +100,13 @@ class ProgrammaticPlayer(LudoPlayer):
     A programmatic participant in the game 'Ludo'. Its custom response behavior
     is described in self._custom_response.
     """
-    def __init__(self, model: CustomResponseModel, rolls: list) -> None:
+    def __init__(self, model: CustomResponseModel, rolls: list[tuple]) -> None:
         """
         Passes along the input CustomResponseModel object to the parent class.
 
         Args:
             model (CustomResponseModel): the instantiated CustomResponseModel
+            rolls (list): The roll sequence list from the game instance.
         """
         super().__init__(model)
         self.tokens['A'] = {
@@ -134,8 +135,8 @@ class ProgrammaticPlayer(LudoPlayer):
         """
         token_positions, turn_number, board_size = self._parse_messages(messages)
 
-        move = self._make_move(token_positions, self.rolls, board_size, turn_number)
-        resp = self._compose_response(move)
+        move: tuple = self._make_move(token_positions, self.rolls, board_size, turn_number)
+        resp: str = self._compose_response(move)
 
         return resp
 
@@ -182,26 +183,52 @@ class ProgrammaticPlayer(LudoPlayer):
             raise Exception('No match found')
 
 
-    def _compose_response(self, move):
-        # format a response message
-        token = move[0]
-        pos = move[1]
+    def _compose_response(self, move: tuple) -> str:
+        """
+        Composes a response message based on the move.
 
-        temp = self.tokens.copy()
+        Args:
+            move (tuple): The move to be made.
+
+        Returns:
+            str: The response message.
+        """
+
+        # format a response message
+        token: str = move[0]
+        pos: int = move[1]
+
+        temp: dict = self.tokens.copy()
         temp[token] = pos
 
         return f"MY MOVE: A -> {temp['A']} ; B -> {temp['B']}"
 
 
     # make a new move as a programmatic player based on the objective.
-    def _make_move(self, token_positions, rolls, board_size, turn_number):
+    def _make_move(
+        self,
+        token_positions: dict,
+        rolls: list[tuple],
+        board_size: int,
+        turn_number: int
+    ) -> tuple:
+        """
+        Makes a new move as a programmatic player based on the objective.
 
-        game = GameSim(board_size, token_positions, rolls, turn_number)
+        Args:
+            token_positions (dict): The positions of the tokens.
+            rolls (list[tuple]): The rolls for the game.
+            board_size (int): The size of the board.
+            turn_number (int): The current turn number.
+
+        Returns:
+            tuple: The move to be made.
+        """
+
+        game: GameSim = GameSim(board_size, token_positions, rolls, turn_number)
         _, move = minimax(game, True)
 
         return move
-
-
 
 def parse_text(text: str, player) -> dict[str: int]:
     """
@@ -224,22 +251,13 @@ def parse_text(text: str, player) -> dict[str: int]:
 
     if not matches:
         raise ValueError(f"Invalid text format: {text[:20]}")
-    
+
     return {"X": int(matches.group(1)), "Y": int(matches.group(2))}
 
 
 # P2 will use MINIMAX, and have access to the instance rolls.
 # 2 objectives to select -> win and eliminate P1. # to be done still
 # once P1 is eliminated, the objective switches to win
-
-
-
-
-
-
-
-
-
 
 
 

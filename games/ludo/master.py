@@ -42,6 +42,7 @@ class LudoGameMaster(GameMaster):
                                          representing each of the players
         """
         super().__init__(GAME_NAME, experiment, player_models)
+        self.error = None
         self.player_models: list[Model] = player_models
 
     def setup(self, **kwargs) -> None:
@@ -253,6 +254,7 @@ class LudoGameBenchmark(GameBenchmark):
         experiment: dict,
         player_models: list[Model]
     ) -> LudoGameMaster:
+
         """
         Instantiates a Ludo-specific GameMaster that handles the running and
         checking of the game on an instance level.
@@ -274,6 +276,7 @@ class LudoGameBenchmark(GameBenchmark):
         experiment: dict,
         game_instance: dict
     ) -> LudoGameScorer:
+
         """
         Instantiates a Ludo-specific GameScorer that handles the ultimate
         scoring of the game performance on an episodic and overall level.
@@ -288,9 +291,11 @@ class LudoGameBenchmark(GameBenchmark):
         Returns:
             LudoGameScorer: instantiated LudoGameScorer object
         """
+
         return LudoGameScorer(experiment, game_instance)
 
     def get_description(self) -> str:
+
         """
         Returns a short description of the Ludo game benchmark.
 
@@ -298,6 +303,7 @@ class LudoGameBenchmark(GameBenchmark):
             str: a short description of the game 'Ludo' and what it seeks to
                  evaluate
         """
+
         return (
             "Benchmark for the Ludo game designed to challenge and " + 
             "evaluate strategic model behavior."
@@ -311,6 +317,7 @@ class LudoGameBenchmark(GameBenchmark):
         Returns:
             bool: True if single-player, False otherwise
         """
+
         return False
 
 
