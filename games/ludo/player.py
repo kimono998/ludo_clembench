@@ -46,14 +46,14 @@ class HumanPlayer(LudoPlayer):
     A human participant in the game 'Ludo'. Its custom response behavior is
     described in self._terminal_response.
     """
-    def __init__(self, model: HumanModel, tokens: dict) -> None:
+    def __init__(self, model: HumanModel) -> None:
         """
         Passes along the input HumanModel object to the parent class.
 
         Args:
             model (HumanModel): the instantiated HumanModel
         """
-        super().__init__(model, tokens)
+        super().__init__(model)
         self.tokens['A'] = {
             "in_play": False,
             "position": 0}
@@ -100,14 +100,14 @@ class ProgrammaticPlayer(LudoPlayer):
     A programmatic participant in the game 'Ludo'. Its custom response behavior
     is described in self._custom_response.
     """
-    def __init__(self, model: CustomResponseModel, tokens: dict, rolls: list) -> None:
+    def __init__(self, model: CustomResponseModel, rolls: list) -> None:
         """
         Passes along the input CustomResponseModel object to the parent class.
 
         Args:
             model (CustomResponseModel): the instantiated CustomResponseModel
         """
-        super().__init__(model, tokens)
+        super().__init__(model)
         self.tokens['A'] = {
             "in_play": False,
             "position": 0}
