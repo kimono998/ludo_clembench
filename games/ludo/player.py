@@ -5,9 +5,7 @@ Describes custom behavior for human and programmatic participants in 'Ludo'.
 import re
 import sys
 from pathlib import Path
-from math import sqrt, log
 from minimax import GameSim, minimax
-import random
 
 sys.path.append(str(Path(__file__).parent.parent.parent))
 
@@ -62,7 +60,6 @@ class HumanPlayer(LudoPlayer):
             "in_play": False,
             "position": 0}
 
-
     # TODO Determine human player behavior
     def _terminal_response(self, messages: list[dict], turn_idx: int) -> str:
         """
@@ -78,8 +75,7 @@ class HumanPlayer(LudoPlayer):
         Returns:
             str: human player's response
         """
-        # should probably do all the verifications for user moves here.
-
+        # TODO Verify moves
 
         print(messages)
         print('What is your next move? Please write \nMY MOVE: A -> N ; B -> N')
@@ -95,6 +91,8 @@ class HumanPlayer(LudoPlayer):
                 return user_input
 
 
+# TODO 2 objectives to select -> (1) win and (2) eliminate P1; implement functionality to eliminate P1
+# TODO Set that the objective switches to win once P1 is eliminated
 class ProgrammaticPlayer(LudoPlayer):
     """
     A programmatic participant in the game 'Ludo'. Its custom response behavior
@@ -106,7 +104,8 @@ class ProgrammaticPlayer(LudoPlayer):
 
         Args:
             model (CustomResponseModel): the instantiated CustomResponseModel
-            rolls (list): The roll sequence list from the game instance.
+            rolls (list[tuple[int, int]]): the roll sequence list from the
+                                           game instance
         """
         super().__init__(model)
         self.tokens['A'] = {
@@ -117,8 +116,9 @@ class ProgrammaticPlayer(LudoPlayer):
             "in_play": False,
             "position": 0}
 
-        self.rolls = rolls
+        self.rolls: list[tuple[int, int]] = rolls
 
+    # TODO Determine if turn_idx is expected in the output
     def _custom_response(self, messages: list[dict], turn_idx: int) -> str:
         """
         Describes the behavior of the programmatic second player, given the
@@ -133,55 +133,53 @@ class ProgrammaticPlayer(LudoPlayer):
         Returns:
             str: programmatic player's response
         """
-        token_positions, turn_number, board_size = self._parse_messages(messages)
+        token_positions, turn_number, n_fields = self._parse_messages(messages)
+        move: tuple = self._make_move(
+            token_positions,
+            self.rolls,
+            n_fields,
+            turn_number
+        )
 
-        move: tuple = self._make_move(token_positions, self.rolls, board_size, turn_number)
-        resp: str = self._compose_response(move)
-
-        return resp
-
+        return self._compose_response(move)
 
     def _parse_messages(self, input_message: str) -> list[dict, int, int]:
         """
-        Parse the input message to obtain the state of the board, as well as the current roll.
+        Parse the input message to obtain the state of the board, as well as
+        the current roll.
         
         Args:
-            messages (str): contains all the messages in the
-                                   conversation thus far
+            messages (str): contains all the messages in the conversation thus
+                            far
         
         Returns:
-            list[dict, int]:  list with [Dictionary with token positions, rolled number, board size]
+            list[dict, int]: list with [dictionary with token positions, rolled
+                             number, board size]
 
+        Raises:
+            Exception: raised if no matching pattern is found
         """
+        pattern: re.Pattern = r"Current state:\s*(.*?)\s*Turn number:\s*(\d+),\s*Roll:\s*(\d+)\."
+        pattern_match: re.Match = re.search(pattern, input_message, re.DOTALL)
 
-        # Define the regex pattern
-        pattern = r"Current state:\s*(.*?)\s*Turn number:\s*(\d+),\s*Roll:\s*(\d+)\."
+        if pattern_match:
+            current_state: str = pattern_match.group(1).strip()
+            turn_number: int = int(pattern_match.group(2))
 
-        # Apply the regex pattern to extract the required information
-        match = re.search(pattern, input_message, re.DOTALL)
-
-        if match:
-            current_state = match.group(1).strip()  # Extract the current state block
-            turn_number = int(match.group(2))  # Extract the turn number (as integer)
-            _ = int(match.group(3))  # Extract the roll (as integer)
-
-            # Identify the positions of tokens (X, Y, A, B) in the current state
-            token_positions = {}
-            tokens = {"X", "Y", "A", "B"}
-            board_size = len(current_state.split())
-
-            for token in tokens:
-                token_positions[token] = 0  # Initialize all tokens to 0
+            # Identifies the positions of tokens (X, Y, A, B) in the current state
+            tokens: dict = {"X", "Y", "A", "B"}
+            n_fields = len(current_state.split())
+            token_positions = {token: 0 for token in tokens}
 
             for index, char in enumerate(current_state.split()):
                 if char in tokens:
-                    token_positions[char] = index + 1  # Store 1-based index
+                    # Stores 1-based index
+                    token_positions[char] = index + 1
 
-            return token_positions, turn_number, board_size
+            return token_positions, turn_number, n_fields
 
         else:
             raise Exception('No match found')
-
 
     def _compose_response(self, move: tuple) -> str:
         """
@@ -193,7 +191,6 @@ class ProgrammaticPlayer(LudoPlayer):
         Returns:
             str: The response message.
         """
-
         # format a response message
         token: str = move[0]
         pos: int = move[1]
@@ -203,32 +200,30 @@ class ProgrammaticPlayer(LudoPlayer):
 
         return f"MY MOVE: A -> {temp['A']} ; B -> {temp['B']}"
 
-
-    # make a new move as a programmatic player based on the objective.
     def _make_move(
         self,
         token_positions: dict,
         rolls: list[tuple],
-        board_size: int,
+        n_fields: int,
         turn_number: int
     ) -> tuple:
         """
         Makes a new move as a programmatic player based on the objective.
 
         Args:
-            token_positions (dict): The positions of the tokens.
-            rolls (list[tuple]): The rolls for the game.
-            board_size (int): The size of the board.
-            turn_number (int): The current turn number.
+            token_positions (dict): the positions of the tokens
+            rolls (list[tuple]): the rolls for the game
+            n_fields (int): the size of the board
+            turn_number (int): the current turn number
 
         Returns:
-            tuple: The move to be made.
+            tuple: the move to be made
         """
-
-        game: GameSim = GameSim(board_size, token_positions, rolls, turn_number)
+        game: GameSim = GameSim(n_fields, token_positions, rolls, turn_number)
         _, move = minimax(game, True)
 
         return move
+
 
 def parse_text(text: str, player) -> dict[str: int]:
     """
@@ -246,8 +241,11 @@ def parse_text(text: str, player) -> dict[str: int]:
                     format; prints a preview of the non-conforming text
     """
 
-    tokens = ['X', 'Y'] if type(player) is LudoPlayer else ['A', 'B']
-    matches: re.Match = re.search(rf"MY MOVE: {tokens[0]} -> (\d+) ; {tokens[1]} -> (\d+)", text)
+    tokens: list[str] = ['X', 'Y'] if type(player) is LudoPlayer else ['A', 'B']
+    matches: re.Match = re.search(
+        rf"MY MOVE: {tokens[0]} -> (\d+) ; {tokens[1]} -> (\d+)",
+        text
+    )
 
     if not matches:
         raise ValueError(f"Invalid text format: {text[:20]}")
@@ -255,16 +253,5 @@ def parse_text(text: str, player) -> dict[str: int]:
     return {"X": int(matches.group(1)), "Y": int(matches.group(2))}
 
 
-# P2 will use MINIMAX, and have access to the instance rolls.
-# 2 objectives to select -> win and eliminate P1. # to be done still
-# once P1 is eliminated, the objective switches to win
-
-
-
-
-def main() -> None:
-    pass
-
-
 if __name__ == '__main__':
-    main()
+    pass

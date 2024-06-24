@@ -189,7 +189,8 @@ class LudoInstanceGenerator(GameInstanceGenerator):
         game_id: int,
         initial_prompt: str,
         n_fields: int,
-        n_rolls: int
+        n_rolls: int,
+        dialogue_partners: list[tuple[str, str]]
     ) -> None:
         """
         Given an instantiated experiment dictionary and the various arguments
@@ -205,6 +206,8 @@ class LudoInstanceGenerator(GameInstanceGenerator):
             n_fields (int): the size of the board
             n_rolls (int): the number of rolls; also the maximum number of
                            turns
+            dialogue_partners (list[tuple[str, str]]): the players in the game
+                                                       variant
         """
         # Generates rolls and checks their viability
         np.random.seed(RANDOM_SEED)
