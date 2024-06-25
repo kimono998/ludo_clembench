@@ -20,7 +20,7 @@ class Game:
         self,
         initial_prompt: str,
         n_fields: int,
-        rolls: list[int],
+        rolls: list[tuple[int, int]],
         player_models: list[Model]
     ) -> None:
         """
@@ -30,7 +30,8 @@ class Game:
             initital_prompt (str): comprised of the system prompt, the task
                                    description, and relevant examples
             n_fields (int): the size of the board
-            rolls (list[int]): contains the die rolls for each turn
+            rolls (list[tuple[int, int]]): contains the die rolls for each
+                                           player for each turn
             player_models (list[Model]): contains the player model(s) to be
                                          turned into LudoPlayer object(s)
         """
@@ -46,7 +47,7 @@ class Game:
         # Game mechanic attributes
         self.turn_limit: int = len(rolls)
         self.turn: int = 0
-        self.rolls: list[int] = rolls
+        self.rolls: list[tuple[int, int]] = rolls
 
         # Player attributes
         self._initialize_players(player_models)

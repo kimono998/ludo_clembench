@@ -38,7 +38,6 @@ class LudoPlayer(Player):
         }
 
 
-# TODO Determine if the HumanPlayer class is necessary; is the inbuilt _terminal_response method sufficient?
 class HumanPlayer(LudoPlayer):
     """
     A human participant in the game 'Ludo'. Its custom response behavior is
@@ -61,8 +60,6 @@ class HumanPlayer(LudoPlayer):
             "position": 0
         }
 
-    # TODO Determine human player behavior
-    # TODO Determine if turn_idx is necessary
     # TODO Test HumanPlayer
     def _terminal_response(self, messages: list[dict], turn_idx: int) -> str:
         """
@@ -77,14 +74,22 @@ class HumanPlayer(LudoPlayer):
 
         Returns:
             str: human player's response
+
+        Raises:
+            ValueError: raised if the user input is not given in the correct
+                        format
         """
         # TODO Write something to verify moves
+        latest_response: str = "Nothing has been said yet."
 
-        print(messages)
-        print('What is your next move? Please write \nMY MOVE: A -> N ; B -> N')
+        if messages:
+            latest_response = messages[-1]["content"]
+
+        print(f"\n{latest_response}")
+        print('What is your next move? Please write:\nMY MOVE: A -> N ; B -> N')
         
         while True:
-            user_input = input(f"Your response as {self.__class__.__name__}:\n")
+            user_input: str = input(f"Your response as {self.__class__.__name__} (turn: {turn_idx}):\n")
             try:
                 _ = parse_text(user_input)
             except ValueError:
@@ -121,6 +126,21 @@ class ProgrammaticPlayer(LudoPlayer):
         }
         self.rolls: list[tuple[int, int]] = rolls
 
+    def _compose_response(self, move: tuple) -> str:
+        """
+        Composes a response message based on the move.
+
+        Args:
+            move (tuple): the move to be made
+
+        Returns:
+            str: the response message
+        """
+        temp: dict = self.tokens.copy()
+        temp[move[0]]['position'] = move[1]
+
+        return f"MY MOVE: A -> {temp['A']['position']} ; B -> {temp['B']['position']}"
+
     # TODO Determine if turn_idx is expected in the output
     def _custom_response(self, messages: list[dict], turn_idx: int) -> str:
         """
@@ -145,6 +165,30 @@ class ProgrammaticPlayer(LudoPlayer):
         )
 
         return self._compose_response(move)
+    
+    def _make_move(
+        self,
+        token_positions: dict,
+        rolls: list[tuple],
+        n_fields: int,
+        turn_number: int
+    ) -> tuple:
+        """
+        Makes a new move as a programmatic player based on the objective.
+
+        Args:
+            token_positions (dict): the positions of the tokens
+            rolls (list[tuple]): the rolls for the game
+            n_fields (int): the size of the board
+            turn_number (int): the current turn number
+
+        Returns:
+            tuple: the move to be made
+        """
+        game: GameSim = GameSim(n_fields, token_positions, rolls, turn_number)
+        _, move = minimax(game, True)
+
+        return move
 
     def _parse_messages(self, input_message: str) -> list[dict, int, int]:
         """
@@ -184,57 +228,15 @@ class ProgrammaticPlayer(LudoPlayer):
         else:
             raise Exception('No match found')
 
-    def _compose_response(self, move: tuple) -> str:
-        """
-        Composes a response message based on the move.
 
-        Args:
-            move (tuple): The move to be made.
-
-        Returns:
-            str: The response message.
-        """
-        # format a response message
-        token: str = move[0]
-        pos: int = move[1]
-
-        temp: dict = self.tokens.copy()
-        temp[token]['position'] = pos
-
-        return f"MY MOVE: A -> {temp['A']['position']} ; B -> {temp['B']['position']}"
-
-    def _make_move(
-        self,
-        token_positions: dict,
-        rolls: list[tuple],
-        n_fields: int,
-        turn_number: int
-    ) -> tuple:
-        """
-        Makes a new move as a programmatic player based on the objective.
-
-        Args:
-            token_positions (dict): the positions of the tokens
-            rolls (list[tuple]): the rolls for the game
-            n_fields (int): the size of the board
-            turn_number (int): the current turn number
-
-        Returns:
-            tuple: the move to be made
-        """
-        game: GameSim = GameSim(n_fields, token_positions, rolls, turn_number)
-        _, move = minimax(game, True)
-
-        return move
-
-
-def parse_text(text: str, player) -> dict[str: int]:
+def parse_text(text: str, player: LudoPlayer) -> dict[str: int]:
     """
     Parses the input text according to an expected input format in order to
     extract per token moves.
 
     Args:
         text (str): raw input text
+        player (LudoPlayer): the player who the text was produced by
 
     Returns:
         dict[str: int]: contains token-position pairs

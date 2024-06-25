@@ -15,6 +15,7 @@ GAME_NAME: str = "ludo"
 RANDOM_SEED: int = 42
 
 
+# TODO Adapt to two players; generate rolls for each, separate logically
 class LudoInstanceGenerator(GameInstanceGenerator):
     """
     A 'Ludo'-specific GameInstanceGenerator, intended to be used to generate
@@ -183,6 +184,7 @@ class LudoInstanceGenerator(GameInstanceGenerator):
                 n_rolls
             )
 
+    # TODO Change to generate rolls for two players; incorporate dialogue_partners?
     def _generate_instance(
         self,
         experiment: dict,
@@ -225,7 +227,8 @@ class LudoInstanceGenerator(GameInstanceGenerator):
                 game_instance["rolls"] = rolls
                 break
 
-def main() -> None:
+
+if __name__ == '__main__':
     filepath: Path = str(Path(__file__).parent / "resources" / "initial_prompt.template")
     resource_locator: GameResourceLocator = GameResourceLocator(GAME_NAME)
     initial_prompt: str = resource_locator.load_template(filepath)
@@ -249,7 +252,3 @@ def main() -> None:
     ]
     instance_generator: LudoInstanceGenerator = LudoInstanceGenerator()
     instance_generator.generate(experiments=experiments)
-
-
-if __name__ == '__main__':
-    main()
