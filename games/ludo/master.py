@@ -58,7 +58,7 @@ class LudoGameMaster(GameMaster):
             game_id (str): an identifying string for each game instance
             initial_prompt (str): the first message sent to the LLM
             n_fields (int): the number of fields on the board
-            rolls (list[int]): the specific die rolls for each turn
+            rolls (list[tuple[int, int]]): the specific die rolls for each turn
         """
         self.game: Game = Game(
             kwargs.get("initial_prompt"),

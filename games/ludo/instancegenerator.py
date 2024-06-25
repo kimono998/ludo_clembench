@@ -213,12 +213,15 @@ class LudoInstanceGenerator(GameInstanceGenerator):
         """
         # Generates new rolls until finding a viable sequence
         while True:
-            p1_rolls: list[int] = [np.random.randint(1, 7) for _ in range(n_rolls)]
-            p2_rolls: list[int] = [np.random.randint(1, 7) for _ in range(n_rolls)]
-
-            # Checks that the rolls are valid
-            min_moves_p1, _ = self._check_sequence(n_fields, p1_rolls)
-            min_moves_p2, _ = self._check_sequence(n_fields, p2_rolls)
+            # Generates and validates rolls for each player
+            min_moves_p1, _ = self._check_sequence(
+                n_fields,
+                p1_rolls := [np.random.randint(1, 7) for _ in range(n_rolls)]
+            )
+            min_moves_p2, _ = self._check_sequence(
+                n_fields,
+                p2_rolls := [np.random.randint(1, 7) for _ in range(n_rolls)]
+            )
             
             # Attaches game instance to the experiment
             if min_moves_p1 != -1 and min_moves_p2:
@@ -226,8 +229,11 @@ class LudoInstanceGenerator(GameInstanceGenerator):
                 game_instance["dialogue_partners"] = dialogue_partners
                 game_instance["initial_prompt"] = initial_prompt
                 game_instance["n_fields"] = n_fields
-                game_instance["p1_rolls"] = p1_rolls
-                game_instance["p2_rolls"] = p2_rolls
+                game_instance["rolls"] = [
+                    (p1_roll, p2_roll)
+                    for p1_roll, p2_roll
+                    in zip(p1_rolls, p2_rolls)
+                ]
                 break
 
 
