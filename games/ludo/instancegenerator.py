@@ -8,7 +8,7 @@ import numpy as np
 
 sys.path.append(str(Path(__file__).parent.parent.parent))
 
-from clemgame.clemgame import GameInstanceGenerator, GameResourceLocator
+from clemgame.clemgame import GameInstanceGenerator
 
 
 GAME_NAME: str = "ludo"
@@ -57,11 +57,7 @@ class LudoInstanceGenerator(GameInstanceGenerator):
                 experiment["n_rolls"]
             )
 
-    def _check_sequence(
-        self,
-        n_fields: int,
-        rolls: list[int]
-    ) -> tuple[int, list[str]]:
+    def _check_sequence(self, n_fields: int, rolls: list[int]) -> bool:
         """
         Given the size of the board and a sequence of rolls, checks that the
         sequence of rolls will result in a game instance that is solvable.
@@ -71,15 +67,18 @@ class LudoInstanceGenerator(GameInstanceGenerator):
             rolls (list[int]): contains a sequence of die rolls
         
         Returns:
-            tuple[int, list[str]]: contains the minimum number of moves
-                                    required to solve the sequence, as well as
-                                    the optimal moves it takes to do so
+            bool: True if a move sequence is solvable, False otherwise
         """
         memorized_moves: dict = {}
 
-        def datapace(X: int, Y: int, roll_index: int) -> tuple[int, list[str]]:
+        def find_minimum(
+                X: int,
+                Y: int,
+                roll_index: int
+        ) -> tuple[int, list[str]]:
             """
-            TODO Description
+            Finds the minimum number of moves required to solve a sequence of
+            die rolls, as well as the moves associated with that minimum.
             
             Args:
                 X (int): position of the token 'X' in terms of the field
@@ -87,64 +86,82 @@ class LudoInstanceGenerator(GameInstanceGenerator):
                 Y (int): position of the token 'Y' in terms of the field
                          number it is currently occupying
                 roll_index (int): the index of the current roll being
-                                considered
+                                  considered
             
             Returns:
                 tuple[int, list[str]]: contains the minimum number of moves
-                                    required to solve the sequence, as well as
-                                    the optimal moves it takes to do so
+                                       required to solve the sequence and the
+                                       associated move sequence
             """
+            # For completed sequences
             if X == n_fields and Y == n_fields:
                 return 0, []
+            
+            # For sequences that have surpassed the turn limit
             if roll_index >= len(rolls):
                 return float('inf'), []
+            
+            # If the move has already been analyzed
             if (X, Y, roll_index) in memorized_moves:
                 return memorized_moves[(X, Y, roll_index)]
 
             roll: int = rolls[roll_index]
             next_roll_index: int = roll_index + 1
-            moves = float('inf')
-            best_move_seq: list[str] = []
+            min_move_count = float('inf')
+            best_sequence: list[str] = []
 
+            # If X is in play, calculates its next position
             if X != 0:
                 new_X: int = X + roll if X + roll <= n_fields else X
-                if new_X != Y or new_X == n_fields:
-                    next_moves, move_seq = datapace(new_X, Y, next_roll_index)
-                    if 1 + next_moves < moves:
-                        moves = 1 + next_moves
-                        best_move_seq: list[str] = [f"Move X from {X} to {new_X}"] + move_seq
 
+                # Analyzes next position if it is valid and not final
+                if new_X != Y or new_X == n_fields:
+                    next_moves, sequence = find_minimum(new_X, Y, next_roll_index)
+                    
+                    # Seeks minimum required moves to solve the sequence
+                    if next_moves + 1 < min_move_count:
+                        min_move_count = next_moves + 1
+                        best_sequence = [f"Move X from {X} to {new_X}"] + sequence
+
+            # If Y is in play, calculates its next position
             if Y != 0:
                 new_Y: int = Y + roll if Y + roll <= n_fields else Y
+                
+                # Analyzes next position if it is valid and not final
                 if new_Y != X or new_Y == n_fields:
-                    next_moves, move_seq = datapace(X, new_Y, next_roll_index)
-                    if 1 + next_moves < moves:
-                        moves = 1 + next_moves
-                        best_move_seq = [f"Move Y from {Y} to {new_Y}"] + move_seq
+                    next_moves, sequence = find_minimum(X, new_Y, next_roll_index)
+                    
+                    # Seeks minimum required moves to solve the sequence
+                    if next_moves + 1 < min_move_count:
+                        min_move_count = next_moves + 1
+                        best_sequence = [f"Move Y from {Y} to {new_Y}"] + sequence
 
+            # If a 6 is rolled and either token can be moved to the board
             if roll == 6:
-                if X == 0 and 1 != Y:
-                    next_moves, move_seq = datapace(1, Y, next_roll_index)
-                    if 1 + next_moves < moves:
-                        moves = 1 + next_moves
-                        best_move_seq: list[str] = ["Place X on 1"] + move_seq
+                if X == 0 and Y != 1:
+                    next_moves, sequence = find_minimum(1, Y, next_roll_index)
+                    if next_moves + 1 < min_move_count:
+                        min_move_count = next_moves + 1
+                        best_sequence = ["Place X on 1"] + sequence
+
                 if Y == 0 and 1 != X:
-                    next_moves, move_seq = datapace(X, 1, next_roll_index)
-                    if 1 + next_moves < moves:
-                        moves = 1 + next_moves
-                        best_move_seq: list[str] = ["Place Y on 1"] + move_seq
+                    next_moves, sequence = find_minimum(X, 1, next_roll_index)
+                    if next_moves + 1 < min_move_count:
+                        min_move_count = next_moves + 1
+                        best_sequence = ["Place Y on 1"] + sequence
 
-            memorized_moves[(X, Y, roll_index)] = (moves, best_move_seq)
+            memorized_moves[(X, Y, roll_index)] = (min_move_count, best_sequence)
 
-            return moves, best_move_seq
+            return min_move_count, best_sequence
 
+        # Initiates the search for the minimum move count
         initial_X, initial_Y = 0, 0
-        result, move_sequence = datapace(initial_X, initial_Y, 0)
+        min_move_count, _ = find_minimum(initial_X, initial_Y, 0)
 
-        if result == float('inf'):
-            return -1, []
+        if min_move_count == float('inf'):
+            return False
 
-        return result, move_sequence
+        return min_move_count != -1
 
     def _generate_experiment(
         self,
@@ -215,18 +232,16 @@ class LudoInstanceGenerator(GameInstanceGenerator):
         """
         # Generates new rolls until finding a viable sequence
         while True:
-            # Generates and validates rolls for each player
-            min_moves_p1, _ = self._check_sequence(
-                n_fields,
-                p1_rolls := [np.random.randint(1, 7) for _ in range(n_rolls)]
-            )
-            min_moves_p2, _ = self._check_sequence(
-                n_fields,
-                p2_rolls := [np.random.randint(1, 7) for _ in range(n_rolls)]
-            )
-            
-            # Attaches game instance to the experiment
-            if min_moves_p1 != -1 and min_moves_p2:
+            if (
+                self._check_sequence(
+                    n_fields,
+                    p1_rolls := [np.random.randint(1, 7) for _ in range(n_rolls)]
+                ) and
+                self._check_sequence(
+                    n_fields,
+                    p2_rolls := [np.random.randint(1, 7) for _ in range(n_rolls)]
+                )
+            ):
                 game_instance: dict = self.add_game_instance(experiment, game_id)
                 game_instance["dialogue_partners"] = dialogue_partners
                 game_instance["initial_prompt"] = initial_prompt

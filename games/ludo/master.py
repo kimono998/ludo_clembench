@@ -1,5 +1,6 @@
 """
-TODO Module description
+Contains custom GameMaster and GameBenchmark child classes to handle the game
+of 'Ludo', describing intended behavior.
 """
 
 import sys
@@ -11,7 +12,6 @@ sys.path.append(str(Path(__file__).parent.parent.parent))
 from backends import Model
 from clemgame.clemgame import GameBenchmark, GameMaster
 from game import Game
-from instancegenerator import LudoInstanceGenerator
 from player import LudoPlayer, parse_text
 from scoring import LudoGameScorer
 from clemgame import get_logger
