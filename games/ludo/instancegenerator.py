@@ -13,9 +13,9 @@ from clemgame.clemgame import GameInstanceGenerator, GameResourceLocator
 
 GAME_NAME: str = "ludo"
 RANDOM_SEED: int = 42
+np.random.seed(RANDOM_SEED)
 
 
-# TODO Adapt to two players; generate rolls for each, separate logically
 class LudoInstanceGenerator(GameInstanceGenerator):
     """
     A 'Ludo'-specific GameInstanceGenerator, intended to be used to generate
@@ -48,10 +48,10 @@ class LudoInstanceGenerator(GameInstanceGenerator):
             self._generate_experiment(
                 experiment["experiment_name"],
                 experiment["n_instances"],
+                experiment["dialogue_partners"],
                 experiment["initial_prompt"],
                 experiment["n_fields"],
-                experiment["n_rolls"],
-                experiment["dialogue_partners"]
+                experiment["n_rolls"]
             )
 
     def _check_sequence(
@@ -147,10 +147,10 @@ class LudoInstanceGenerator(GameInstanceGenerator):
         self,
         experiment_name: str,
         n_instances: int,
+        dialogue_partners: list[tuple[str, str]],
         initial_prompt: str,
         n_fields: int,
-        n_rolls: int,
-        dialogue_partners: list[tuple[str, str]]
+        n_rolls: int
     ) -> None:
         """
         Given experiment specifications, generates an experiment as well as a
@@ -162,13 +162,13 @@ class LudoInstanceGenerator(GameInstanceGenerator):
                                    game variant
             n_instances (int): the number of instances to be generated and
                                attached to the experiment
+            dialogue_partners (list[tuple[str, str]]): the players in the game
+                                                       variant
             initial_prompt (str): the prompt associated with the desired game
                                   variant
             n_fields (int): the size of the board in the game
             n_rolls (int): the number of rolls; also the maximum number of
                            turns
-            dialogue_partners (list[tuple[str, str]]): the players in the game
-                                                       variant
         """
         # Creates an experiment
         experiment: dict = self.add_experiment(experiment_name, dialogue_partners)
@@ -179,20 +179,20 @@ class LudoInstanceGenerator(GameInstanceGenerator):
             self._generate_instance(
                 experiment,
                 game_id,
+                dialogue_partners,
                 initial_prompt,
                 n_fields,
                 n_rolls
             )
 
-    # TODO Change to generate rolls for two players; incorporate dialogue_partners?
     def _generate_instance(
         self,
         experiment: dict,
         game_id: int,
+        dialogue_partners: list[tuple[str, str]],
         initial_prompt: str,
         n_fields: int,
-        n_rolls: int,
-        dialogue_partners: list[tuple[str, str]]
+        n_rolls: int
     ) -> None:
         """
         Given an instantiated experiment dictionary and the various arguments
@@ -204,27 +204,30 @@ class LudoInstanceGenerator(GameInstanceGenerator):
         Args:
             experiment (dict): where the instance will be attached
             game_id (dict): the identifying marker for the game instance
+            dialogue_partners (list[tuple[str, str]]): the players in the game
+                                                       variant
             initial_prompt (str): the initial prompt passed to the LLM
             n_fields (int): the size of the board
             n_rolls (int): the number of rolls; also the maximum number of
                            turns
-            dialogue_partners (list[tuple[str, str]]): the players in the game
-                                                       variant
         """
-        # Generates rolls and checks their viability
-        np.random.seed(RANDOM_SEED)
-        
         # Generates new rolls until finding a viable sequence
         while True:
-            rolls: list[int] = [np.random.randint(1, 7) for _ in range(n_rolls)]
-            min_moves, _ = self._check_sequence(n_fields, rolls)
+            p1_rolls: list[int] = [np.random.randint(1, 7) for _ in range(n_rolls)]
+            p2_rolls: list[int] = [np.random.randint(1, 7) for _ in range(n_rolls)]
+
+            # Checks that the rolls are valid
+            min_moves_p1, _ = self._check_sequence(n_fields, p1_rolls)
+            min_moves_p2, _ = self._check_sequence(n_fields, p2_rolls)
             
             # Attaches game instance to the experiment
-            if min_moves != -1:
+            if min_moves_p1 != -1 and min_moves_p2:
                 game_instance: dict = self.add_game_instance(experiment, game_id)
+                game_instance["dialogue_partners"] = dialogue_partners
                 game_instance["initial_prompt"] = initial_prompt
                 game_instance["n_fields"] = n_fields
-                game_instance["rolls"] = rolls
+                game_instance["p1_rolls"] = p1_rolls
+                game_instance["p2_rolls"] = p2_rolls
                 break
 
 
@@ -236,18 +239,13 @@ if __name__ == '__main__':
         {
             "experiment_name": "basic",
             "n_instances": 5,
+            "dialogue_partners": {
+                "player_1": "llm",
+                "player_2": "programmatic"
+            },
             "initial_prompt": initial_prompt,
             "n_fields": 23,
-            "n_rolls": 20,
-            "dialogue_partners": ""
-        },
-        {
-            "experiment_name": "programmatic",
-            "n_instances": 5,
-            "initial_prompt": initial_prompt,
-            "n_fields": 23,
-            "n_rolls": 20,
-            "dialogue_partners": ""
+            "n_rolls": 20
         }
     ]
     instance_generator: LudoInstanceGenerator = LudoInstanceGenerator()

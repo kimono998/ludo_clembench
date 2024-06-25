@@ -66,7 +66,6 @@ class LudoGameMaster(GameMaster):
             kwargs.get("rolls"),
             self.player_models
         )
-
         self.players_dic: dict[str: LudoPlayer] = {
             "GM": 'Game Master for Ludo',
             "player_1": self.game.player_1
@@ -96,12 +95,11 @@ class LudoGameMaster(GameMaster):
             for index, player in enumerate(self.players_dic.keys()):
                 roll: int = self.game.rolls[self.game.turn][index]
 
-                # Composes  and logs the message sent to player 1
+                # Composes and logs the message sent to player 1
                 message: str = f"Current state: {self.game.current_state}\n"
                 message += f"Turn number: {self.game.turn}, Roll: {roll}. "
                 message += "Where will you move your token?"
                 self.game.add_message(message)
-
                 self.log_event(
                     from_="GM",
                     to="Player 1",
@@ -116,7 +114,7 @@ class LudoGameMaster(GameMaster):
                     # Gets the player's response and logs it
                     _, _, response_text = self.players_dic[player](
                         self.game.context
-                        if type(self.players_dic[player]) is LudoPlayer
+                        if type(self.players_dic[player]) is LudoPlayer()
                         else message,
                         self.game.turn
                     )
@@ -149,6 +147,7 @@ class LudoGameMaster(GameMaster):
                         roll,
                         self.game.n_fields
                     ):
+                        # Sends and logs the player's response
                         self.game.add_message(
                             response_text,
                             role=(
@@ -161,11 +160,12 @@ class LudoGameMaster(GameMaster):
                             from_=f"GM",
                             to="GM",
                             action={
-                                'type': 'update_board_state',
+                                'type': 'update board state',
                                 'content': response_text
                             }
                         )
 
+                        # Updates status and position of player tokens
                         for token in move.keys():
                             self.players_dic[player].tokens["in_play"] = move[token] > 0
                             self.players_dic[player].tokens["position"] = move[token]
@@ -223,7 +223,7 @@ class LudoGameMaster(GameMaster):
         for player in self.players_dic.values():
             tokens: list[str] = (
                 ['X', 'Y']
-                if type(player) is LudoPlayer
+                if type(player) is LudoPlayer()
                 else ['A', 'B']
             )
             if (

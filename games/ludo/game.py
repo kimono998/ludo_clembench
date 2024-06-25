@@ -1,5 +1,5 @@
 """
-TODO Module description
+Contains the main game behavior of Ludo.
 """
 
 import sys
@@ -144,10 +144,5 @@ class Game:
         return " ".join(["□"] * self.n_fields).strip()
 
 
-
-def main() -> None:
-    pass
-
-
 if __name__ == "__main__":
-    main()
+    pass

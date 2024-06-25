@@ -1,6 +1,6 @@
 """
-Comprises a class which simulates a game at a given time step, then feeds this
-to the minimax heuristic to calculate the optimal next move for the
+Comprised of a class which simulates a game at a given time step, then feeds
+this to the minimax heuristic to calculate the optimal next move for the
 ProgrammaticPlayer.
 """
 

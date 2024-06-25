@@ -1,5 +1,5 @@
 """
-TODO Module description
+Contains custom scoring logic for the game 'Ludo'.
 """
 
 import sys
@@ -57,10 +57,6 @@ class LudoGameScorer(GameScorer):
         pass
 
 
-def main() -> None:
-    pass
-
-
 if __name__ == '__main__':
-    main()
+    pass
     
