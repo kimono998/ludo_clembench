@@ -1,23 +1,23 @@
-Welcome to my new game! Your task is to move from start to end across the board. I will give you a board with empty fields. An empty field is marked like this = □.
-Your tokens are marked with X and Y. Your tokens X or Y count as occupied fields.
-
+Welcome to my new game! Your task is to move from start to end across the board. I will give you a board with empty fields. An empty field is marked like this = □. Your tokens are marked with X and Y. Your tokens X or Y count as occupied fields.
 
 General instructions:
+
 1) Every turn I will give you the current state of the board. You must tell me what your next move is.
-2) Your answers must contain the words "MY MOVE:", the instruction of how you want the token to move.
+2) Your answers must contain the words "MY MOVE:", followed by the instruction of how you want the token to move.
 3) You must keep track of the state of the board. Double check every turn if the position of the tokens from the turn before making your move.
 4) You cannot have 2 tokens in the same field.
 5) You can only play one token in one round.
 6) You can add a new token when 6 is rolled.
 7) If both tokens are on the board, no new tokens can be added.
-8) Once a token is on the board, it cannot be removed from the board. 
+8) Once a token is on the board, it cannot be removed from the board unless it reaches the end.
 9) The number of fields does not change throughout the game! Remember that. The total number of fields in the game will remain the same as in the initial state. Remember that number. It is 23.
 10) If for some reason at any turn you want to tell me that there are more fields than in your initial turn, remember that the number is wrong and correct yourself.
 11) You start with no tokens on the board.
-12) Tokens can only move from left to right. 
+12) Tokens can only move from left to right.
 13) When a token is on the board, it is counted as an occupied field which means it is no longer an empty field.
 
 Movement:
+
 1) You are only allowed to move if you have a token on the board.
 2) In the beginning of the game, you do not have any tokens on the board.
 3) You are only allowed to add a token when I roll a 6. The token is placed on the 1st field on the board.
@@ -26,24 +26,27 @@ Movement:
 6) Once you move a token, the previously occupied field is marked with □.
 7) Fields are counted from left to right.
 8) If there are 2 tokens on the board, think about which one to move. You want to finish the game in as few moves as possible.
-9) You have to move if I roll a die, you cannot skip turns.
+9) You must make a move if it's possible when I roll a die. If no move is possible (e.g., rolls exceed remaining fields without reaching the end), then state "no move possible".
 10) If there is already a token on the board and I roll a 6, you can move the token on the board or add the second token. You are free to make a decision.
 11) If all of the tokens are already on board, and you roll a 6, you are allowed to move any of the tokens.
 12) All of the constraints apply at all times. Always consider them.
-Note: you need to keep track of your current position, and move N (rolled number) positions from it. It is important that you do that.
 
+When deciding which token to move:
+
+1) Prioritize moving the token that is closest to the finish line if it can move without exceeding the board length.
+2) If neither token can reach the finish line without exceeding the board length, move the token that is farthest from the start to maximize board advancement.
+3) Consider the potential of blocking the opponent's path or creating a strategic setup for future moves if applicable.
 
 Ending the game:
+
 1) To end the game, both of your tokens need to be at the last field on the grid.
 2) If a rolled number is higher than the number of remaining fields from a token, you cannot move that token.
-3) If you cannot move any of the tokens, you must skip the turn.
+3) If you cannot move any of the tokens, clearly state, "no move possible".
 4) You need at least 2 tokens to be on the board to finish the game. You cannot move your token on the board to the finish line if it's the only token on the board.
-
 
 Note: The board is updated at every turn. It is one continuous game. You need to remember your position in the previous turn.
 The game begins when I give you the beginning state and roll the first number.
 Think through your every step.
-
 
 Here is an example of what one turn looks like. Let's think step by step.
 
