@@ -13,7 +13,7 @@ class GameSim:
     def __init__(
             self,
             n_fields: int,
-            player_tokens: dict,
+            token_positions: dict,
             rolls: list[tuple],
             turn: int
     ) -> None:
@@ -27,42 +27,42 @@ class GameSim:
             turn (int): the current turn number
         """
         self.n_fields: int = n_fields
+        self.token_positions: dict = token_positions
         self.rolls: list = rolls
-        self.token_state: dict = player_tokens
-        self.current_turn: int = turn
+        self.turn: int = turn
 
-    def get_new_state(self, move: tuple, player: int) -> 'GameSim':
+    def get_new_state(self, move: tuple[str, int], player: int) -> 'GameSim':
         """
         Gets the new state after the move. If player is True, it is the
         ProgrammaticPlayer, in which case the turn number is updated.
 
         Args:
-            move (tuple): the move to be made
-            player (int): the player number
+            move (tuple[str, int]): the move to be made
+            player (int): the player number -- 0 for player 1, 1 for player 2
 
         Returns:
             GameSim: the new game state after the move
         """
-        new_token_state: dict = self.token_state.copy()
-        new_token_state[move[0]] = move[1]
+        new_token_positions: dict = self.token_positions.copy()
+        new_token_positions[move[0]] = move[1]
         opponent_tokens: list[str] = self._get_tokens(1 - player)
 
         # Opponent not removed if token occupies the final position
         for opponent_token in opponent_tokens:
             if (
-                new_token_state[opponent_token] == move[1] and
+                new_token_positions[opponent_token] == move[1] and
                 move[1] != self.n_fields
             ):
-                new_token_state[opponent_token] = 0
+                new_token_positions[opponent_token] = 0
 
         return GameSim(
             self.n_fields,
-            new_token_state,
+            new_token_positions,
             self.rolls,
             (
-                self.current_turn + 1
+                self.turn + 1
                 if player == 1
-                else self.current_turn
+                else self.turn
             )
         )
     
@@ -77,13 +77,13 @@ class GameSim:
         Returns:
             list: the possible moves for the player
         """
-        roll: int = self.rolls[self.current_turn][player]
+        roll: int = self.rolls[self.turn][player]
         tokens: list[str] = self._get_tokens(player)
         
         moves: list = []
         for token in tokens:
             # Calculates next move unless not possible
-            move: tuple[str, int] = self.token_state[token] + roll
+            move: tuple[str, int] = self.token_positions[token] + roll
             if (
                 not self._is_taken(tokens, move) and
                 move <= self.n_fields and
@@ -94,16 +94,33 @@ class GameSim:
             # If a token can be moved out, it is added to possible moves
             if (
                 roll == 6 and
-                self.token_state[token] == 0 and
+                self.token_positions[token] == 0 and
                 not self._is_taken(tokens, 1)
             ):
                 moves.append((token, 1))
 
         if not moves:
             for token in tokens:
-                moves.append((token, self.token_state[token]))
+                moves.append((token, self.token_positions[token]))
 
         return moves
+    
+    def is_terminal(self) -> bool:
+        """
+        Checks whether we have reached the terminal state (game is done).
+
+        Returns:
+            bool: True if the game is done, False otherwise.
+        """
+        return (
+            (
+                self.token_positions["X"] == self.n_fields and
+                self.token_positions["Y"] == self.n_fields
+            ) or (
+                self.token_positions["A"] == self.n_fields and
+                self.token_positions["B"] == self.n_fields
+            )
+        )
     
     def score(self) -> int:
         """
@@ -116,24 +133,24 @@ class GameSim:
         """
         if self.is_terminal():
             if (
-                self.token_state['X'] == self.n_fields and
-                self.token_state['Y'] == self.n_fields
+                self.token_positions['X'] == self.n_fields and
+                self.token_positions['Y'] == self.n_fields
             ):
                 return -100
 
             elif (
-                self.token_state['A'] == self.n_fields and
-                self.token_state['B'] == self.n_fields
+                self.token_positions['A'] == self.n_fields and
+                self.token_positions['B'] == self.n_fields
             ):
                 return 100
 
         # Heuristic: Calculate the progress of each player's tokens
         progress: int = sum(
-            self.token_state[token]
+            self.token_positions[token]
             for token in ['A', 'B']
         )
         opponent_progress: int = sum(
-            self.token_state[token]
+            self.token_positions[token]
             for token in ['X', 'Y']
         )
 
@@ -161,7 +178,7 @@ class GameSim:
         Returns:
             bool: True if the token is out of the base, False otherwise
         """
-        return self.token_state[token] > 0
+        return self.token_positions[token] > 0
     
     def _is_taken(self, tokens: list[str], pos: int) -> bool:
         """
@@ -175,27 +192,10 @@ class GameSim:
             bool: True if the position is occupied, False otherwise
         """
         for token in tokens:
-            if self.token_state[token] == pos and pos != self.n_fields:
+            if self.token_positions[token] == pos and pos != self.n_fields:
                 return True
 
         return False
-
-    def is_terminal(self) -> bool:
-        """
-        Checks whether we have reached the terminal state (game is done).
-
-        Returns:
-            bool: True if the game is done, False otherwise.
-        """
-        return (
-            (
-                self.token_state["X"] == self.n_fields and
-                self.token_state["Y"] == self.n_fields
-            ) or (
-                self.token_state["A"] == self.n_fields and
-                self.token_state["B"] == self.n_fields
-            )
-        )
 
 
 def minimax(
@@ -209,60 +209,53 @@ def minimax(
 
     Args:
         game_state (GameSim): the current game state
-        maximizingPlayer (bool): True if the current player is the maximizing
-                                 player, False otherwise
+        maximizing_player (bool): True if the current player is the maximizing
+                                  player, False otherwise
         alpha (float): the alpha value for alpha-beta pruning
         beta (float): the beta value for alpha-beta pruning
 
     Returns:
         tuple[int, tuple]: the score of the game and the best move
     """
-
+    # If the game is at its terminal state, it is scored
     if (
         game_state.is_terminal() or
-        game_state.current_turn > len(game_state.rolls)-1
+        game_state.turn > len(game_state.rolls)-1
     ):
         return game_state.score(), None
-
-    if maximizing_player:
-        value: float = float('-inf')
-
-        # int 1 for maximizing player (our player)
-        possible_moves: list = game_state.get_possible_moves(1)
-
-        for move in possible_moves:
-            child: GameSim = game_state.get_new_state(move, 1)
-            temp: int = minimax(child, False, alpha, beta)[0]
-
-            if temp > value:
-                value = temp
+    
+    # Otherwise, the current game state is analyzed for the given player
+    best_move_score: float = float('-inf')
+    possible_moves: list = game_state.get_possible_moves(int(maximizing_player))
+    
+    for move in possible_moves:
+        move_score: int = minimax(
+                game_state.get_new_state(move, int(maximizing_player)),
+                maximizing_player=not maximizing_player,
+                alpha=alpha,
+                beta=beta
+            )[0]
+        if maximizing_player:
+            if move_score > best_move_score:
+                best_move_score = move_score
                 best_move: tuple[str, int] = move
 
-            if value >= beta:
+            if best_move_score >= beta:
                 break
 
-            alpha = max(alpha, value)
+            alpha = max(alpha, best_move_score)
 
-    else:
-        value: float = float('inf')
-
-        # int 0 for minimizing player
-        possible_moves: list = game_state.get_possible_moves(0)
-
-        for move in possible_moves:
-            child: GameSim = game_state.get_new_state(move, 0)
-            temp: int = minimax(child, True, alpha, beta)[0]
-
-            if temp < value:
-                value = temp
+        else:
+            if move_score < best_move_score:
+                best_move_score = move_score
                 best_move: tuple[str, int] = move
 
-            if value <= alpha:
+            if best_move_score <= alpha:
                 break
 
-            beta = min(beta, value)
+            beta = min(beta, best_move_score)
 
-    return value, best_move
+    return best_move_score, best_move
 
 
 if __name__ == '__main__':

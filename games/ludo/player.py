@@ -192,7 +192,7 @@ class ProgrammaticPlayer(LudoPlayer):
 
     def _parse_messages(self, input_message: str) -> list[dict, int, int]:
         """
-        Parse the input message to obtain the state of the board, as well as
+        Parses the input message to obtain the state of the board, as well as
         the current roll.
         
         Args:
@@ -214,19 +214,18 @@ class ProgrammaticPlayer(LudoPlayer):
             turn_number: int = int(pattern_match.group(2))
 
             # Identifies the positions of tokens (X, Y, A, B) in the current state
-            tokens: dict = {"X", "Y", "A", "B"}
+            tokens: list = ["X", "Y", "A", "B"]
             n_fields = len(current_state.split())
             token_positions = {token: 0 for token in tokens}
 
             for index, char in enumerate(current_state.split()):
                 if char in tokens:
-                    # Stores 1-based index
                     token_positions[char] = index + 1
 
             return token_positions, turn_number, n_fields
 
         else:
-            raise Exception('No match found')
+            raise Exception('No match found.')
 
 
 def parse_text(text: str, player: LudoPlayer) -> dict[str: int]:

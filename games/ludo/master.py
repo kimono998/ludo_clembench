@@ -52,6 +52,7 @@ class LudoGameMaster(GameMaster):
         """
         Reads the specifications of a game instance, then passes them, along
         with the player models, to the instance-specific Game object.
+        Additionally, sets up and logs the player dictionary.
 
         Args:
             game_id (str): an identifying string for each game instance
@@ -66,7 +67,6 @@ class LudoGameMaster(GameMaster):
             self.player_models
         )
 
-        # Creates the player dictionary, logs it, then removes the GM for gameplay
         self.players_dic: dict[str: LudoPlayer] = {
             "GM": 'Game Master for Ludo',
             "player_1": self.game.player_1
@@ -78,9 +78,16 @@ class LudoGameMaster(GameMaster):
         self.log_players(self.players_dic)
         del self.players_dic['GM']
 
+    # TODO Write something for when the reprompting limit is exceeded -- e.g., failure/game aborting message
     def play(self) -> None:
         """
-        Handles the basic gameplay loop.
+        Handles the basic gameplay loop. While the game is not finished, for
+        each turn that does not exceed the turn limit, each player is given
+        their roll as well as a prompting message. They produce their
+        responses, which are then parsed and verified. If the move is valid,
+        the board and the game are updated to reflect this. If the move is not
+        valid, the player is reprompted up to a maximum of three times, after
+        which time, the game is aborted.
         """
         while self.game.turn < self.game.turn_limit or not self._check_if_done:
             logger.info(f"Game turn: {self.game.turn}")
@@ -333,6 +340,7 @@ class LudoGameMaster(GameMaster):
                 return token
             return None
 
+
 class LudoGameBenchmark(GameBenchmark):
     """
     Organizes the running of an experiment of the game 'Ludo'.
@@ -349,7 +357,6 @@ class LudoGameBenchmark(GameBenchmark):
         experiment: dict,
         player_models: list[Model]
     ) -> LudoGameMaster:
-
         """
         Instantiates a Ludo-specific GameMaster that handles the running and
         checking of the game on an instance level.
@@ -371,7 +378,6 @@ class LudoGameBenchmark(GameBenchmark):
         experiment: dict,
         game_instance: dict
     ) -> LudoGameScorer:
-
         """
         Instantiates a Ludo-specific GameScorer that handles the ultimate
         scoring of the game performance on an episodic and overall level.
@@ -386,7 +392,6 @@ class LudoGameBenchmark(GameBenchmark):
         Returns:
             LudoGameScorer: instantiated LudoGameScorer object
         """
-
         return LudoGameScorer(experiment, game_instance)
 
     def get_description(self) -> str:
@@ -398,7 +403,6 @@ class LudoGameBenchmark(GameBenchmark):
             str: a short description of the game 'Ludo' and what it seeks to
                  evaluate
         """
-
         return (
             "Benchmark for the Ludo game designed to challenge and " + 
             "evaluate strategic model behavior."
@@ -412,11 +416,10 @@ class LudoGameBenchmark(GameBenchmark):
         Returns:
             bool: True if single-player, False otherwise
         """
-
         return False
 
 
-def main() -> None:
+if __name__ == "__main__":
     from clemgame import benchmark
     from scripts.cli import read_model_specs
 
@@ -445,7 +448,3 @@ def main() -> None:
     #     experiment_name=experiment_name,
     #     results_dir=results_dir
     # )
-
-
-if __name__ == "__main__":
-    main()
