@@ -12,7 +12,10 @@ from clemgame.clemgame import GameInstanceGenerator, GameResourceLocator
 
 
 GAME_NAME: str = "ludo"
+DIRECTORY_PATH: Path = Path(__file__).parent
+RESOURCE_PATH: Path = DIRECTORY_PATH / "resources"
 RANDOM_SEED: int = 42
+
 np.random.seed(RANDOM_SEED)
 
 
@@ -49,7 +52,7 @@ class LudoInstanceGenerator(GameInstanceGenerator):
                 experiment["experiment_name"],
                 experiment["n_instances"],
                 experiment["dialogue_partners"],
-                experiment["initial_prompt"],
+                self.load_template(str(RESOURCE_PATH / experiment["prompt_filename"])),
                 experiment["n_fields"],
                 experiment["n_rolls"]
             )
@@ -175,10 +178,9 @@ class LudoInstanceGenerator(GameInstanceGenerator):
 
         # Generates and attaches game instances to the experiment
         for index in range(n_instances):
-            game_id: str = f"in{index + 1:03}"
             self._generate_instance(
                 experiment,
-                game_id,
+                f"in{index + 1:03}",
                 dialogue_partners,
                 initial_prompt,
                 n_fields,
@@ -238,9 +240,7 @@ class LudoInstanceGenerator(GameInstanceGenerator):
 
 
 if __name__ == '__main__':
-    filepath: Path = str(Path(__file__).parent / "resources" / "initial_prompt.template")
-    resource_locator: GameResourceLocator = GameResourceLocator(GAME_NAME)
-    initial_prompt: str = resource_locator.load_template(filepath)
+    # Example experiment
     experiments: list[dict] = [
         {
             "experiment_name": "basic",
@@ -249,10 +249,12 @@ if __name__ == '__main__':
                 "player_1": "llm",
                 "player_2": "programmatic"
             },
-            "initial_prompt": initial_prompt,
+            "prompt_filename": "initial_prompt.template",
             "n_fields": 23,
             "n_rolls": 20
         }
     ]
+
+    # Generates game instances
     instance_generator: LudoInstanceGenerator = LudoInstanceGenerator()
     instance_generator.generate(experiments=experiments)
