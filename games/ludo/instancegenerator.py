@@ -208,7 +208,7 @@ class LudoInstanceGenerator(GameInstanceGenerator):
         self,
         experiment: dict,
         game_id: int,
-        dialogue_partners: list[tuple[str, str]],
+        dialogue_partners: dict[str: str],
         initial_prompt: str,
         n_fields: int,
         n_rolls: int
@@ -223,34 +223,45 @@ class LudoInstanceGenerator(GameInstanceGenerator):
         Args:
             experiment (dict): where the instance will be attached
             game_id (dict): the identifying marker for the game instance
-            dialogue_partners (list[tuple[str, str]]): the players in the game
+            dialogue_partners (dict[str: str]): the players in the game
                                                        variant
             initial_prompt (str): the initial prompt passed to the LLM
             n_fields (int): the size of the board
             n_rolls (int): the number of rolls; also the maximum number of
                            turns
+
+        Raises:
+            ValueError: raised if either too few or too many dialogue partners
+                        are introduced
         """
-        # Generates new rolls until finding a viable sequence
         while True:
-            if (
-                self._check_sequence(
-                    n_fields,
-                    p1_rolls := [np.random.randint(1, 7) for _ in range(n_rolls)]
-                ) and
-                self._check_sequence(
-                    n_fields,
-                    p2_rolls := [np.random.randint(1, 7) for _ in range(n_rolls)]
-                )
+            if self._check_sequence(
+                n_fields,
+                p1_rolls := [np.random.randint(1, 7) for _ in range(n_rolls)]
             ):
+                match len(dialogue_partners):
+                    case 1:
+                        rolls: list[int] = p1_rolls
+                    case 2:
+                        if self._check_sequence(
+                            n_fields,
+                            p2_rolls := [np.random.randint(1, 7) for _ in range(n_rolls)]
+                        ):
+                            rolls: list[tuple[int, int]] = [
+                                (p1_roll, p2_roll)
+                                for p1_roll, p2_roll
+                                in zip(p1_rolls, p2_rolls)
+                            ]
+                        else:
+                            continue
+                    case _:
+                        raise ValueError("There should only be two dialogue partners.")
+
                 game_instance: dict = self.add_game_instance(experiment, game_id)
                 game_instance["dialogue_partners"] = dialogue_partners
                 game_instance["initial_prompt"] = initial_prompt
                 game_instance["n_fields"] = n_fields
-                game_instance["rolls"] = [
-                    (p1_roll, p2_roll)
-                    for p1_roll, p2_roll
-                    in zip(p1_rolls, p2_rolls)
-                ]
+                game_instance["rolls"] = rolls
                 break
 
 
