@@ -164,32 +164,6 @@ class LudoGameMaster(GameMaster):
         action = {'type': f'{status}', 'content': response_text}
         self.log_event(from_="GM", to="GM", action=action)
 
-
-
-
-    def is_won(self):
-
-        if self.game.player_1.tokens['X']['position'] == self.game.n_fields and self.game.player_1.tokens['Y']['position'] == self.game.n_fields:
-            return True
-        else:
-            return False
-
-
-    def _check_game_status(self):
-        # 0 -> draw/turn limit reached
-        # 1 -> p1 wins
-        # -1 -> p2 wins
-
-        if self.game.turn == self.game.turn_limit: # 0 if game limit reached
-            return 0
-        elif self.is_done: # otherwise check if anyone has completed the game
-            if self.is_won(): # return 1 if p1 won
-                return 1
-            else: # return -1 if p1 lost
-                return -1
-        else: # if game has not been completed yet and turn limit not reached, return False.
-            return False
-
     def _check_move(
         self,
         tokens: dict[str: dict],
@@ -315,7 +289,7 @@ class LudoGameMaster(GameMaster):
                 return token
             return None
 
-    def is_done(self):
+    def _is_done(self):
 
         for player in self.players_dic.values():
             tlist = ['X', 'Y'] if type(player) is LudoPlayer else ['A', 'B']
@@ -323,6 +297,29 @@ class LudoGameMaster(GameMaster):
                 return True
 
         return False
+
+    def _is_won(self):
+
+        if self.game.player_1.tokens['X']['position'] == self.game.n_fields and self.game.player_1.tokens['Y']['position'] == self.game.n_fields:
+            return True
+        else:
+            return False
+
+    def _check_game_status(self):
+        # 0 -> draw/turn limit reached
+        # 1 -> p1 wins
+        # -1 -> p2 wins
+
+        if self.game.turn == self.game.turn_limit: # 0 if game limit reached
+            return 0
+        elif self._is_done: # otherwise check if anyone has completed the game
+            if self._is_won(): # return 1 if p1 won
+                return 1
+            else: # return -1 if p1 lost
+                return -1
+        else: # if game has not been completed yet and turn limit not reached, return False.
+            return False
+
 
 class LudoGameBenchmark(GameBenchmark):
     """
