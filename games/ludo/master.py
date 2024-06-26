@@ -7,8 +7,6 @@ import sys
 from logging import Logger
 from pathlib import Path
 
-sys.path.append(str(Path(__file__).parent.parent.parent))
-
 from backends import Model
 from clemgame.clemgame import GameBenchmark, GameMaster
 from game import Game
@@ -16,6 +14,7 @@ from instancegenerator import LudoInstanceGenerator
 from player import LudoPlayer, parse_text
 from scoring import LudoGameScorer
 from clemgame import get_logger
+sys.path.append(str(Path(__file__).parent.parent.parent))
 
 
 GAME_NAME: str = "ludo"
@@ -69,11 +68,11 @@ class LudoGameMaster(GameMaster):
         # reference game defines GM in player dict as well.
         self.players_dic: dict[str: LudoPlayer] = {
             "GM": 'Game Master for Ludo',
-            "player_1": self.game.player_1
+            "Player 1": self.game.player_1
         }
 
         if self.game.player_2:
-            self.players_dic["player_2"] = self.game.player_2
+            self.players_dic["Player 2"] = self.game.player_2
 
         self.log_players(self.players_dic)
         del self.players_dic['GM']  # to preserve the game loop
@@ -92,7 +91,6 @@ class LudoGameMaster(GameMaster):
         """
 
         while not self._check_game_status():
-
             logger.info("Game turn: %d", self.game.turn)
             self.log_next_turn()
 
@@ -103,66 +101,142 @@ class LudoGameMaster(GameMaster):
                 else:
                     roll: int = self.game.rolls[self.game.turn]
 
-                message: str = f"Current state: {self.game.current_state}\n"
-                message += f"Turn number: {self.game.turn}, Roll: {roll}. "
-                message += "Where will you move your token?"
-                self.game.add_message(message)
+                message = self._build_message(roll, player) # constructs the message and logs event from GM to Player
 
-                action = {'type': 'send message', 'content': message}
-                self.log_event(from_="GM", to="Player 1", action=action)
-
-                while self.game.reprompt_attempts < 3:
-                    # Gets the player's response and logs it
-                    _, _, response_text = self.players_dic[player](
-                        self.game.context
-                        if type(self.players_dic[player]) is LudoPlayer
-                        else message,
-                        self.game.turn
-                    )
-
-                    action = {'type': 'get message', 'content': response_text}
-                    self.log_event(from_=f"{player}", to="GM", action=action, call=(message, response_text))
-
-                    move: dict[str: int] = parse_text(response_text)
-                    # Updates game attributes if move is valid
-                    action = {'type': 'parse', 'content': response_text,
-                              'expression': move}
+                # checks if we can proceed with the game. Logs Player to GM.
+                can_proceed, response_text = self._can_proceed(player, message, roll)
+                if can_proceed:
+                    continue
+                else:
+                    # game is aborted
+                    action = {'type': f'invalid format', 'content': 'abort game'}
                     self.log_event(from_="GM", to="GM", action=action)
-
-                    if self._check_move(self.players_dic[player].tokens, move, roll, self.game.n_fields):
-                        self.game.add_message(
-                            response_text,
-                            role="assistant" if type(self.players_dic[player]) is LudoPlayer
-                            else "user"
-                        )
-
-                        for token in move.keys():
-                            self.players_dic[player].tokens[token]["in_play"] = move[token] > 0
-                            self.players_dic[player].tokens[token]["position"] = move[token]
-                        self.game.update_board(self.players_dic[player], move)
-                        self.game.reprompt_attempts = 0
-
-                        action = {'type': 'update_board_state', 'content': response_text}
-                        self.log_event(from_=f"GM", to="GM", action=action)
-
-
-                    # Reprompt the player if not
-                    else:
-                        value = f'Reprompting attempt: {self.game.reprompt_attempts}'\
-                            if self.game.reprompt_attempts < 3 else 'aborting'
-
-                        action = {'type': f'{self.error[0]}', 'content': value}
-                        self.log_event(from_=f"GM", to="GM", action=action)
-
-                        self.game.reprompt(self.error[0], self.error[1])
-                        self.error = None
-
-            self.game.turn += 1
+                    self.game.is_aborted = True
+                    break # breaks inner loop (player iter)
+            if self.game.is_aborted:
+                break  # breaks outer loop (gameplay)
+            else:
+                self.game.turn += 1
 
         # once the game has been completed, we exit the loop and log the results.
         status = self._check_game_status() # what is the game result
-        action = {'type': f'{status}', 'content': response_text}
+        action = {'type': 'metadata', 'content': f'game_result = {status}'}
         self.log_event(from_="GM", to="GM", action=action)
+
+    def _build_message(self, roll: int, player: str) -> str:
+        """
+        Constructs a message for the player with the current game state, turn number, and roll.
+        The message is then logged as an event.
+
+        Args:
+            roll (int): The roll of the dice for the current turn.
+            player (str): The name of the player for whom the message is being built.
+
+        Returns:
+            str: The constructed message.
+        """
+
+        message: str = f"Current state: {self.game.current_state}\n"
+        message += f"Turn number: {self.game.turn}, Roll: {roll}. "
+        message += "Where will you move your token?"
+        self.game.add_message(message)
+
+        action = {'type': 'send message', 'content': message}
+        self.log_event(from_="GM", to=f"{player}", action=action)
+
+        return message
+
+    def _get_resp(self, player: str, message: str) -> tuple(dict, str):
+        """
+        Gets the player's response and logs it. The response is then parsed into a move.
+
+        Args:
+            player (str): The name of the player from whom the response is being gotten.
+            message (str): The message to be sent to the player.
+
+        Returns:
+            tuple: A tuple containing the parsed move and the response text.
+        """
+        _, _, response_text = self.players_dic[player](
+            self.game.context
+            if type(self.players_dic[player]) is LudoPlayer
+            else message,
+            self.game.turn
+        )
+
+        action: dict = {'type': 'get message', 'content': response_text}
+        call: tuple | None = (message, response_text) if type(self.players_dic[player]) is LudoPlayer else None
+        self.log_event(from_=f"{player}", to="GM", action=action, call=call)
+
+        move: dict[str: int] = parse_text(response_text)
+        action: dict = {'type': 'parse', 'content': move}
+        self.log_event(from_="GM", to="GM", action=action)
+
+        return move, response_text
+
+    def _update_player_dict(self, move, player) -> None:
+        """
+        Updates the player's tokens' positions in the players dictionary based on the provided move.
+
+        Args:
+            move (dict): A dictionary containing the desired position for all tokens.
+            player (str): The name of the player whose tokens' positions are to be updated.
+
+        Returns:
+            None
+        """
+
+        for token in move.keys():
+            self.players_dic[player].tokens[token]["in_play"] = move[token] > 0
+            self.players_dic[player].tokens[token]["position"] = move[token]
+
+    def _can_proceed(self, player: str, message: str, roll: int) -> tuple(bool, str):
+
+        """
+        Checks if the game can proceed. If the player's move is valid, the game proceeds.
+        If the move is not valid, the player is reprompted up to a maximum of three times.
+        If the player still doesn't provide a valid move after three attempts, the game is aborted.
+
+        Args:
+            player (str): The name of the player whose move is being checked.
+            message (str): The message to be sent to the player.
+            roll (int): The roll of the dice for the current turn.
+
+        Returns:
+            tuple: A tuple containing a boolean and a string. The boolean is True if the game can proceed and False otherwise.
+                   The string is the response text from the player.
+        """
+
+        while self.game.reprompt_attempts < 3:
+            # Gets the player's response and logs it
+            move, response_text = self._get_resp(player, message)
+
+            # Updates game attributes if move is valid
+            if self._check_move(self.players_dic[player].tokens, move, roll, self.game.n_fields):
+                self.game.add_message(
+                    response_text,
+                    role="assistant" if type(self.players_dic[player]) is LudoPlayer
+                    else "user"
+                )
+
+                self._update_player_dict(move, player)
+                self.game.update_board(self.players_dic[player], move)
+                self.game.reprompt_attempts = 0
+
+                action = {'type': 'metadata', 'content': 'update board state'}
+                self.log_event(from_=f"GM", to="GM", action=action)
+
+                return True, response_text
+
+            # Reprompt the player if not
+            else:
+                action = {'type': f'error', 'content': {self.error[0]}}
+                self.log_event(from_=f"GM", to="GM", action=action)
+                self.game.reprompt(self.error[0], self.error[1])
+                self.error = None
+                message = self.game.context[-1]
+
+        return False, response_text
 
     def _check_move(
         self,
@@ -309,14 +383,15 @@ class LudoGameMaster(GameMaster):
         # 0 -> draw/turn limit reached
         # 1 -> p1 wins
         # -1 -> p2 wins
-
+        if self.game.is_aborted:
+            return 'ABORTED'
         if self.game.turn == self.game.turn_limit: # 0 if game limit reached
-            return 0
-        elif self._is_done: # otherwise check if anyone has completed the game
+            return 'DRAW'
+        elif self._is_done(): # otherwise check if anyone has completed the game
             if self._is_won(): # return 1 if p1 won
-                return 1
+                return 'WIN'
             else: # return -1 if p1 lost
-                return -1
+                return 'LOSE'
         else: # if game has not been completed yet and turn limit not reached, return False.
             return False
 

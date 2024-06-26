@@ -272,8 +272,8 @@ if __name__ == '__main__':
             "experiment_name": "basic",
             "n_instances": 5,
             "dialogue_partners": {
-                "player_1": "llm",
-                "player_2": "programmatic"
+                "Player 1": "llm",
+                "Player 2": "programmatic"
             },
             "prompt_filename": "initial_prompt.template",
             "n_fields": 23,

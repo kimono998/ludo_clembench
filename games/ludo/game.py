@@ -48,7 +48,7 @@ class Game:
         self.turn_limit: int = len(rolls)
         self.turn: int = 0
         self.rolls: list[tuple[int, int]] = rolls
-
+        self.is_aborted = False
         # Player attributes
         self._initialize_players(player_models)
 
