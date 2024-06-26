@@ -6,6 +6,7 @@ of 'Ludo', describing intended behavior.
 import sys
 from logging import Logger
 from pathlib import Path
+sys.path.append(str(Path(__file__).parent.parent.parent))
 
 from backends import Model
 from clemgame.clemgame import GameBenchmark, GameMaster
@@ -14,7 +15,7 @@ from instancegenerator import LudoInstanceGenerator
 from player import LudoPlayer, parse_text
 from scoring import LudoGameScorer
 from clemgame import get_logger
-sys.path.append(str(Path(__file__).parent.parent.parent))
+
 
 
 GAME_NAME: str = "ludo"
@@ -67,15 +68,17 @@ class LudoGameMaster(GameMaster):
         )
         # reference game defines GM in player dict as well.
         self.players_dic: dict[str: LudoPlayer] = {
-            "GM": 'Game Master for Ludo',
             "Player 1": self.game.player_1
         }
-
+        # aux dictionary strictly for the purpose of logging
+        self.player_log: dict ={
+            "GM": 'Game Master for Ludo',
+            "Player 1": self.game.player_1.get_description()
+        }
         if self.game.player_2:
             self.players_dic["Player 2"] = self.game.player_2
-
-        self.log_players(self.players_dic)
-        del self.players_dic['GM']  # to preserve the game loop
+            self.player_log["Player 2"] = self.game.player_2.get_description()
+        self.log_players(self.player_log)
 
     # TODO Write something for when the reprompting limit is exceeded -- e.g., failure/game aborting message
 
@@ -93,7 +96,10 @@ class LudoGameMaster(GameMaster):
         while not self._check_game_status():
             logger.info("Game turn: %d", self.game.turn)
             self.log_next_turn()
-
+            # log current state
+            action = {'type': f'current state', 'content': self.game.current_state}
+            self.log_event(from_="GM", to="GM", action=action)
+            logger.info(f"current_state: {self.game.current_state}")
             for i, player in enumerate(self.players_dic.keys()):
                 if len(self.players_dic.keys()) > 1:
                     # rolls needs to be format list[(roll_player_1, roll_player_2),..]
@@ -102,11 +108,16 @@ class LudoGameMaster(GameMaster):
                     roll: int = self.game.rolls[self.game.turn]
 
                 message = self._build_message(roll, player) # constructs the message and logs event from GM to Player
-
+                logger.info(f"message_to_ai: {message}")
                 # checks if we can proceed with the game. Logs Player to GM.
-                can_proceed, response_text = self._can_proceed(player, message, roll)
+                can_proceed, response_text, move = self._does_game_proceed(player, message, roll)
+                logger.info(f'resp = {response_text}, move = {move}')
                 if can_proceed:
+                    action = {'type': f'accepted move', 'content': move} # log move dictionary
+                    self.log_event(from_="GM", to="GM", action=action)
+
                     continue
+
                 else:
                     # game is aborted
                     action = {'type': f'invalid format', 'content': 'abort game'}
@@ -122,7 +133,7 @@ class LudoGameMaster(GameMaster):
         status = self._check_game_status() # what is the game result
         action = {'type': 'metadata', 'content': f'game_result = {status}'}
         self.log_event(from_="GM", to="GM", action=action)
-
+        self._log_assets()
     def _build_message(self, roll: int, player: str) -> str:
         """
         Constructs a message for the player with the current game state, turn number, and roll.
@@ -146,7 +157,7 @@ class LudoGameMaster(GameMaster):
 
         return message
 
-    def _get_resp(self, player: str, message: str) -> tuple(dict, str):
+    def _get_resp(self, player: str, message: str) -> tuple[dict, str]:
         """
         Gets the player's response and logs it. The response is then parsed into a move.
 
@@ -167,8 +178,14 @@ class LudoGameMaster(GameMaster):
         action: dict = {'type': 'get message', 'content': response_text}
         call: tuple | None = (message, response_text) if type(self.players_dic[player]) is LudoPlayer else None
         self.log_event(from_=f"{player}", to="GM", action=action, call=call)
+        move: dict[str: int] = parse_text(response_text, self.players_dic[player])
+        print()
+        print(self.players_dic[player].tokens)
+        print(message)
+        #print(self.game.current_state)
+        print(response_text)
+        print(move)
 
-        move: dict[str: int] = parse_text(response_text)
         action: dict = {'type': 'parse', 'content': move}
         self.log_event(from_="GM", to="GM", action=action)
 
@@ -190,8 +207,7 @@ class LudoGameMaster(GameMaster):
             self.players_dic[player].tokens[token]["in_play"] = move[token] > 0
             self.players_dic[player].tokens[token]["position"] = move[token]
 
-    def _can_proceed(self, player: str, message: str, roll: int) -> tuple(bool, str):
-
+    def _does_game_proceed(self, player: str, message: str, roll: int) -> tuple[bool, str]:
         """
         Checks if the game can proceed. If the player's move is valid, the game proceeds.
         If the move is not valid, the player is reprompted up to a maximum of three times.
@@ -226,17 +242,18 @@ class LudoGameMaster(GameMaster):
                 action = {'type': 'metadata', 'content': 'update board state'}
                 self.log_event(from_=f"GM", to="GM", action=action)
 
-                return True, response_text
+                return True, response_text, move
 
             # Reprompt the player if not
             else:
-                action = {'type': f'error', 'content': {self.error[0]}}
+                action = {'type': f'error', 'content': self.error[0]}
                 self.log_event(from_=f"GM", to="GM", action=action)
                 self.game.reprompt(self.error[0], self.error[1])
                 self.error = None
                 message = self.game.context[-1]
+                self.game.total_retry_count +=1
 
-        return False, response_text
+        return False, response_text, move
 
     def _check_move(
         self,
@@ -268,41 +285,110 @@ class LudoGameMaster(GameMaster):
             return False
 
         moved_token: str = self._get_moved_token(self._check_token_moved(tokens, move))
-
+        print(moved_token)
         check_list: list = []
+
         for token in move.keys():
             current_position: int = tokens[token]["position"]
-            match [token == moved_token, tokens[token]["in_play"]]:
-                # Token wasn't moved and hasn't been played to the board
-                case [False, False]:
+            if not moved_token:
+                if not tokens[token]["in_play"]:
                     if roll != 6:
                         check_list.append(True)
                         continue
                     self.error: tuple = ("not_moved_to_board", token)
                     return False
-
-                # Token wasn't moved but has been played to the board
-                case [False, True]:
+                else:
                     if roll + current_position > n_fields:
                         check_list.append(True)
                         continue
                     self.error: tuple = ("not_moved", token)
                     return False
+            else:
 
-                # Token was played and has been played to the board
-                case [True, True]:
-                    if roll == 6 and move[token] == 1:
+                if not tokens[token]["in_play"]:
+                    if (
+                        token == moved_token
+                        and roll == 6
+                        and move[token] == 1
+                        and not self._is_taken(tokens, 1)
+                    ):
+
                         check_list.append(True)
                         continue
-                    if current_position + roll == move[token]:
+                    elif token != moved_token:
                         check_list.append(True)
                         continue
-                    self.error: tuple = ("incorrect_move", token)
-                    return False
+                    else:
+                        self.error: tuple = ("incorrect_move", token)
+                        return False
+                else:
+                    if (
+                        token == moved_token
+                        and current_position + roll == move[token]
+                        and not self._is_taken(tokens, move[token])
+                    ):
+                        check_list.append(True)
+                        continue
+                    elif token != moved_token:
+                        check_list.append(True)
+                    else:
+                        self.error: tuple = ("incorrect_move", token)
+                        return False
+
 
         if all(check_list):
             return True
 
+
+
+
+        # for token in move.keys():
+        #     current_position: int = tokens[token]["position"]
+        #     match [token == moved_token, tokens[token]["in_play"]]:
+        #         # Token wasn't moved and hasn't been played to the board
+        #         case [False, False]:
+        #             if roll != 6:
+        #                 check_list.append(True)
+        #                 continue
+        #             self.error: tuple = ("not_moved_to_board", token)
+        #             return False
+        #
+        #         # Token wasn't moved but has been played to the board
+        #         case [False, True]:
+        #             if roll + current_position > n_fields:
+        #                 check_list.append(True)
+        #                 continue
+        #             self.error: tuple = ("incorrect_move", token)
+        #             return False
+        #
+        #         # Token was played and has been played to the board
+        #         case [True, True]:
+        #             if roll == 6 and move[token] == 1:
+        #                 check_list.append(True)
+        #                 continue
+        #             if current_position + roll == move[token]:
+        #                 check_list.append(True)
+        #                 continue
+        #             self.error: tuple = ("incorrect_move", token)
+        #             return False
+
+    def _is_taken(self, tokens: dict[str: dict], pos: int) -> bool:
+        """
+        Checks if the position is occupied by any token.
+
+        Args:
+            tokens (dict[str: dict]): the tokens to check
+            pos (int): the position to check
+
+        Returns:
+            bool: True if the position is occupied, False otherwise
+        """
+
+        for token in tokens.keys():
+            if tokens[token]["position"] == pos and pos != self.game.n_fields:
+                return True
+
+        return False
     def _check_both_tokens_moved(
         self,
         tokens: dict[str: dict],
@@ -361,7 +447,7 @@ class LudoGameMaster(GameMaster):
         for token in tokens_moved.keys():
             if tokens_moved[token]:
                 return token
-            return None
+        return None
 
     def _is_done(self):
 
@@ -395,6 +481,16 @@ class LudoGameMaster(GameMaster):
         else: # if game has not been completed yet and turn limit not reached, return False.
             return False
 
+    def _log_assets(self):
+        # logs key game assets
+        self.log_key('Board size', self.game.n_fields)
+        self.log_key('Number of players', len(self.players_dic))
+        self.log_key('Rolls', self.game.rolls)
+
+        self.log_key('Played turns', self.game.turn)
+        self.log_key('Turn limit', self.game.turn_limit)
+        self.log_key('Reprompt attempts', self.game.total_retry_count)
+        self.log_key('Final status', self._check_game_status())
 
 class LudoGameBenchmark(GameBenchmark):
     """
@@ -463,7 +559,7 @@ class LudoGameBenchmark(GameBenchmark):
         """
 
         return (
-            "Benchmark for the Ludo game designed to challenge and " + 
+            "Benchmark for the Ludo game designed to challenge and " +
             "evaluate strategic model behavior."
         )
 

@@ -245,6 +245,9 @@ def parse_text(text: str, player: LudoPlayer) -> dict[str: int]:
                     format; prints a preview of the non-conforming text
     """
 
+    print()
+    #print('text')
+    #print(text)
     tokens: list[str] = ['X', 'Y'] if type(player) is LudoPlayer else ['A', 'B']
     matches: re.Match = re.search(
         rf"MY MOVE: {tokens[0]} -> (\d+) ; {tokens[1]} -> (\d+)",

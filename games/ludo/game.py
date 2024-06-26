@@ -45,13 +45,13 @@ class Game:
         self.reprompt_attempts: int = 0
 
         # Game mechanic attributes
+        self.total_retry_count = 0
         self.turn_limit: int = len(rolls)
         self.turn: int = 0
         self.rolls: list[tuple[int, int]] = rolls
         self.is_aborted = False
         # Player attributes
         self._initialize_players(player_models)
-
     def add_message(self, message: str, role: str = "user") -> None:
         """
         Adds a message to the conversation context. If it is the first message
@@ -65,9 +65,13 @@ class Game:
         if not self.context:
             split_prompt: list[str]  = self.initial_prompt.split("\n")
             self.context.append({"role": "system", "content": split_prompt[0]})
-            self.context.append({"role": "user", "content": split_prompt[2:]})
+            concatenated_content = ' '.join(split_prompt[2:])
+            self.context.append({"role": "user", "content": concatenated_content})
 
-        self.context.append({"role": role, "content": message})
+        if self.context[-1]["role"] == role:
+            self.context[-1]['content'] += f'\n{message}'
+        else:
+            self.context.append({"role": role, "content": message})
 
     def reprompt(self, error_type: str, token: str | None = None) -> None:
         """
@@ -104,13 +108,13 @@ class Game:
             player (LudoPlayer): the player who just made a move
             move (dict[str: int]): contains the desired position for all tokens
         """
-        split_board: list[str] = self.current_state.split()
+
+        split_board: list[str] = self._reset_board().split()
 
         for token in move.keys():
-            if player.tokens["in_play"]:
-                split_board[player.tokens["position"] - 1] = "□"
-                split_board[move[token]] = token
 
+            if player.tokens[token]["in_play"]:
+                split_board[move[token] -1] = token
         self.current_state = " ".join(split_board).strip()
 
     def _initialize_players(self, player_models: list[Model]) -> None:
