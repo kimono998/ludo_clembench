@@ -80,12 +80,17 @@ class LudoGameMaster(GameMaster):
         Handles the basic gameplay loop.
         """
 
-        while self.game.turn < self.game.turn_limit or not self.is_done:
+        while not self._check_game_status():
+
             logger.info("Game turn: %d", self.game.turn)
             self.log_next_turn()
 
             for i, player in enumerate(self.players_dic.keys()):
-                roll: int = self.game.rolls[self.game.turn][i] # rolls needs to be format list[(roll_player_1, roll_player_2),..]
+                if len(self.players_dic.keys()) > 1:
+                    # rolls needs to be format list[(roll_player_1, roll_player_2),..]
+                    roll: int = self.game.rolls[self.game.turn][i]
+                else:
+                    roll: int = self.game.rolls[self.game.turn]
 
                 message: str = f"Current state: {self.game.current_state}\n"
                 message += f"Turn number: {self.game.turn}, Roll: {roll}. "
@@ -120,8 +125,8 @@ class LudoGameMaster(GameMaster):
                         )
 
                         for token in move.keys():
-                            self.players_dic[player].tokens["in_play"] = move[token] > 0
-                            self.players_dic[player].tokens["position"] = move[token]
+                            self.players_dic[player].tokens[token]["in_play"] = move[token] > 0
+                            self.players_dic[player].tokens[token]["position"] = move[token]
                         self.game.update_board(self.players_dic[player], move)
                         self.game.reprompt_attempts = 0
 
@@ -142,7 +147,36 @@ class LudoGameMaster(GameMaster):
 
             self.game.turn += 1
 
+        # once the game has been completed, we exit the loop and log the results.
+        status = self._check_game_status() # what is the game result
+        action = {'type': f'{status}', 'content': response_text}
+        self.log_event(from_="GM", to="GM", action=action)
 
+
+
+
+    def is_won(self):
+
+        if self.game.player_1.tokens['X']['position'] == self.game.n_fields and self.game.player_1.tokens['Y']['position'] == self.game.n_fields:
+            return True
+        else:
+            return False
+
+
+    def _check_game_status(self):
+        # 0 -> draw/turn limit reached
+        # 1 -> p1 wins
+        # -1 -> p2 wins
+
+        if self.game.turn == self.game.turn_limit: # 0 if game limit reached
+            return 0
+        elif self.is_done: # otherwise check if anyone has completed the game
+            if self.is_won(): # return 1 if p1 won
+                return 1
+            else: # return -1 if p1 lost
+                return -1
+        else: # if game has not been completed yet and turn limit not reached, return False.
+            return False
 
     def _check_move(
         self,

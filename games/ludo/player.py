@@ -252,7 +252,7 @@ def parse_text(text: str, player) -> dict[str: int]:
     if not matches:
         raise ValueError(f"Invalid text format: {text[:20]}")
 
-    return {"X": int(matches.group(1)), "Y": int(matches.group(2))}
+    return {f"{tokens[0]}": int(matches.group(1)), f"{tokens[1]}": int(matches.group(2))}
 
 
 # P2 will use MINIMAX, and have access to the instance rolls.
