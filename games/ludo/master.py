@@ -176,7 +176,7 @@ class LudoGameMaster(GameMaster):
         )
 
         action: dict = {'type': 'get message', 'content': response_text}
-        call: tuple | None = (message, response_text) if type(self.players_dic[player]) is LudoPlayer else None
+        call: tuple | None = (self.game.context, response_text) if type(self.players_dic[player]) is LudoPlayer else None
         self.log_event(from_=f"{player}", to="GM", action=action, call=call)
         move: dict[str: int] = parse_text(response_text, self.players_dic[player])
         print()
