@@ -32,7 +32,9 @@ class LudoGameMaster(GameMaster):
     def __init__(
         self,
         experiment: dict[str: dict],
-        player_models: list[Model]
+        player_models: list[Model],
+        chain_of_thought: bool,
+        reprompting: bool
     ) -> None:
         """
         Initializes attributes from the passed in arguments, as well as
@@ -43,9 +45,14 @@ class LudoGameMaster(GameMaster):
                                           details for a game instance
             player_models (list[Model]): contains instantiated Model objects,
                                          representing each of the players
+            chain_of_thought (bool): allows for chain-of-thought functionality
+                                     if True
+            reprompting (bool): allows for reprompting of the LLM if True
         """
         super().__init__(GAME_NAME, experiment, player_models)
         self.player_models: list[Model] = player_models
+        self.chain_of_thought: bool = chain_of_thought
+        self.attempt_limit: int = 3 if reprompting else 1
         self.error: str | None = None
 
     def setup(self, **kwargs) -> None:
@@ -79,6 +86,7 @@ class LudoGameMaster(GameMaster):
 
         self.log_players(self.player_log)
 
+    # TODO Adapt to react to chain-of-thought and reprompting flags
     def play(self) -> None:
         """
         Handles the basic gameplay loop. While the game is not finished, for
@@ -271,7 +279,6 @@ class LudoGameMaster(GameMaster):
                     self.error: tuple = ("not_moved", token)
                     return False
             else:
-
                 if not tokens[token]["in_play"]:
                     if (
                         token == moved_token
@@ -279,7 +286,6 @@ class LudoGameMaster(GameMaster):
                         and move[token] == 1
                         and not self._is_taken(tokens, 1)
                     ):
-
                         check_list.append(True)
                         continue
                     elif token != moved_token:
@@ -350,7 +356,7 @@ class LudoGameMaster(GameMaster):
                    otherwise), a string (the response text from the player),
                    and a dictionary detailing the resulting move
         """
-        while self.game.reprompt_attempts < 3:
+        while self.game.reprompt_attempts < self.attempt_limit:
             # Gets the player's response and logs it
             move, response_text = self._get_response(player, message)
 
@@ -544,19 +550,30 @@ class LudoGameBenchmark(GameBenchmark):
     """
     Organizes the running of an experiment of the game 'Ludo'.
     """
-    def __init__(self):
+    # TODO Determine if chain-of-thought and reprompting should be passed to LudoGameBenchmark at instantiation
+    def __init__(
+            self,
+            chain_of_thought: bool = False,
+            reprompting: bool = False
+    ):
         """
         Passes along the game name and allows for the creation of the game
         master.
+
+        Args:
+            chain_of_thought (bool): allows for chain-of-thought functionality
+                                     if True
+            reprompting (bool): allows for reprompting of the LLM if True
         """
         super().__init__(GAME_NAME)
+        self.chain_of_thought: bool = chain_of_thought
+        self.reprompting: bool = reprompting
 
     def create_game_master(
         self,
         experiment: dict,
         player_models: list[Model]
     ) -> LudoGameMaster:
-
         """
         Instantiates a Ludo-specific GameMaster that handles the running and
         checking of the game on an instance level.
@@ -567,11 +584,19 @@ class LudoGameBenchmark(GameBenchmark):
             player_models (list[Model]): contains two player models, being of
                                          different child classes depending on
                                          the game variant
+            chain_of_thought (bool): allows for chain-of-thought functionality
+                                     if True
+            reprompting (bool): allows for reprompting of the LLM if True
 
         Returns:
             LudoGameMaster: instantiated LudoGameMaster object
         """
-        return LudoGameMaster(experiment, player_models)
+        return LudoGameMaster(
+            experiment,
+            player_models,
+            self.chain_of_thought,
+            self.reprompting
+        )
 
     def create_game_scorer(
         self,
@@ -607,6 +632,8 @@ class LudoGameBenchmark(GameBenchmark):
             "evaluate strategic model behavior."
         )
 
+    # TODO Adapt to single- and multiplayer
+    # TODO Determine if necessary
     def is_single_player(self) -> bool:
         """
         An in-built function which determines if the game is single-player or

@@ -269,12 +269,12 @@ if __name__ == '__main__':
     # Example experiment
     experiments: list[dict] = [
         {
-            "experiment_name": "single",
+            "experiment_name": "single_player",
             "n_instances": 5,
             "dialogue_partners": {
                 "Player 1": "llm"
             },
-            "prompt_filename": "initial_prompt.template",
+            "prompt_filename": "single_player.template",
             "n_fields": 23,
             "n_rolls": 20
         }
