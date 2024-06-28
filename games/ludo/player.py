@@ -206,8 +206,11 @@ class ProgrammaticPlayer(LudoPlayer):
         Raises:
             Exception: raised if no matching pattern is found
         """
-        pattern: re.Pattern = r"Current state:\s*(.*?)\s*Turn number:\s*(\d+),\s*Roll:\s*(\d+)\."
-        pattern_match: re.Match = re.search(pattern, input_message, re.DOTALL)
+        pattern_match: re.Match = re.search(
+            r"Current state:\s*(.*?)\s*Turn number:\s*(\d+),\s*Roll:\s*(\d+)\.",
+            input_message,
+            re.DOTALL
+        )
 
         if pattern_match:
             current_state: str = pattern_match.group(1).strip()
@@ -215,8 +218,8 @@ class ProgrammaticPlayer(LudoPlayer):
 
             # Identifies the positions of tokens (X, Y, A, B) in the current state
             tokens: list = ["X", "Y", "A", "B"]
-            n_fields = len(current_state.split())
-            token_positions = {token: 0 for token in tokens}
+            n_fields: int = len(current_state.split())
+            token_positions: dict = {token: 0 for token in tokens}
 
             for index, char in enumerate(current_state.split()):
                 if char in tokens:
@@ -244,10 +247,6 @@ def parse_text(text: str, player: LudoPlayer) -> dict[str: int]:
         ValueError: raises when the text does not match the expected
                     format; prints a preview of the non-conforming text
     """
-
-    print()
-    #print('text')
-    #print(text)
     tokens: list[str] = ['X', 'Y'] if type(player) is LudoPlayer else ['A', 'B']
     matches: re.Match = re.search(
         rf"MY MOVE: {tokens[0]} -> (\d+) ; {tokens[1]} -> (\d+)",
@@ -257,7 +256,10 @@ def parse_text(text: str, player: LudoPlayer) -> dict[str: int]:
     if not matches:
         raise ValueError(f"Invalid text format: {text[:20]}")
 
-    return {f"{tokens[0]}": int(matches.group(1)), f"{tokens[1]}": int(matches.group(2))}
+    return {
+        f"{tokens[0]}": int(matches.group(1)),
+        f"{tokens[1]}": int(matches.group(2))
+    }
 
 
 if __name__ == '__main__':

@@ -12,8 +12,6 @@ from clemgame.clemgame import GameInstanceGenerator
 
 
 GAME_NAME: str = "ludo"
-DIRECTORY_PATH: Path = Path(__file__).parent
-RESOURCE_PATH: Path = DIRECTORY_PATH / "resources"
 RANDOM_SEED: int = 42
 
 np.random.seed(RANDOM_SEED)
@@ -52,7 +50,7 @@ class LudoInstanceGenerator(GameInstanceGenerator):
                 experiment["experiment_name"],
                 experiment["n_instances"],
                 experiment["dialogue_partners"],
-                self.load_template(str(RESOURCE_PATH / experiment["prompt_filename"])),
+                experiment["prompt_name"],
                 experiment["n_fields"],
                 experiment["n_rolls"]
             )
@@ -168,7 +166,7 @@ class LudoInstanceGenerator(GameInstanceGenerator):
         experiment_name: str,
         n_instances: int,
         dialogue_partners: list[tuple[str, str]],
-        initial_prompt: str,
+        prompt_name: str,
         n_fields: int,
         n_rolls: int
     ) -> None:
@@ -184,8 +182,8 @@ class LudoInstanceGenerator(GameInstanceGenerator):
                                attached to the experiment
             dialogue_partners (list[tuple[str, str]]): the players in the game
                                                        variant
-            initial_prompt (str): the prompt associated with the desired game
-                                  variant
+            prompt_name (str): the prompt associated with the desired game
+                               variant
             n_fields (int): the size of the board in the game
             n_rolls (int): the number of rolls; also the maximum number of
                            turns
@@ -199,7 +197,7 @@ class LudoInstanceGenerator(GameInstanceGenerator):
                 experiment,
                 f"in{index + 1:03}",
                 dialogue_partners,
-                initial_prompt,
+                prompt_name,
                 n_fields,
                 n_rolls
             )
@@ -209,7 +207,7 @@ class LudoInstanceGenerator(GameInstanceGenerator):
         experiment: dict,
         game_id: int,
         dialogue_partners: dict[str: str],
-        initial_prompt: str,
+        prompt_name: str,
         n_fields: int,
         n_rolls: int
     ) -> None:
@@ -225,7 +223,7 @@ class LudoInstanceGenerator(GameInstanceGenerator):
             game_id (dict): the identifying marker for the game instance
             dialogue_partners (dict[str: str]): the players in the game
                                                        variant
-            initial_prompt (str): the initial prompt passed to the LLM
+            prompt_name (str): the initial prompt passed to the LLM
             n_fields (int): the size of the board
             n_rolls (int): the number of rolls; also the maximum number of
                            turns
@@ -259,7 +257,7 @@ class LudoInstanceGenerator(GameInstanceGenerator):
 
                 game_instance: dict = self.add_game_instance(experiment, game_id)
                 game_instance["dialogue_partners"] = dialogue_partners
-                game_instance["initial_prompt"] = initial_prompt
+                game_instance["prompt_name"] = prompt_name
                 game_instance["n_fields"] = n_fields
                 game_instance["rolls"] = rolls
                 break
@@ -269,12 +267,12 @@ if __name__ == '__main__':
     # Example experiment
     experiments: list[dict] = [
         {
-            "experiment_name": "single",
-            "n_instances": 5,
+            "experiment_name": "single_player",
+            "n_instances": 1,
             "dialogue_partners": {
-                "Player 1": "llm"
+                "player 1": "llm"
             },
-            "prompt_filename": "initial_prompt.template",
+            "prompt_name": "single_player",
             "n_fields": 23,
             "n_rolls": 20
         }
