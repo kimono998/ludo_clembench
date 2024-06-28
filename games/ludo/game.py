@@ -8,20 +8,27 @@ from pathlib import Path
 sys.path.append(str(Path(__file__).parent.parent.parent))
 
 from backends import CustomResponseModel, HumanModel, Model
+from clemgame.clemgame import GameResourceLocator
 from player import HumanPlayer, LudoPlayer, ProgrammaticPlayer
 
 
-class Game:
+GAME_NAME: str = "ludo"
+DIRECTORY_PATH: Path = Path(__file__).parent
+RESOURCE_PATH: Path = DIRECTORY_PATH / "resources"
+
+
+class Game(GameResourceLocator):
     """
     A class which handles the game behavior of Ludo, namely prompting the model
     to make its next move given the current game state.
     """
     def __init__(
         self,
-        initial_prompt: str,
+        prompt_name: str,
         n_fields: int,
         rolls: list[tuple[int, int]],
-        player_models: list[Model]
+        player_models: list[Model],
+        chain_of_thought: bool
     ) -> None:
         """
         Initializes chat-based attributes.
@@ -34,13 +41,21 @@ class Game:
                                            player for each turn
             player_models (list[Model]): contains the player model(s) to be
                                          turned into LudoPlayer object(s)
+            chain_of_thought (bool): allows for chain-of-thought functionality
+                                     if True
         """
+        super().__init__(GAME_NAME)
+
         # Board attributes
         self.n_fields: int = n_fields
         self.current_state: str = self._reset_board()
 
         # Conversation attributes
-        self.initial_prompt: str = initial_prompt
+        self.initial_prompt: str = self.load_template(
+            str(RESOURCE_PATH / f"{prompt_name}_cot.template")
+            if chain_of_thought
+            else str(RESOURCE_PATH / f"{prompt_name}.template")
+        )
         self.context: list[str] = []
         self.reprompt_attempts: int = 0
         self.total_retry_count: int = 0

@@ -67,10 +67,11 @@ class LudoGameMaster(GameMaster):
             rolls (list[int]): the specific die rolls for each turn
         """
         self.game: Game = Game(
-            kwargs.get("initial_prompt"),
+            kwargs.get("prompt_name"),
             kwargs.get("n_fields"),
             kwargs.get("rolls"),
-            self.player_models
+            self.player_models,
+            self.chain_of_thought
         )
         self.players_dic: dict[str: LudoPlayer] = {
             "Player 1": self.game.player_1
@@ -650,7 +651,7 @@ if __name__ == "__main__":
     from scripts.cli import read_model_specs
 
     game_name: str = "ludo"
-    model_specs: list[str] = ["gpt-3.5-turbo-1106", "programmatic"]
+    model_specs: list[str] = ["gpt-3.5-turbo-1106"]
     gen_args: dict[str: str] = {"temperature": 0.0, "max_tokens": 400}
     experiment_name: str | None = None
     instances_name: str = "instances"

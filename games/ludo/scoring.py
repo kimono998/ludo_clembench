@@ -12,6 +12,7 @@ from clemgame.clemgame import GameScorer
 
 GAME_NAME: str = "ludo"
 
+
 class LudoGameScorer(GameScorer):
     """
     Handles the scoring of the game 'Ludo' on a per-turn, episodic, and overall
