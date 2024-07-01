@@ -4,3 +4,5 @@ records/*.json
 records/*.txt
 records/*.md
 records/
+*.ipynb
+
