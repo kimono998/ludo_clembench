@@ -258,7 +258,7 @@ class LudoGameMaster(GameMaster):
             ValueError: raised if the move is invalid, explaining why
         """
         if self._check_both_tokens_moved(tokens, move):
-            self.error: str = "simultaneous_move"
+            self.error: str = ("simultaneous_move", None)
             return False
 
         moved_token: str = self._get_moved_token(self._check_token_moved(tokens, move))
@@ -400,7 +400,11 @@ class LudoGameMaster(GameMaster):
                 self.error = None
                 message = self.game.context[-1]
                 self.game.total_retry_count +=1
-
+                self.log_event(
+                    from_="GM",
+                    to=f"{player}",
+                    action={'type': 'reprompt', 'content': message}
+                )
         return False, response_text, move
     
     def _get_moved_token(self, tokens_moved: dict[str: bool]) -> str | None:
