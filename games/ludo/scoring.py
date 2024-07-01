@@ -4,6 +4,7 @@ Contains custom scoring logic for the game 'Ludo'.
 
 import sys
 from pathlib import Path
+from typing import Dict
 
 sys.path.append(str(Path(__file__).parent.parent.parent))
 
@@ -32,6 +33,9 @@ class LudoGameScorer(GameScorer):
         super().__init__(GAME_NAME, experiment, game_instance)
 
     # TODO Determine turn scoring procedure
+
+    def compute_scores(self, episode_interactions: Dict) -> None:
+        pass
     def score_turns(self, episodic_interactions: dict) -> None:
         """
         TODO Method description
