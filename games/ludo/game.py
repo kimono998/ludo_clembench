@@ -34,8 +34,7 @@ class Game(GameResourceLocator):
         Initializes chat-based attributes.
 
         Args:
-            initital_prompt (str): comprised of the system prompt, the task
-                                   description, and relevant examples
+            prompt_name (str): the name of the file containing the prompt
             n_fields (int): the size of the board
             rolls (list[tuple[int, int]]): contains the die rolls for each
                                            player for each turn
@@ -151,7 +150,7 @@ class Game(GameResourceLocator):
         self.player_1: LudoPlayer = LudoPlayer(player_models[0])
 
         if len(player_models) > 1:
-            match type(player_models[1]):
+            match player_models[1]:
                 case HumanModel():
                     self.player_2: LudoPlayer = HumanPlayer(player_models[1])
                 case CustomResponseModel():

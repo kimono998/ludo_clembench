@@ -6,7 +6,7 @@ Your tokens are marked with X and Y. Your tokens X or Y count as occupied fields
 
 General instructions:
 1) Every turn I will give you the current state of the grid. You must tell me what your next move is.
-2) Your answers must contain the words "MY MOVE:", the instruction of how you want the token to move.
+2) Your answers must contain the words "MY MOVE:", the instruction of how you want both tokens to move.
 3) You must keep track of the state of the board in order to win the game.
 4) You cannot have 2 tokens in the same field, except for in the end field. 
 5) You can only play one token in 1 round.

@@ -50,7 +50,7 @@ class LudoInstanceGenerator(GameInstanceGenerator):
                 experiment["experiment_name"],
                 experiment["n_instances"],
                 experiment["dialogue_partners"],
-                experiment["prompt_name"],
+                experiment["experiment_name"],
                 experiment["n_fields"],
                 experiment["n_rolls"]
             )
@@ -272,10 +272,19 @@ if __name__ == '__main__':
             "dialogue_partners": {
                 "player 1": "llm"
             },
-            "prompt_name": "single_player",
             "n_fields": 23,
             "n_rolls": 20
         }
+        # {
+        #     "experiment_name": "multiplayer",
+        #     "n_instances": 1,
+        #     "dialogue_partners": {
+        #         "player 1": "llm",
+        #         "player 2": "programmatic"
+        #     },
+        #     "n_fields": 23,
+        #     "n_rolls": 20
+        # }
     ]
 
     # Generates game instances
