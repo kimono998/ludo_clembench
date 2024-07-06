@@ -4,7 +4,7 @@ of 'Ludo', describing intended behavior.
 """
 
 import sys
-from logging import Logger
+import logging
 from pathlib import Path
 
 sys.path.append(str(Path(__file__).parent.parent.parent))
@@ -18,7 +18,8 @@ from clemgame import get_logger
 
 
 GAME_NAME: str = "ludo"
-logger: Logger = get_logger(__name__)
+logger: logging.Logger = get_logger(__name__)
+
 
 class LudoGameMaster(GameMaster):
     """
@@ -101,7 +102,7 @@ class LudoGameMaster(GameMaster):
         which time, the game is aborted.
         """
         while not self._check_game_status():
-            logger.info("Game turn: %d", self.game.turn)
+            logger.info(f"{GAME_NAME}: [GAME TURN] {self.game.turn}")
             self.log_next_turn()
             self.log_event(
                 from_="GM",
@@ -111,7 +112,7 @@ class LudoGameMaster(GameMaster):
                     'content': self.game.current_state
                 }
             )
-            logger.info(f"current_state: {self.game.current_state}")
+            logger.info(f"{GAME_NAME}: [CURRENT STATE] {self.game.current_state}")
             
             for index, player in enumerate(self.players_dic.keys()):
                 roll: int = (
@@ -121,11 +122,12 @@ class LudoGameMaster(GameMaster):
                 )
 
                 message: str = self._build_message(roll, player)
-                logger.info(f"message_to_llm: {message}")
+                logger.info(f"{GAME_NAME}: [GM->{player}]: {message}")
                 
                 # Checks if we can proceed with the game and logs Player to GM
                 can_proceed, response_text, move = self._does_game_proceed(player, message, roll)
-                logger.info(f'resp = {response_text}, move = {move}')
+                logger.info(f'{GAME_NAME}: [{player}->GM (RAW)]: {response_text}')
+                logger.info(f'{GAME_NAME}: [{player}->GM (PARSED)]: {move}')
 
                 # If so, the move is logged and we continue to next player
                 if can_proceed:

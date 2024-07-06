@@ -3,11 +3,13 @@ Contains the main game behavior of Ludo.
 """
 
 import sys
+import logging
 from pathlib import Path
 
 sys.path.append(str(Path(__file__).parent.parent.parent))
 
 from backends import CustomResponseModel, HumanModel, Model
+from clemgame import get_logger
 from clemgame.clemgame import GameResourceLocator
 from player import HumanPlayer, LudoPlayer, ProgrammaticPlayer
 
@@ -15,6 +17,8 @@ from player import HumanPlayer, LudoPlayer, ProgrammaticPlayer
 GAME_NAME: str = "ludo"
 DIRECTORY_PATH: Path = Path(__file__).parent
 RESOURCE_PATH: Path = DIRECTORY_PATH / "resources"
+
+logger: logging.Logger = get_logger("games.ludo.game")
 
 
 class Game(GameResourceLocator):
@@ -106,17 +110,20 @@ class Game(GameResourceLocator):
 
         match error_type:
             case "simultaneous_move":
-                message += "Both of your in-play tokens were moved simultaneously. "
+                reason: str = "Both of your in-play tokens were moved simultaneously. "
             case "not_moved_to_board":
-                message += f"Token {token} can be played to the board but wasn't. "
+                reason: str = f"Token {token} can be played to the board but wasn't. "
             case "not_moved":
-                message += f"Token {token} can be moved but wasn't. "
+                reason: str =  f"Token {token} can be moved but wasn't. "
             case "incorrect_move":
-                message += f"Token {token} was moved incorrectly. "
+                reason: str =  f"Token {token} was moved incorrectly. "
 
+        message += reason
         message += "Please try again."
 
         self.add_message(message)
+        logger.error(f"{GAME_NAME}: [MOVE ERROR] {reason}")
+
         self.reprompt_attempts += 1
 
     def update_board(self, player: LudoPlayer, move: dict[str: int]) -> None:

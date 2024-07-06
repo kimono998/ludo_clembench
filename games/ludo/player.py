@@ -5,12 +5,12 @@ Describes custom behavior for human and programmatic participants in 'Ludo'.
 import re
 import sys
 from pathlib import Path
-from minimax import GameSim, minimax
 
 sys.path.append(str(Path(__file__).parent.parent.parent))
 
 from backends import CustomResponseModel, HumanModel, Model
 from clemgame.clemgame import Player
+from minimax import GameSim, minimax
 
 
 class LudoPlayer(Player):
