@@ -254,7 +254,8 @@ def parse_text(text: str, player: LudoPlayer) -> dict[str: int]:
     )
 
     if not matches:
-        raise ValueError(f"Invalid text format: {text[:20]}")
+        return False
+        # raise ValueError(f"Invalid text format: {text[:20]}")
 
     return {
         f"{tokens[0]}": int(matches.group(1)),
