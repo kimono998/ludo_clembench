@@ -52,7 +52,8 @@ class LudoInstanceGenerator(GameInstanceGenerator):
                 experiment["dialogue_partners"],
                 experiment["experiment_name"],
                 experiment["n_fields"],
-                experiment["n_rolls"]
+                experiment["n_rolls"],
+                experiment["min_moves"]
             )
 
     def _check_sequence(self, n_fields: int, rolls: list[int]) -> bool:
@@ -233,7 +234,8 @@ class LudoInstanceGenerator(GameInstanceGenerator):
                         are introduced
         """
         while True:
-            if self._check_sequence(
+
+            if p1_min_moves := self._check_sequence(
                 n_fields,
                 p1_rolls := [np.random.randint(1, 7) for _ in range(n_rolls)]
             ):
@@ -260,6 +262,7 @@ class LudoInstanceGenerator(GameInstanceGenerator):
                 game_instance["prompt_name"] = prompt_name
                 game_instance["n_fields"] = n_fields
                 game_instance["rolls"] = rolls
+                game_instance["min_moves"] = p1_min_moves
                 break
 
 

@@ -63,7 +63,7 @@ class Game(GameResourceLocator):
         self.reprompt_attempts: int = 0
         self.total_retry_count: int = 0
         self.is_aborted: bool = False
-
+        self.error_count = 0
         # Game mechanic attributes
         self.turn_limit: int = len(rolls)
         self.turn: int = 0
@@ -109,6 +109,9 @@ class Game(GameResourceLocator):
         message: str = "INVALID MOVE: "
 
         match error_type:
+            case "parsing_failed":
+                message += ("The response format is not correct.\n"
+                            "Please state your answer in this format\n MY MOVE: X -> N ; Y -> N")
             case "simultaneous_move":
                 reason: str = "Both of your in-play tokens were moved simultaneously. "
             case "not_moved_to_board":

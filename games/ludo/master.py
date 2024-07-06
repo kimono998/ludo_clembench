@@ -109,7 +109,7 @@ class LudoGameMaster(GameMaster):
                 to="GM",
                 action={
                     'type': 'current state',
-                    'content': self.game.current_state
+                    'content': self.players_dic
                 }
             )
             logger.info(f"{GAME_NAME}: [CURRENT STATE] {self.game.current_state}")
@@ -275,14 +275,19 @@ class LudoGameMaster(GameMaster):
                     if roll != 6:
                         check_list.append(True)
                         continue
+                        
                     self.error = ("not_moved_to_board", token)
+                    self.game.error_count+=1
                     return False
+                  
                 else:
                     if roll + current_position > n_fields:
                         check_list.append(True)
                         continue
                     self.error = ("not_moved", token)
+                    self.game.error_count+=1
                     return False
+                  
             else:
                 if not tokens[token]["in_play"]:
                     if (
@@ -298,7 +303,9 @@ class LudoGameMaster(GameMaster):
                         continue
                     else:
                         self.error = ("incorrect_move", token)
+                        self.game.error_count += 1
                         return False
+                      
                 else:
                     if (
                         token == moved_token
@@ -311,6 +318,7 @@ class LudoGameMaster(GameMaster):
                         check_list.append(True)
                     else:
                         self.error = ("incorrect_move", token)
+                        self.game.error_count += 1
                         return False
 
         if all(check_list):
@@ -365,53 +373,62 @@ class LudoGameMaster(GameMaster):
             # Gets the player's response and logs it
             move, response_text = self._get_response(player, message)
 
+            # if parsing failes, reprompt so that we get a good format
+            if not move:
+                self.error: str = ("parsing_failed", None)
+                self._reprompt_loop(player)
+
             # Updates game attributes if move is valid
-            if self._check_move(
-                self.players_dic[player].tokens,
-                move,
-                roll,
-                self.game.n_fields
-            ):
-                self.game.add_message(
-                    response_text,
-                    role="assistant"
-                    if type(self.players_dic[player]) is LudoPlayer
-                    else "user"
-                )
-                self.log_event(
-                    from_=f"GM",
-                    to="GM",
-                    action={
-                        'type': 'metadata',
-                        'content': 'update board state'
-                    }
-                )
-
-                self._update_player_dict(move, player)
-                self.game.update_board(self.players_dic[player], move)
-                self.game.reprompt_attempts = 0
-
-                return True, response_text, move
-
-            # Reprompt the player if not
             else:
-                self.log_event(
-                    from_=f"GM",
-                    to="GM",
-                    action={'type': f'error', 'content': self.error[0]}
-                )
-                self.game.reprompt(self.error[0], self.error[1])
-                self.error = None
-                message = self.game.context[-1]
-                self.log_event(
-                    from_="GM",
-                    to=f"{player}",
-                    action={'type': 'reprompt', 'content': message}
-                )
-                self.game.total_retry_count +=1
+                if self._check_move(
+                    self.players_dic[player].tokens,
+                    move,
+                    roll,
+                    self.game.n_fields
+                ):
+                    self.game.add_message(
+                        response_text,
+                        role="assistant"
+                        if type(self.players_dic[player]) is LudoPlayer
+                        else "user"
+                    )
+                    self.log_event(
+                        from_=f"GM",
+                        to="GM",
+                        action={
+                            'type': 'metadata',
+                            'content': 'update board state'
+                        }
+                    )
+
+                    self._update_player_dict(move, player)
+                    self.game.update_board(self.players_dic[player], move)
+                    self.game.reprompt_attempts = 0
+
+                    return True, response_text, move
+
+                # Reprompt the player if not
+                else:
+                    self._reprompt_loop(player)
 
         return False, response_text, move
-    
+
+    def _reprompt_loop(self, player):
+
+        self.log_event(
+            from_=f"GM",
+            to="GM",
+            action={'type': f'error', 'content': self.error[0]}
+        )
+        self.game.reprompt(self.error[0], self.error[1])
+        self.error = None
+        message = self.game.context[-1]
+        self.game.total_retry_count += 1
+        self.log_event(
+            from_="GM",
+            to=f"{player}",
+            action={'type': 'reprompt', 'content': message}
+        )
     def _get_moved_token(self, tokens_moved: dict[str: bool]) -> str | None:
         """
         Given token-bool pairs, where the boolean value is True if the token
@@ -458,21 +475,31 @@ class LudoGameMaster(GameMaster):
                 else None
             )
         )
+
         move: dict[str: int] = parse_text(response_text, self.players_dic[player])
+        if move:
+            print()
+            print(self.players_dic[player].tokens)
+            print(message)
+            print(response_text)
+            print(move)
 
-        print()
-        print(self.players_dic[player].tokens)
-        print(message)
-        print(response_text)
-        print(move)
+            self.log_event(
+                from_="GM",
+                to="GM",
+                action={'type': 'parse', 'content': move}
+            )
 
-        self.log_event(
-            from_="GM",
-            to="GM",
-            action={'type': 'parse', 'content': move}
-        )
+            return move, response_text
 
-        return move, response_text
+        else:
+            self.log_event(
+                from_="GM",
+                to="GM",
+                action={'type': 'parsing failed', 'content': response_text}
+            )
+
+        return False, response_text
 
     def _is_done(self) -> bool:
         """
@@ -536,7 +563,10 @@ class LudoGameMaster(GameMaster):
         self.log_key('Turn limit', self.game.turn_limit)
         self.log_key('Reprompt attempts', self.game.total_retry_count)
         self.log_key('Final status', self._check_game_status())
-    
+        self.log_key('Aborted', self.game.is_aborted)
+        self.log_key('Error count', self.game.error_count)
+        self.log_key('Turns played', self.game.turn)
+
     def _update_player_dict(self, move, player) -> None:
         """
         Updates the player's tokens' positions in the players dictionary based
