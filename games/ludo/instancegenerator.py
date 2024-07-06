@@ -234,7 +234,6 @@ class LudoInstanceGenerator(GameInstanceGenerator):
                         are introduced
         """
         while True:
-
             if p1_min_moves := self._check_sequence(
                 n_fields,
                 p1_rolls := [np.random.randint(1, 7) for _ in range(n_rolls)]

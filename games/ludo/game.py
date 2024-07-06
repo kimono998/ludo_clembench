@@ -62,8 +62,9 @@ class Game(GameResourceLocator):
         self.context: list[str] = []
         self.reprompt_attempts: int = 0
         self.total_retry_count: int = 0
+        self.error_count: int = 0
         self.is_aborted: bool = False
-        self.error_count = 0
+
         # Game mechanic attributes
         self.turn_limit: int = len(rolls)
         self.turn: int = 0

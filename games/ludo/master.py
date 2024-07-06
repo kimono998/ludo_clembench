@@ -12,7 +12,7 @@ sys.path.append(str(Path(__file__).parent.parent.parent))
 from backends import Model
 from clemgame.clemgame import GameBenchmark, GameMaster
 from game import Game
-from player import LudoPlayer, parse_text
+from player import LudoPlayer, HumanPlayer, ProgrammaticPlayer, parse_text
 from scoring import LudoGameScorer
 from clemgame import get_logger
 
@@ -277,7 +277,7 @@ class LudoGameMaster(GameMaster):
                         continue
                         
                     self.error = ("not_moved_to_board", token)
-                    self.game.error_count+=1
+                    self.game.error_count +=1
                     return False
                   
                 else:
@@ -285,7 +285,7 @@ class LudoGameMaster(GameMaster):
                         check_list.append(True)
                         continue
                     self.error = ("not_moved", token)
-                    self.game.error_count+=1
+                    self.game.error_count +=1
                     return False
                   
             else:
@@ -376,7 +376,7 @@ class LudoGameMaster(GameMaster):
             # if parsing failes, reprompt so that we get a good format
             if not move:
                 self.error: str = ("parsing_failed", None)
-                self._reprompt_loop(player)
+                self._reprompt_player(player)
 
             # Updates game attributes if move is valid
             else:
@@ -409,26 +409,10 @@ class LudoGameMaster(GameMaster):
 
                 # Reprompt the player if not
                 else:
-                    self._reprompt_loop(player)
+                    self._reprompt_player(player)
 
         return False, response_text, move
 
-    def _reprompt_loop(self, player):
-
-        self.log_event(
-            from_=f"GM",
-            to="GM",
-            action={'type': f'error', 'content': self.error[0]}
-        )
-        self.game.reprompt(self.error[0], self.error[1])
-        self.error = None
-        message = self.game.context[-1]
-        self.game.total_retry_count += 1
-        self.log_event(
-            from_="GM",
-            to=f"{player}",
-            action={'type': 'reprompt', 'content': message}
-        )
     def _get_moved_token(self, tokens_moved: dict[str: bool]) -> str | None:
         """
         Given token-bool pairs, where the boolean value is True if the token
@@ -566,6 +550,33 @@ class LudoGameMaster(GameMaster):
         self.log_key('Aborted', self.game.is_aborted)
         self.log_key('Error count', self.game.error_count)
         self.log_key('Turns played', self.game.turn)
+
+    def _reprompt_player(
+            self,
+            player: LudoPlayer | HumanPlayer | ProgrammaticPlayer
+    ) -> None:
+        """
+        Upon encountering one of several errors, the player is reprompted. The
+        error is logged, the reprompt procedure is carried out, and attributes
+        are updated.
+
+        Args:
+            player (LudoPlayer | HumanPlayer | ProgrammaticPlayer): the player
+        """
+        self.log_event(
+            from_=f"GM",
+            to="GM",
+            action={'type': f'error', 'content': self.error[0]}
+        )
+        self.game.reprompt(self.error[0], self.error[1])
+        self.error = None
+        message = self.game.context[-1]
+        self.game.total_retry_count += 1
+        self.log_event(
+            from_="GM",
+            to=f"{player}",
+            action={'type': 'reprompt', 'content': message}
+        )
 
     def _update_player_dict(self, move, player) -> None:
         """
