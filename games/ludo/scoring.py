@@ -39,7 +39,7 @@ class LudoGameScorer(GameScorer):
                                   individual game instance
         """
         super().__init__(GAME_NAME, experiment, game_instance)
-        self.min_moves: int = experiment['min_moves']
+        self.min_moves: int = game_instance["min_moves"]
 
     # TODO Adapt per turn move accuracy to single player
     def score_turns(self, episodic_interactions: dict) -> None:
@@ -53,8 +53,8 @@ class LudoGameScorer(GameScorer):
             score, turn_reprompts = LudoGameScorer._score_turn(
                 turn_number=idx,
                 interaction=turn,
-                n_fields=episodic_interactions["Board size"], # TODO Correct
-                rolls=episodic_interactions["Rolls"] # TODO Correct
+                n_fields=episodic_interactions["Board size"],
+                rolls=episodic_interactions["Rolls"]
             )
 
             # Logs the move accuracy
@@ -137,8 +137,8 @@ class LudoGameScorer(GameScorer):
             LudoGameScorer._score_turn(
                 turn_number=idx,
                 interaction=turn,
-                n_fields=episodic_interactions["Board size"], # TODO Correct
-                rolls=episodic_interactions["Rolls"] # TODO Correct
+                n_fields=episodic_interactions["Board size"],
+                rolls=episodic_interactions["Rolls"]
             )[0] for idx, turn in enumerate(episodic_interactions["turns"])
         )
         accuracy: float = (move_accuracy_sum / final_turn) * 100
@@ -218,7 +218,8 @@ class LudoGameScorer(GameScorer):
             turn_number: int,
             interaction: list[dict[str: str]],
             n_fields: int,
-            rolls: list[tuple]) -> tuple[float, int]:
+            rolls: list[tuple]
+    ) -> tuple[float, int]:
         """
         Categorizes the events which took place in a turn, ultimately
         calculating the turn score and the number of reprompts which took
@@ -241,7 +242,8 @@ class LudoGameScorer(GameScorer):
         turn_reprompts: int = 0
         for event in interaction:
             match event["action"]["type"]:
-                case "current_state": # TODO Rename to something and leave 'current_state' to the board image?
+                case "current_state": 
+                    # TODO Rename to something and leave 'current_state' to the board image?
                     current_state: dict = {
                             token: value['position']
                             for token, value

@@ -52,11 +52,14 @@ class LudoInstanceGenerator(GameInstanceGenerator):
                 experiment["dialogue_partners"],
                 experiment["experiment_name"],
                 experiment["n_fields"],
-                experiment["n_rolls"],
-                experiment["min_moves"]
+                experiment["n_rolls"]
             )
 
-    def _check_sequence(self, n_fields: int, rolls: list[int]) -> bool:
+    @staticmethod
+    def _check_sequence(
+        n_fields: int,
+        rolls: list[int]
+    ) -> tuple[bool, int] | bool:
         """
         Given the size of the board and a sequence of rolls, checks that the
         sequence of rolls will result in a game instance that is solvable.
@@ -66,7 +69,12 @@ class LudoInstanceGenerator(GameInstanceGenerator):
             rolls (list[int]): contains a sequence of die rolls
         
         Returns:
-            bool: True if a move sequence is solvable, False otherwise
+            tuple[bool, int] | bool: either a tuple containing a bool (True if
+                                     the sequence is solveable and False
+                                     otherwise) and an integer (the minimum
+                                     number of moves required to solve the
+                                     sequence) or a bool (False, indicating
+                                     that the sequence is not solveable)
         """
         memorized_moves: dict = {}
 
@@ -160,7 +168,7 @@ class LudoInstanceGenerator(GameInstanceGenerator):
         if min_move_count == float('inf'):
             return False
 
-        return min_move_count != -1
+        return min_move_count != -1, min_move_count
 
     def _generate_experiment(
         self,
@@ -234,7 +242,7 @@ class LudoInstanceGenerator(GameInstanceGenerator):
                         are introduced
         """
         while True:
-            if p1_min_moves := self._check_sequence(
+            if p1_min_moves := LudoInstanceGenerator._check_sequence(
                 n_fields,
                 p1_rolls := [np.random.randint(1, 7) for _ in range(n_rolls)]
             ):
@@ -242,7 +250,7 @@ class LudoInstanceGenerator(GameInstanceGenerator):
                     case 1:
                         rolls: list[int] = p1_rolls
                     case 2:
-                        if self._check_sequence(
+                        if LudoInstanceGenerator._check_sequence(
                             n_fields,
                             p2_rolls := [np.random.randint(1, 7) for _ in range(n_rolls)]
                         ):
@@ -261,7 +269,7 @@ class LudoInstanceGenerator(GameInstanceGenerator):
                 game_instance["prompt_name"] = prompt_name
                 game_instance["n_fields"] = n_fields
                 game_instance["rolls"] = rolls
-                game_instance["min_moves"] = p1_min_moves
+                game_instance["min_moves"] = p1_min_moves[1]
                 break
 
 
