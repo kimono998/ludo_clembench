@@ -10,42 +10,40 @@ sys.path.append(str(Path(__file__).parent.parent.parent))
 
 from backends import CustomResponseModel, HumanModel, Model
 from clemgame import get_logger
-from clemgame.clemgame import GameResourceLocator
 from player import HumanPlayer, LudoPlayer, ProgrammaticPlayer
 
 
 GAME_NAME: str = "ludo"
-DIRECTORY_PATH: Path = Path(__file__).parent
-RESOURCE_PATH: Path = DIRECTORY_PATH / "resources"
 
 logger: logging.Logger = get_logger("games.ludo.game")
 
-
-class Game(GameResourceLocator):
+class Game:
     """
     A class which handles the game behavior of Ludo, namely prompting the model
     to make its next move given the current game state.
     """
     def __init__(
         self,
-        prompt_name: str,
+        initial_prompt: str,
         n_fields: int,
-        rolls: list[tuple[int, int]],
-        player_models: list[Model],
-        chain_of_thought: bool
+        n_tokens: int,
+        rolls: list[tuple[int, int] | int],
+        player_models: list[Model]
     ) -> None:
         """
         Initializes chat-based attributes.
 
         Args:
-            prompt_name (str): the name of the file containing the prompt
+            initial_prompt (str): what is initially passed to the LLM
             n_fields (int): the size of the board
-            rolls (list[tuple[int, int]]): contains the die rolls for each
-                                           player for each turn
+            n_tokens (int): the number of tokens given to each player
+            rolls (list[tuple[int, int] | int]): contains the die rolls,
+                                                 either in the form of tuples
+                                                 of integers or as integers,
+                                                 depending on the number of
+                                                 players
             player_models (list[Model]): contains the player model(s) to be
                                          turned into LudoPlayer object(s)
-            chain_of_thought (bool): allows for chain-of-thought functionality
-                                     if True
         """
         super().__init__(GAME_NAME)
 
@@ -54,11 +52,7 @@ class Game(GameResourceLocator):
         self.current_state: str = self._reset_board()
 
         # Conversation attributes
-        self.initial_prompt: str = self.load_template(
-            str(RESOURCE_PATH / f"{prompt_name}_cot.template")
-            if chain_of_thought
-            else str(RESOURCE_PATH / f"{prompt_name}.template")
-        )
+        self.initial_prompt: str = initial_prompt
         self.context: list[str] = []
         self.reprompt_attempts: int = 0
         self.total_retry_count: int = 0
@@ -68,7 +62,7 @@ class Game(GameResourceLocator):
         # Game mechanic attributes
         self.turn_limit: int = len(rolls)
         self.turn: int = 0
-        self.rolls: list[tuple[int, int]] = rolls
+        self.rolls: list[tuple[int, int] | int] = rolls
 
         # Player attributes
         self._initialize_players(player_models)

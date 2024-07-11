@@ -18,6 +18,9 @@ from clemgame import get_logger
 
 
 GAME_NAME: str = "ludo"
+DIRECTORY_PATH: Path = Path(__file__).parent
+RESOURCE_PATH: Path = DIRECTORY_PATH / "resources"
+
 logger: logging.Logger = get_logger(__name__)
 
 
@@ -51,7 +54,6 @@ class LudoGameMaster(GameMaster):
             reprompting (bool): allows for reprompting of the LLM if True
         """
         super().__init__(GAME_NAME, experiment, player_models)
-        self.player_models: list[Model] = player_models
         self.chain_of_thought: bool = chain_of_thought
         self.attempt_limit: int = 3 if reprompting else 1
         self.error: tuple[str, str | None] | None = None
@@ -62,21 +64,34 @@ class LudoGameMaster(GameMaster):
         with the player models, to the instance-specific Game object.
 
         Args:
-            experiment_name (str): the name of the experiment, used to load
-                                   the appropriate prompt
+            prompt_name (str): the name of the experiment, used to load the
+                               appropriate prompt
             n_fields (int): the number of fields on the board
+            n_tokens (int): the number of tokens given to each plauer
             rolls (list[int | tuple[int, int]]): contains the rolls for each
                                                  turn, comprised of integers
                                                  if single player or a tuple
                                                  of integers if multiplayer
         """
-        self.game: Game = Game(
-            kwargs.get("prompt_name"),
-            kwargs.get("n_fields"),
-            kwargs.get("rolls"),
-            self.player_models,
-            self.chain_of_thought
+        # Loads the correct prompt, depending on chain-of-thought
+        prompt_name: str = kwargs.get("prompt_name")
+        initial_prompt: str = self.load_template(
+            str(RESOURCE_PATH / f"{prompt_name}_cot.template")
+            if self.chain_of_thought
+            else str(RESOURCE_PATH / f"{prompt_name}.template")
         )
+
+        # Creates the Game object
+        self.game: Game = Game(
+            initial_prompt=initial_prompt,
+            n_fields=kwargs.get("n_fields"),
+            n_tokens=kwargs.get("n_tokens"),
+            rolls=kwargs.get("rolls"),
+            player_models=self.player_models,
+            chain_of_thought=self.chain_of_thought
+        )
+
+        # Loads the players to a dict and logs it
         self.players_dic: dict[str: LudoPlayer] = {
             "Player 1": self.game.player_1
         }
