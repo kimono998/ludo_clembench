@@ -12,12 +12,15 @@ sys.path.append(str(Path(__file__).parent.parent.parent))
 from backends import Model
 from clemgame.clemgame import GameBenchmark, GameMaster
 from game import Game
-from player import LudoPlayer, parse_text
+from player import LudoPlayer, HumanPlayer, ProgrammaticPlayer, parse_text
 from scoring import LudoGameScorer
 from clemgame import get_logger
 
 
 GAME_NAME: str = "ludo"
+DIRECTORY_PATH: Path = Path(__file__).parent
+RESOURCE_PATH: Path = DIRECTORY_PATH / "resources"
+
 logger: logging.Logger = get_logger(__name__)
 
 
@@ -51,7 +54,6 @@ class LudoGameMaster(GameMaster):
             reprompting (bool): allows for reprompting of the LLM if True
         """
         super().__init__(GAME_NAME, experiment, player_models)
-        self.player_models: list[Model] = player_models
         self.chain_of_thought: bool = chain_of_thought
         self.attempt_limit: int = 3 if reprompting else 1
         self.error: tuple[str, str | None] | None = None
@@ -62,21 +64,34 @@ class LudoGameMaster(GameMaster):
         with the player models, to the instance-specific Game object.
 
         Args:
-            experiment_name (str): the name of the experiment, used to load
-                                   the appropriate prompt
+            prompt_name (str): the name of the experiment, used to load the
+                               appropriate prompt
             n_fields (int): the number of fields on the board
+            n_tokens (int): the number of tokens given to each plauer
             rolls (list[int | tuple[int, int]]): contains the rolls for each
                                                  turn, comprised of integers
                                                  if single player or a tuple
                                                  of integers if multiplayer
         """
-        self.game: Game = Game(
-            kwargs.get("prompt_name"),
-            kwargs.get("n_fields"),
-            kwargs.get("rolls"),
-            self.player_models,
-            self.chain_of_thought
+        # Loads the correct prompt, depending on chain-of-thought
+        prompt_name: str = kwargs.get("prompt_name")
+        initial_prompt: str = self.load_template(
+            str(RESOURCE_PATH / f"{prompt_name}_cot.template")
+            if self.chain_of_thought
+            else str(RESOURCE_PATH / f"{prompt_name}.template")
         )
+
+        # Creates the Game object
+        self.game: Game = Game(
+            initial_prompt=initial_prompt,
+            n_fields=kwargs.get("n_fields"),
+            n_tokens=kwargs.get("n_tokens"),
+            rolls=kwargs.get("rolls"),
+            player_models=self.player_models,
+            chain_of_thought=self.chain_of_thought
+        )
+
+        # Loads the players to a dict and logs it
         self.players_dic: dict[str: LudoPlayer] = {
             "Player 1": self.game.player_1
         }
@@ -277,7 +292,7 @@ class LudoGameMaster(GameMaster):
                         continue
                         
                     self.error = ("not_moved_to_board", token)
-                    self.game.error_count+=1
+                    self.game.error_count +=1
                     return False
                   
                 else:
@@ -285,7 +300,7 @@ class LudoGameMaster(GameMaster):
                         check_list.append(True)
                         continue
                     self.error = ("not_moved", token)
-                    self.game.error_count+=1
+                    self.game.error_count +=1
                     return False
                   
             else:
@@ -376,7 +391,7 @@ class LudoGameMaster(GameMaster):
             # if parsing failes, reprompt so that we get a good format
             if not move:
                 self.error: str = ("parsing_failed", None)
-                self._reprompt_loop(player)
+                self._reprompt_player(player)
 
             # Updates game attributes if move is valid
             else:
@@ -409,26 +424,10 @@ class LudoGameMaster(GameMaster):
 
                 # Reprompt the player if not
                 else:
-                    self._reprompt_loop(player)
+                    self._reprompt_player(player)
 
         return False, response_text, move
 
-    def _reprompt_loop(self, player):
-
-        self.log_event(
-            from_=f"GM",
-            to="GM",
-            action={'type': f'error', 'content': self.error[0]}
-        )
-        self.game.reprompt(self.error[0], self.error[1])
-        self.error = None
-        message = self.game.context[-1]
-        self.game.total_retry_count += 1
-        self.log_event(
-            from_="GM",
-            to=f"{player}",
-            action={'type': 'reprompt', 'content': message}
-        )
     def _get_moved_token(self, tokens_moved: dict[str: bool]) -> str | None:
         """
         Given token-bool pairs, where the boolean value is True if the token
@@ -566,6 +565,33 @@ class LudoGameMaster(GameMaster):
         self.log_key('Aborted', self.game.is_aborted)
         self.log_key('Error count', self.game.error_count)
         self.log_key('Turns played', self.game.turn)
+
+    def _reprompt_player(
+            self,
+            player: LudoPlayer | HumanPlayer | ProgrammaticPlayer
+    ) -> None:
+        """
+        Upon encountering one of several errors, the player is reprompted. The
+        error is logged, the reprompt procedure is carried out, and attributes
+        are updated.
+
+        Args:
+            player (LudoPlayer | HumanPlayer | ProgrammaticPlayer): the player
+        """
+        self.log_event(
+            from_=f"GM",
+            to="GM",
+            action={'type': f'error', 'content': self.error[0]}
+        )
+        self.game.reprompt(self.error[0], self.error[1])
+        self.error = None
+        message = self.game.context[-1]
+        self.game.total_retry_count += 1
+        self.log_event(
+            from_="GM",
+            to=f"{player}",
+            action={'type': 'reprompt', 'content': message}
+        )
 
     def _update_player_dict(self, move, player) -> None:
         """
