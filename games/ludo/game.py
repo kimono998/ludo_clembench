@@ -95,7 +95,7 @@ class Game(GameResourceLocator):
         else:
             self.context.append({"role": role, "content": message})
 
-    def reprompt(self, error_type: str, token: str | None = None) -> None:
+    def reprompt(self, error_type: str, msg, token: str | None = None) -> None:
         """
         Specifies the error, then asks the player to submit a new move.
 
@@ -110,7 +110,7 @@ class Game(GameResourceLocator):
                 message += ("The response format is not correct.\n"
                             "Please state your answer in this format\n MY MOVE: X -> N ; Y -> N")
             case "simultaneous_move":
-                message += "Both of your in-play tokens were moved simultaneously. "
+                message += "Both of your in-play tokens were moved simultaneously. Please re-count the positions and think this through! "
             case "not_moved_to_board":
                 message += f"Token {token} can be played to the board but wasn't. "
             case "not_moved":
@@ -118,7 +118,8 @@ class Game(GameResourceLocator):
             case "incorrect_move":
                 message += f"Token {token} was moved incorrectly. "
 
-        message += "Please try again."
+        message += "Please try again. \n"
+        message += msg
 
         self.add_message(message)
         self.reprompt_attempts += 1

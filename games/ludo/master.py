@@ -19,7 +19,7 @@ from clemgame import get_logger
 
 GAME_NAME: str = "ludo"
 logger: Logger = get_logger(__name__)
-
+REPROMPT_LIMIT = 3
 class LudoGameMaster(GameMaster):
     """
     In carrying out the game 'Ludo' with a LLM, this class controls the general
@@ -52,7 +52,9 @@ class LudoGameMaster(GameMaster):
         super().__init__(GAME_NAME, experiment, player_models)
         self.player_models: list[Model] = player_models
         self.chain_of_thought: bool = chain_of_thought
-        self.attempt_limit: int = 3 if reprompting else 1
+        self.attempt_limit: int = REPROMPT_LIMIT if reprompting else 1
+        self.do_reprompt = reprompting
+        self.cot = chain_of_thought
         self.error: str | None = None
 
     def setup(self, **kwargs) -> None:
@@ -100,13 +102,17 @@ class LudoGameMaster(GameMaster):
         """
         while not self._check_game_status():
             logger.info("Game turn: %d", self.game.turn)
+
             self.log_next_turn()
             self.log_event(
                 from_="GM",
                 to="GM",
                 action={
                     'type': 'current state',
-                    'content': self.players_dic
+                    'content': {token: value['position']
+                                for player in self.players_dic.keys()
+                                for token, value in self.players_dic[player].tokens.items()
+                                }
                 }
             )
             logger.info(f"current_state: {self.game.current_state}")
@@ -368,7 +374,21 @@ class LudoGameMaster(GameMaster):
             # if parsing failes, reprompt so that we get a good format
             if not move:
                 self.error: str = ("parsing_failed", None)
-                self._reprompt_loop(player)
+                self.log_event(
+                    from_=f"GM",
+                    to="GM",
+                    action={'type': f'error', 'content': self.error[0]}
+                )
+                # if reprompting enabled, send to reprompting loop.
+                # else break the loop
+                if self.do_reprompt:
+                    self.game.add_message(
+                        response_text,
+                        role="assistant"
+                    )
+                    self._reprompt_loop(player, message)
+                else:
+                    break
 
             # Updates game attributes if move is valid
             else:
@@ -401,17 +421,24 @@ class LudoGameMaster(GameMaster):
 
                 # Reprompt the player if not
                 else:
-                    self._reprompt_loop(player)
+                    self.log_event(
+                        from_=f"GM",
+                        to="GM",
+                        action={'type': f'error', 'content': self.error[0]}
+                    )
+                    if self.do_reprompt:
+                        self.game.add_message(
+                            response_text,
+                            role="assistant"
+                        )
+                        self._reprompt_loop(player, message)
+                    else:
+                        break
         return False, response_text, move
 
-    def _reprompt_loop(self, player):
+    def _reprompt_loop(self, player, msg):
 
-        self.log_event(
-            from_=f"GM",
-            to="GM",
-            action={'type': f'error', 'content': self.error[0]}
-        )
-        self.game.reprompt(self.error[0], self.error[1])
+        self.game.reprompt(self.error[0], msg, self.error[1])
         self.error = None
         message = self.game.context[-1]
         self.game.total_retry_count += 1
@@ -561,7 +588,9 @@ class LudoGameMaster(GameMaster):
         self.log_key('Aborted', self.game.is_aborted)
         self.log_key('Error count', self.game.error_count)
         self.log_key('Turns played', self.game.turn)
-
+        self.log_key('Multiplayer', 1 if self.game.player_2 else 0)
+        self.log_key('Reprompting', 1 if self.do_reprompt else 0)
+        self.log_key('Chain of Thought', 1 if self.cot else 0)
     def _update_player_dict(self, move, player) -> None:
         """
         Updates the player's tokens' positions in the players dictionary based
@@ -584,8 +613,8 @@ class LudoGameBenchmark(GameBenchmark):
     # TODO Determine if chain-of-thought and reprompting should be passed to LudoGameBenchmark at instantiation
     def __init__(
             self,
-            chain_of_thought: bool = False,
-            reprompting: bool = False
+            chain_of_thought: bool = True,
+            reprompting: bool = True
     ):
         """
         Passes along the game name and allows for the creation of the game
