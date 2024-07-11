@@ -27,6 +27,7 @@ class GameSim:
             turn (int): the current turn number
         """
         self.n_fields: int = n_fields
+        self.n_tokens: int = len(token_positions)
         self.token_positions: dict = token_positions
         self.rolls: list = rolls
         self.turn: int = turn
@@ -131,18 +132,27 @@ class GameSim:
         Returns:
             int: the score of the game
         """
-        if self.is_terminal():
-            if (
-                self.token_positions['X'] == self.n_fields and
-                self.token_positions['Y'] == self.n_fields
-            ):
-                return -100
+        # if self.is_terminal():
+        #     if (
+        #         self.token_positions['X'] == self.n_fields and
+        #         self.token_positions['Y'] == self.n_fields
+        #     ):
+        #         return -100
 
-            elif (
-                self.token_positions['A'] == self.n_fields and
-                self.token_positions['B'] == self.n_fields
-            ):
-                return 100
+        #     elif (
+        #         self.token_positions['A'] == self.n_fields and
+        #         self.token_positions['B'] == self.n_fields
+        #     ):
+        #         return 100
+
+        # TODO Fix -- does token_positions contain all two/four tokens?
+        # If game is terminal, score according to player
+        if self.is_terminal() and all(
+            self.token_positions[token] == self.n_fields
+            for token in self.token_positions
+        ):      
+            return -100 if self.token_positions["X"] else 100
+            
 
         # Heuristic: Calculate the progress of each player's tokens
         progress: int = sum(
@@ -166,8 +176,12 @@ class GameSim:
         Returns:
             list[str]: the tokens associated with the player
         """
-        return ['A', 'B'] if player == 1 else ['X', 'Y']
-
+        match self.n_tokens:
+            case 1:
+                return ["A"] if player == 1 else ["X"]
+            case 2:
+                return ['A', 'B'] if player == 1 else ['X', 'Y']
+        
     def _is_out(self, token: str) -> bool:
         """
         Checks if the token is out of the base.
@@ -220,7 +234,7 @@ def minimax(
     # If the game is at its terminal state, it is scored
     if (
         game_state.is_terminal() or
-        game_state.turn > len(game_state.rolls)-1
+        game_state.turn > len(game_state.rolls) - 1
     ):
         return game_state.score(), None
     
