@@ -28,7 +28,7 @@ class LudoInstanceGenerator(GameInstanceGenerator):
         Passes along the game name to the parent class.
         """
         super().__init__(GAME_NAME)
-
+    
     def on_generate(self, **kwargs) -> None:
         """
         Given a list of experiment configurations, generates the appropriate
@@ -59,123 +59,39 @@ class LudoInstanceGenerator(GameInstanceGenerator):
     def _check_sequence(
             self,
             n_fields: int,
+            n_tokens: int,
             rolls: list[int]
-    ) -> tuple[bool, int] | bool:
+    ) -> int:
         """
         Given the size of the board and a sequence of rolls, checks that the
         sequence of rolls will result in a game instance that is solvable.
         
         Args:
             n_fields (int): the size of the board
+            n_tokens (int): the number of tokens to be given to each player
             rolls (list[int]): contains a sequence of die rolls
         
         Returns:
-            tuple[bool, int] | bool: either a tuple containing a bool (True if
-                                     the sequence is solveable and False
-                                     otherwise) and an integer (the minimum
-                                     number of moves required to solve the
-                                     sequence) or a bool (False, indicating
-                                     that the sequence is not solveable)
+            int: minimum number of moves required to solve the die sequence
         """
-        memorized_moves: dict = {}
+        match n_tokens:
+            case 1:
+                min_moves: int = find_monotoken_minimum(
+                    rolls=rolls,
+                    n_fields=n_fields,
+                    memorized_moves=dict()
+                )
+            case 2:
+                min_moves: int = find_multitoken_minimum(
+                    rolls=rolls,
+                    n_fields=n_fields,
+                    memorized_moves=dict()
+                )
 
-
-        # Initiates the search for the minimum move count
-        initial_X, initial_Y = 0, 0
-        min_move_count, _ = self.find_minimum(initial_X, initial_Y,0, rolls, n_fields, memorized_moves)
-
-        if min_move_count == float('inf'):
+        if min_moves[0] == float('inf'):
             return -1
 
-        return min_move_count
-
-    def find_minimum(self,
-                     X: int,
-                     Y: int,
-                     roll_index: int,
-                     rolls: list,
-                     n_fields: int,
-                     memorized_moves: dict
-                     ) -> tuple[int, list[str]]:
-        """
-        Finds the minimum number of moves required to solve a sequence of
-        die rolls, as well as the moves associated with that minimum.
-
-        Args:
-            X (int): position of the token 'X' in terms of the field
-                     number it is currently occupying
-            Y (int): position of the token 'Y' in terms of the field
-                     number it is currently occupying
-            roll_index (int): the index of the current roll being
-                              considered
-
-        Returns:
-            tuple[int, list[str]]: contains the minimum number of moves
-                                   required to solve the sequence and the
-                                   associated move sequence
-
-        """
-        # For completed sequences
-        if X == n_fields and Y == n_fields:
-            return 0, []
-
-        # For sequences that have surpassed the turn limit
-        if roll_index >= len(rolls):
-            return float('inf'), []
-
-        # If the move has already been analyzed
-        if (X, Y, roll_index) in memorized_moves:
-            return memorized_moves[(X, Y, roll_index)]
-
-        roll: int = rolls[roll_index]
-        next_roll_index: int = roll_index + 1
-        min_move_count = float('inf')
-        best_sequence: list[str] = []
-
-        # If X is in play, calculates its next position
-        if X != 0:
-            new_X: int = X + roll if X + roll <= n_fields else X
-
-            # Analyzes next position if it is valid and not final
-            if new_X != Y or new_X == n_fields:
-                next_moves, sequence = self.find_minimum(new_X, Y, next_roll_index, rolls, n_fields, memorized_moves)
-
-                # Seeks minimum required moves to solve the sequence
-                if next_moves + 1 < min_move_count:
-                    min_move_count = next_moves + 1
-                    best_sequence = ['X', new_X] + sequence
-
-        # If Y is in play, calculates its next position
-        if Y != 0:
-            new_Y: int = Y + roll if Y + roll <= n_fields else Y
-
-            # Analyzes next position if it is valid and not final
-            if new_Y != X or new_Y == n_fields:
-                next_moves, sequence = self.find_minimum(X, new_Y, next_roll_index, rolls, n_fields, memorized_moves)
-
-                # Seeks minimum required moves to solve the sequence
-                if next_moves + 1 < min_move_count:
-                    min_move_count = next_moves + 1
-                    best_sequence = ['Y', new_Y] + sequence
-
-        # If a 6 is rolled and either token can be moved to the board
-        if roll == 6:
-            if X == 0 and Y != 1:
-
-                next_moves, sequence = self.find_minimum(1, Y, next_roll_index, rolls, n_fields, memorized_moves)
-                if next_moves + 1 < min_move_count:
-                    min_move_count = next_moves + 1
-                    best_sequence = ['X', 1] + sequence
-
-            if Y == 0 and 1 != X:
-
-                next_moves, sequence = self.find_minimum(X, 1, next_roll_index, rolls, n_fields, memorized_moves)
-                if next_moves + 1 < min_move_count:
-                    min_move_count = next_moves + 1
-                    best_sequence = ['Y', 1] + sequence
-        memorized_moves[(X, Y, roll_index)] = (min_move_count, best_sequence)
-
-        return min_move_count, best_sequence
+        return min_moves
 
     def _generate_experiment(
             self,
@@ -292,14 +208,22 @@ class LudoInstanceGenerator(GameInstanceGenerator):
                                                      required to solve the
                                                      sequence
         """
-        p1_rolls, min_moves = self._generate_valid_rolls(n_tokens, n_fields, n_rolls)
+        p1_rolls, min_moves = self._generate_valid_rolls(
+            n_tokens=n_tokens,
+            n_fields=n_fields,
+            n_rolls=n_rolls
+        )
         
         match len(dialogue_partners):
             case 1:
                 rolls: list[int] = p1_rolls
 
             case 2:
-                p2_rolls, _ = self._generate_valid_rolls(n_tokens, n_fields, n_rolls)
+                p2_rolls, _ = self._generate_valid_rolls(
+                    n_tokens=n_tokens,
+                    n_fields=n_fields,
+                    n_rolls=n_rolls
+                )
                 rolls: list[int] = [
                     (p1_roll, p2_roll)
                     for p1_roll, p2_roll
@@ -308,7 +232,6 @@ class LudoInstanceGenerator(GameInstanceGenerator):
 
         return rolls, min_moves
 
-    # TODO Adapt to single token
     def _generate_valid_rolls(
             self,
             n_tokens: int,
@@ -333,13 +256,209 @@ class LudoInstanceGenerator(GameInstanceGenerator):
         """
         while True:
             rolls: list[int] = [np.random.randint(1, 7) for _ in range(n_rolls)]
-            match n_tokens:
-                case 1:
-                    min_moves: tuple | bool = self._check_sequence(n_fields, rolls)
-                case 2:
-                    min_moves: tuple | bool = self._check_sequence(n_fields, rolls)
-            if min_moves:
+            min_moves: int = self._check_sequence(
+                n_fields=n_fields,
+                n_tokens=n_tokens,
+                rolls=rolls
+            )
+            if min_moves != -1:
                 return rolls, min_moves
+            
+
+def find_monotoken_minimum(
+            rolls: list[int],
+            n_fields: int,
+            memorized_moves: dict,
+            X: int = 0,
+            index: int = 0,
+    ) -> tuple[int, list[str]]:
+        """
+        Finds the minimum number of moves required to solve a sequence of
+        die rolls, as well as the moves associated with that minimum.
+
+        Args:
+            TODO rolls (list[int]):
+            TODO n_fields (int):
+            TODO memorized_moves (dict[tuple: tuple]):
+            X (int): position of the token 'X' in terms of the field
+                     number it is currently occupying
+            index (int): the index of the current roll being considered
+
+        Returns:
+            tuple[int, list[str]]: contains the minimum number of moves
+                                   required to solve the sequence and the
+                                   associated move sequence
+        """
+        # For completed sequences
+        if X == n_fields:
+            return 0, []
+
+        # For sequences that have surpassed the turn limit
+        if index >= len(rolls):
+            return float('inf'), []
+
+        # If the move has already been analyzed
+        if (X, index) in memorized_moves:
+            return memorized_moves[(X, index)]
+
+        roll: int = rolls[index]
+        next_index: int = index + 1
+        min_move_count: float | int = float('inf')
+        best_sequence: list[str] = []
+
+        # If X is in play, calculates its next position
+        if X != 0:
+            new_X: int = X + roll if X + roll <= n_fields else X
+
+            # Analyzes next position if it is valid and not final
+            if new_X == n_fields:
+                next_moves, sequence = find_multitoken_minimum(
+                    rolls=rolls,
+                    n_fields=n_fields,
+                    memorized_moves=memorized_moves,
+                    X=new_X,
+                    index=next_index
+                )
+
+                # Seeks minimum required moves to solve the sequence
+                if next_moves + 1 < min_move_count:
+                    min_move_count = next_moves + 1
+                    best_sequence = ['X', new_X] + sequence
+
+        # If a 6 is rolled and either token can be moved to the board
+        if roll == 6:
+            if X == 0:
+                next_moves, sequence = find_multitoken_minimum(
+                    rolls=rolls,
+                    n_fields=n_fields,
+                    memorized_moves=memorized_moves,
+                    X=1,
+                    index=next_index
+                )
+                if next_moves + 1 < min_move_count:
+                    min_move_count = next_moves + 1
+                    best_sequence = ['X', 1] + sequence
+
+        memorized_moves[(X, index)] = (min_move_count, best_sequence)
+
+        return min_move_count, best_sequence
+
+
+def find_multitoken_minimum(
+            rolls: list[int],
+            n_fields: int,
+            memorized_moves: dict,
+            X: int = 0,
+            Y: int = 0,
+            index: int = 0,
+    ) -> tuple[int, list[str]]:
+        """
+        Finds the minimum number of moves required to solve a sequence of
+        die rolls, as well as the moves associated with that minimum.
+
+        Args:
+            TODO rolls (list[int]):
+            TODO n_fields (int):
+            TODO memorized_moves (dict[tuple: tuple]):
+            X (int): position of the token 'X' in terms of the field
+                     number it is currently occupying
+            Y (int): position of the token 'Y' in terms of the field
+                     number it is currently occupying
+            index (int): the index of the current roll being considered
+
+        Returns:
+            tuple[int, list[str]]: contains the minimum number of moves
+                                   required to solve the sequence and the
+                                   associated move sequence
+        """
+        # For completed sequences
+        if X == n_fields and Y == n_fields:
+            return 0, []
+
+        # For sequences that have surpassed the turn limit
+        if index >= len(rolls):
+            return float('inf'), []
+
+        # If the move has already been analyzed
+        if (X, Y, index) in memorized_moves:
+            return memorized_moves[(X, Y, index)]
+
+        roll: int = rolls[index]
+        next_index: int = index + 1
+        min_move_count = float('inf')
+        best_sequence: list[str] = []
+
+        # If X is in play, calculates its next position
+        if X != 0:
+            new_X: int = X + roll if X + roll <= n_fields else X
+
+            # Analyzes next position if it is valid and not final
+            if new_X != Y or new_X == n_fields:
+                next_moves, sequence = find_multitoken_minimum(
+                    rolls=rolls,
+                    n_fields=n_fields,
+                    memorized_moves=memorized_moves,
+                    X=new_X,
+                    Y=Y,
+                    index=next_index
+                )
+
+                # Seeks minimum required moves to solve the sequence
+                if next_moves + 1 < min_move_count:
+                    min_move_count = next_moves + 1
+                    best_sequence = ['X', new_X] + sequence
+
+        # If Y is in play, calculates its next position
+        if Y != 0:
+            new_Y: int = Y + roll if Y + roll <= n_fields else Y
+
+            # Analyzes next position if it is valid and not final
+            if new_Y != X or new_Y == n_fields:
+                next_moves, sequence = find_multitoken_minimum(
+                    rolls=rolls,
+                    n_fields=n_fields,
+                    memorized_moves=memorized_moves,
+                    X=X,
+                    Y=new_Y,
+                    index=next_index
+                )
+
+                # Seeks minimum required moves to solve the sequence
+                if next_moves + 1 < min_move_count:
+                    min_move_count = next_moves + 1
+                    best_sequence = ['Y', new_Y] + sequence
+
+        # If a 6 is rolled and either token can be moved to the board
+        if roll == 6:
+            if X == 0 and Y != 1:
+                next_moves, sequence = find_multitoken_minimum(
+                    rolls=rolls,
+                    n_fields=n_fields,
+                    memorized_moves=memorized_moves,
+                    X=1,
+                    Y=Y,
+                    index=next_index
+                )
+                if next_moves + 1 < min_move_count:
+                    min_move_count = next_moves + 1
+                    best_sequence = ['X', 1] + sequence
+
+            if Y == 0 and 1 != X:
+                next_moves, sequence = find_multitoken_minimum(
+                    rolls=rolls,
+                    n_fields=n_fields,
+                    memorized_moves=memorized_moves,
+                    X=X,
+                    Y=1,
+                    index=next_index
+                )
+                if next_moves + 1 < min_move_count:
+                    min_move_count = next_moves + 1
+                    best_sequence = ['Y', 1] + sequence
+
+        memorized_moves[(X, Y, index)] = (min_move_count, best_sequence)
+
+        return min_move_count, best_sequence
 
 
 if __name__ == '__main__':

@@ -10,11 +10,11 @@ from pathlib import Path
 sys.path.append(str(Path(__file__).parent.parent.parent))
 
 from backends import Model
+from clemgame import get_logger
 from clemgame.clemgame import GameBenchmark, GameMaster
 from game import Game
-from player import LudoPlayer, HumanPlayer, ProgrammaticPlayer, parse_text
+from player import LudoPlayer, parse_text
 from scoring import LudoGameScorer
-from clemgame import get_logger
 
 
 GAME_NAME: str = "ludo"

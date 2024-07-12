@@ -11,7 +11,7 @@ sys.path.append(str(Path(__file__).parent.parent.parent))
 from minimax import GameSim, minimax
 from clemgame.clemgame import GameScorer
 from clemgame.metrics import *
-from instancegenerator import LudoInstanceGenerator
+from instancegenerator import find_multitoken_minimum
 
 GAME_NAME: str = "ludo"
 ATTEMPT_LIMIT: int = 3
@@ -115,14 +115,14 @@ class LudoGameScorer(GameScorer):
     def _sp_move_score(self, episode_interactions, current_state: dict, idx: int, updated_state: dict):
         memorized_moves = {}
         tokens = current_state.keys()
-        generator = LudoInstanceGenerator()
-        _, moves = generator.find_minimum(current_state[tokens[0]],
-                                       current_state[tokens[1]],
-                                       idx,
-                                       episode_interactions["Rolls"],
-                                       episode_interactions["Board size"],
-                                       memorized_moves
-                                       )
+        _, moves = find_multitoken_minimum(
+            rolls=episode_interactions["Rolls"],
+            n_fields=episode_interactions["Board size"],
+            memorized_moves=memorized_moves,
+            X=current_state[tokens[0]],
+            Y=current_state[tokens[1]],
+            index=idx
+        )
 
         simulated_move = moves[0]
         selected_move = current_state.copy()
