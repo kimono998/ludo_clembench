@@ -279,21 +279,27 @@ def parse_text(text: str, player: LudoPlayer) -> dict[str: int]:
 
     Returns:
         dict[str: int]: contains token-position pairs
-
-    Raises:
-        ValueError: raises when the text does not match the expected
-                    format; prints a preview of the non-conforming text
     """
     tokens: list[str] = list(player.tokens.keys())
-    matches: re.Match = re.search(
-        pattern=rf"MY MOVE: {tokens[0]} -> (\d+) ; {tokens[1]} -> (\d+)",
-        string=text
-    )
+    
+    match player.n_tokens:
+        case 1:
+            matches: re.Match = re.search(
+                rf"MY MOVE: {tokens[0]} -> (\d+)",
+                text
+            )
+            token_dict: dict[str: int] = {tokens[0]: int(matches.group(1))}
+        case 2:
+            matches: re.Match = re.search(
+                rf"MY MOVE: {tokens[0]} -> (\d+) ; {tokens[1]} -> (\d+)",
+                text
+            )
+            token_dict: dict[str: int] = {
+                tokens[0]: int(matches.group(1)),
+                tokens[1]: int(matches.group(2))
+            }
 
-    return (
-        {tokens[0]: int(matches.group(1)), tokens[1]: int(matches.group(2))}
-        if matches else False
-    )
+    return token_dict if matches else False
 
 
 if __name__ == '__main__':

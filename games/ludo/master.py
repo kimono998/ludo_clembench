@@ -67,7 +67,7 @@ class LudoGameMaster(GameMaster):
             prompt_name (str): the name of the experiment, used to load the
                                appropriate prompt
             n_fields (int): the number of fields on the board
-            n_tokens (int): the number of tokens given to each plauer
+            n_tokens (int): the number of tokens given to each player
             rolls (list[int | tuple[int, int]]): contains the rolls for each
                                                  turn, comprised of integers
                                                  if single player or a tuple
@@ -210,6 +210,7 @@ class LudoGameMaster(GameMaster):
     def _check_both_tokens_moved(
         self,
         tokens: dict[str: dict],
+        n_tokens: int,
         move: dict[str: int]
     ) -> bool:
         """
@@ -219,12 +220,20 @@ class LudoGameMaster(GameMaster):
             tokens (dict[str: dict]): specifies the positions of the player's
                                       token and whether or not they are on the
                                       board
+            n_tokens (int): the number of tokens given to each player
             move (dict[str: int]): contains token-position pairs
 
         Returns:
             bool: True if both tokens have been moved, False otherwise
         """
-        return bool(all(value for value in self._check_token_moved(tokens, move).values()))
+        match n_tokens:
+            case 1:
+                return False
+            case 2:
+                return all(
+                    value for value
+                    in self._check_token_moved(tokens, move).values()
+                )
     
     def _check_game_status(self) -> str | bool:
         """
@@ -251,7 +260,6 @@ class LudoGameMaster(GameMaster):
         else:
             return False
     
-    # TODO Adapt to single token
     def _check_move(
         self,
         tokens: dict[str: dict],
@@ -268,22 +276,19 @@ class LudoGameMaster(GameMaster):
             tokens (dict[str: dict]): specifies the positions of the player's
                                       token and whether or not they are on the
                                       board
-            TODO n_tokens (int):
+            n_tokens (int): the number of tokens given to each player
             move (dict[str: int]): contains token-position pairs
             roll (int): the die roll for the current turn
             n_fields (int): indicates the size of the board
 
         Returns:
             bool: True if the move is valid
-
-        Raises:
-            ValueError: raised if the move is invalid, explaining why
         """
-        if self._check_both_tokens_moved(tokens, move):
+        if self._check_both_tokens_moved(tokens, n_tokens, move):
             self.error = ("simultaneous_move", None)
             return False
 
-        moved_token: str = self._get_moved_token(self._check_token_moved(tokens, move))
+        moved_token: str = self._get_moved_token(tokens, move)
         check_list: list = []
 
         for token in move.keys():
@@ -365,7 +370,6 @@ class LudoGameMaster(GameMaster):
             for token, position in move.items()
         }
     
-    # TODO Adapt to single token
     def _does_game_proceed(
             self,
             player: str,
@@ -383,7 +387,7 @@ class LudoGameMaster(GameMaster):
             player (str): the name of the player whose move is being checked
             message (str): the message to be sent to the player
             roll (int): the roll of the dice for the current turn
-            TODO n_tokens (int):
+            n_tokens (int): the number of tokens given to each player
 
         Returns:
             tuple: contains a boolean (True if the game can proceed and False
@@ -403,6 +407,7 @@ class LudoGameMaster(GameMaster):
             else:
                 if self._check_move(
                     tokens=self.players_dic[player].tokens,
+                    n_tokens=n_tokens,
                     move=move,
                     roll=roll,
                     n_fields=self.game.n_fields
@@ -434,22 +439,30 @@ class LudoGameMaster(GameMaster):
 
         return False, response_text, move
 
-    def _get_moved_token(self, tokens_moved: dict[str: bool]) -> str | None:
+    def _get_moved_token(
+            self,
+            tokens: dict[str: dict],
+            move: dict[str: int]
+    ) -> str | None:
         """
         Given token-bool pairs, where the boolean value is True if the token
         was moved, retrieves the token if it was moved.
 
         Args:
-            tokens_moved (dict[str: bool]): contains token-bool pairs, which
-                                            are True if said token has been
-                                            moved, False otherwise
+            tokens (dict[str: dict]): specifies the positions of the player's
+                                      token and whether or not they are on the
+                                      board
+            move (dict[str: int]): contains token-position pairs
 
         Returns:
             str | None: name of the token that was moved
         """
+        tokens_moved: dict[str: bool] = self._check_token_moved(tokens, move)
+        
         for token in tokens_moved.keys():
             if tokens_moved[token]:
                 return token
+
         return None
     
     def _get_response(self, player: str, message: str) -> tuple[dict, str]:
@@ -481,7 +494,11 @@ class LudoGameMaster(GameMaster):
             )
         )
 
-        move: dict[str: int] = parse_text(response_text, self.players_dic[player])
+        move: dict[str: int] = parse_text(
+            text=response_text,
+            player=self.players_dic[player]
+        )
+        
         if move:
             print()
             print(self.players_dic[player].tokens)
@@ -514,17 +531,12 @@ class LudoGameMaster(GameMaster):
             bool: True if the game is done, False otherwise
         """
         for player in self.players_dic.values():
-            token_list: list[str] = (
-                ['X', 'Y']
-                if type(player) is LudoPlayer
-                else ['A', 'B']
-            )
-            if (
-                player.tokens[token_list[0]]['position'] == self.game.n_fields and
-                player.tokens[token_list[1]]['position'] == self.game.n_fields
+            if all(
+                token["position"] == self.game.n_fields
+                for token in player.tokens.values()
             ):
                 return True
-
+            
         return False
     
     def _is_taken(self, tokens: dict[str: dict], pos: int) -> bool:
@@ -538,11 +550,10 @@ class LudoGameMaster(GameMaster):
         Returns:
             bool: True if the position is occupied, False otherwise
         """
-
-        for token in tokens.keys():
-            if tokens[token]["position"] == pos and pos != self.game.n_fields:
+        for token in tokens.values():
+            if token["position"] == pos and pos != self.game.n_fields:
                 return True
-
+            
         return False
 
     def _is_won(self) -> bool:
@@ -552,9 +563,9 @@ class LudoGameMaster(GameMaster):
         Returns:
             bool: True if player 1 has won the game, False otherwise
         """
-        return (
-            self.game.player_1.tokens['X']['position'] == self.game.n_fields and
-            self.game.player_1.tokens['Y']['position'] == self.game.n_fields
+        return all(
+            token["position"] == self.game.n_fields
+            for token in self.game.player_1.tokens.values()
         )
     
     def _log_assets(self) -> None:
@@ -563,6 +574,7 @@ class LudoGameMaster(GameMaster):
         """
         self.log_key('Board size', self.game.n_fields)
         self.log_key('Number of players', len(self.players_dic))
+        self.log_key('Number of tokens', self.game.n_tokens)
         self.log_key('Rolls', self.game.rolls)
         self.log_key('Played turns', self.game.turn)
         self.log_key('Turn limit', self.game.turn_limit)
