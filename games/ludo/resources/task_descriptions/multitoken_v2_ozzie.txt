@@ -34,7 +34,8 @@ Movement:
 When deciding which token to move:
 
 1) Prioritize moving the token that is closest to the finish line if it can move without exceeding the board length.
-2) If neither token can reach the finish line without exceeding the board length, move the token that is farthest from the start to maximize board advancement.
+2) If neither token can reach the finish line without exceeding the board length, move the token that is farthest from the start 
+to maximize board advancement.
 3) Consider the potential of blocking the opponent's path or creating a strategic setup for future moves if applicable.
 
 Ending the game:
