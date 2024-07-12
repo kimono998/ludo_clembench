@@ -133,7 +133,7 @@ class LudoInstanceGenerator(GameInstanceGenerator):
                 # Seeks minimum required moves to solve the sequence
                 if next_moves + 1 < min_move_count:
                     min_move_count = next_moves + 1
-                    best_sequence = ['X', new_X] + sequence
+                    best_sequence = [('X', new_X)] + sequence
 
         # If Y is in play, calculates its next position
         if Y != 0:
@@ -146,7 +146,7 @@ class LudoInstanceGenerator(GameInstanceGenerator):
                 # Seeks minimum required moves to solve the sequence
                 if next_moves + 1 < min_move_count:
                     min_move_count = next_moves + 1
-                    best_sequence = ['Y', new_Y] + sequence
+                    best_sequence = [('Y', new_Y)] + sequence
 
         # If a 6 is rolled and either token can be moved to the board
         if roll == 6:
@@ -155,14 +155,14 @@ class LudoInstanceGenerator(GameInstanceGenerator):
                 next_moves, sequence = self.find_minimum(1, Y, next_roll_index, rolls, n_fields, memorized_moves)
                 if next_moves + 1 < min_move_count:
                     min_move_count = next_moves + 1
-                    best_sequence = ['X', 1] + sequence
+                    best_sequence = [('X', 1)] + sequence
 
             if Y == 0 and 1 != X:
 
                 next_moves, sequence = self.find_minimum(X, 1, next_roll_index, rolls, n_fields, memorized_moves)
                 if next_moves + 1 < min_move_count:
                     min_move_count = next_moves + 1
-                    best_sequence = ['Y', 1] + sequence
+                    best_sequence = [('Y', 1)] + sequence
         memorized_moves[(X, Y, roll_index)] = (min_move_count, best_sequence)
 
         return min_move_count, best_sequence

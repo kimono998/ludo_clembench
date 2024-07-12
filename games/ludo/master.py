@@ -54,7 +54,6 @@ class LudoGameMaster(GameMaster):
         self.chain_of_thought: bool = chain_of_thought
         self.attempt_limit: int = REPROMPT_LIMIT if reprompting else 1
         self.do_reprompt = reprompting
-        self.cot = chain_of_thought
         self.error: str | None = None
 
     def setup(self, **kwargs) -> None:
@@ -590,7 +589,7 @@ class LudoGameMaster(GameMaster):
         self.log_key('Turns played', self.game.turn)
         self.log_key('Multiplayer', 1 if self.game.player_2 else 0)
         self.log_key('Reprompting', 1 if self.do_reprompt else 0)
-        self.log_key('Chain of Thought', 1 if self.cot else 0)
+        self.log_key('Chain of Thought', 1 if self.chain_of_thought else 0)
     def _update_player_dict(self, move, player) -> None:
         """
         Updates the player's tokens' positions in the players dictionary based
@@ -724,11 +723,11 @@ if __name__ == "__main__":
         instances_name=instances_name,
         results_dir=results_dir
     )
-    # benchmark.score(
-    #     game_name=game_name,
-    #     experiment_name=experiment_name,
-    #     results_dir=results_dir
-    # )
+    benchmark.score(
+        game_name=game_name,
+        experiment_name=experiment_name,
+        results_dir=results_dir
+    )
     # benchmark.transcripts(
     #     game_name=game_name,
     #     experiment_name=experiment_name,
