@@ -50,12 +50,17 @@ class LudoInstanceGenerator(GameInstanceGenerator):
                 experiment["experiment_name"],
                 experiment["n_instances"],
                 experiment["dialogue_partners"],
-                experiment["prompt_name"],
+                experiment["experiment_name"],
+                experiment["n_tokens"],
                 experiment["n_fields"],
-                experiment["n_rolls"],
+                experiment["n_rolls"]
             )
-
-    def _check_sequence(self, n_fields: int, rolls: list[int]) -> bool:
+    
+    def _check_sequence(
+            self,
+            n_fields: int,
+            rolls: list[int]
+    ) -> tuple[bool, int] | bool:
         """
         Given the size of the board and a sequence of rolls, checks that the
         sequence of rolls will result in a game instance that is solvable.
@@ -65,7 +70,12 @@ class LudoInstanceGenerator(GameInstanceGenerator):
             rolls (list[int]): contains a sequence of die rolls
         
         Returns:
-            bool: True if a move sequence is solvable, False otherwise
+            tuple[bool, int] | bool: either a tuple containing a bool (True if
+                                     the sequence is solveable and False
+                                     otherwise) and an integer (the minimum
+                                     number of moves required to solve the
+                                     sequence) or a bool (False, indicating
+                                     that the sequence is not solveable)
         """
         memorized_moves: dict = {}
 
@@ -168,13 +178,14 @@ class LudoInstanceGenerator(GameInstanceGenerator):
         return min_move_count, best_sequence
 
     def _generate_experiment(
-        self,
-        experiment_name: str,
-        n_instances: int,
-        dialogue_partners: list[tuple[str, str]],
-        prompt_name: str,
-        n_fields: int,
-        n_rolls: int
+            self,
+            experiment_name: str,
+            n_instances: int,
+            dialogue_partners: list[tuple[str, str]],
+            prompt_name: str,
+            n_tokens: int,
+            n_fields: int,
+            n_rolls: int
     ) -> None:
         """
         Given experiment specifications, generates an experiment as well as a
@@ -190,6 +201,7 @@ class LudoInstanceGenerator(GameInstanceGenerator):
                                                        variant
             prompt_name (str): the prompt associated with the desired game
                                variant
+            n_tokens (int): the number of tokens to be given to each player
             n_fields (int): the size of the board in the game
             n_rolls (int): the number of rolls; also the maximum number of
                            turns
@@ -204,18 +216,20 @@ class LudoInstanceGenerator(GameInstanceGenerator):
                 f"in{index + 1:03}",
                 dialogue_partners,
                 prompt_name,
+                n_tokens,
                 n_fields,
                 n_rolls
             )
 
     def _generate_instance(
-        self,
-        experiment: dict,
-        game_id: int,
-        dialogue_partners: dict[str: str],
-        prompt_name: str,
-        n_fields: int,
-        n_rolls: int
+            self,
+            experiment: dict,
+            game_id: int,
+            dialogue_partners: dict[str: str],
+            prompt_name: str,
+            n_tokens: int,
+            n_fields: int,
+            n_rolls: int
     ) -> None:
         """
         Given an instantiated experiment dictionary and the various arguments
@@ -230,45 +244,102 @@ class LudoInstanceGenerator(GameInstanceGenerator):
             dialogue_partners (dict[str: str]): the players in the game
                                                        variant
             prompt_name (str): the initial prompt passed to the LLM
+            n_tokens (int): the number of tokens to be given to each player
             n_fields (int): the size of the board
             n_rolls (int): the number of rolls; also the maximum number of
                            turns
+        """
+        rolls, min_moves = self._get_rolls(
+            dialogue_partners=dialogue_partners,
+            n_tokens=n_tokens,
+            n_fields=n_fields,
+            n_rolls=n_rolls
+        )
+        
+        game_instance: dict = self.add_game_instance(experiment, game_id)
+        game_instance["dialogue_partners"] = dialogue_partners
+        game_instance["prompt_name"] = prompt_name
+        game_instance["n_tokens"] = n_tokens
+        game_instance["n_fields"] = n_fields
+        game_instance["rolls"] = rolls
+        game_instance["min_moves"] = min_moves
 
-        Raises:
-            ValueError: raised if either too few or too many dialogue partners
-                        are introduced
+    def _get_rolls(
+            self,
+            dialogue_partners: dict[str: str],
+            n_tokens: int,
+            n_fields: int,
+            n_rolls: int
+    ) -> tuple[list[int | tuple[int, int]], int]:
+        """
+        Generates valid die rolls resulting in a solvable sequence, depending
+        on the number of dialogue partners and the number of tokens in the
+        game variant.
+
+        Args:
+            dialogue_partners (dict[str: str]): the players in the game
+                                                       variant
+            n_tokens (int): the number of tokens to be given to each player
+            n_fields (int): the size of the board
+            n_rolls (int): the number of rolls; also the maximum number of
+                           turns
+        
+        Returns:
+            tuple[list[int | tuple[int, int]], int]: contains a list of either
+                                                     single or pairs of die
+                                                     rolls, as well as the
+                                                     minimum number of moves
+                                                     required to solve the
+                                                     sequence
+        """
+        p1_rolls, min_moves = self._generate_valid_rolls(n_tokens, n_fields, n_rolls)
+        
+        match len(dialogue_partners):
+            case 1:
+                rolls: list[int] = p1_rolls
+
+            case 2:
+                p2_rolls, _ = self._generate_valid_rolls(n_tokens, n_fields, n_rolls)
+                rolls: list[int] = [
+                    (p1_roll, p2_roll)
+                    for p1_roll, p2_roll
+                    in zip(p1_rolls, p2_rolls)
+                ]
+
+        return rolls, min_moves
+
+    # TODO Adapt to single token
+    def _generate_valid_rolls(
+            self,
+            n_tokens: int,
+            n_fields: int,
+            n_rolls: int
+    ) -> tuple[list[int], int]:
+        """
+        Generates a sequence of die rolls which result in a solvable game,
+        then returns the die rolls and the minimum number of moves required to
+        solve the sequence.
+        
+        Args:
+            n_tokens (int): the number of tokens to be given to each player
+            n_fields (int): the size of the board
+            n_rolls (int): the number of rolls; also the maximum number of
+                           turns
+        
+        Returns:
+            tuple[list[int], int]: contains a list of die rolls and the
+                                   minimum number of moves required to solve
+                                   the sequence
         """
         while True:
-            p1_min_moves = self._check_sequence(
-                n_fields,
-                p1_rolls := [np.random.randint(1, 7) for _ in range(n_rolls)]
-            )
-            if p1_min_moves != -1:
-                match len(dialogue_partners):
-                    case 1:
-                        rolls: list[int] = p1_rolls
-                    case 2:
-                        if self._check_sequence(
-                            n_fields,
-                            p2_rolls := [np.random.randint(1, 7) for _ in range(n_rolls)]
-                        ) != -1:
-                            rolls: list[tuple[int, int]] = [
-                                (p1_roll, p2_roll)
-                                for p1_roll, p2_roll
-                                in zip(p1_rolls, p2_rolls)
-                            ]
-                        else:
-                            continue
-                    case _:
-                        raise ValueError("There should only be two dialogue partners.")
-
-                game_instance: dict = self.add_game_instance(experiment, game_id)
-                game_instance["dialogue_partners"] = dialogue_partners
-                game_instance["prompt_name"] = prompt_name
-                game_instance["n_fields"] = n_fields
-                game_instance["rolls"] = rolls
-                game_instance["min_moves"] = p1_min_moves
-                break
+            rolls: list[int] = [np.random.randint(1, 7) for _ in range(n_rolls)]
+            match n_tokens:
+                case 1:
+                    min_moves: tuple | bool = self._check_sequence(n_fields, rolls)
+                case 2:
+                    min_moves: tuple | bool = self._check_sequence(n_fields, rolls)
+            if min_moves:
+                return rolls, min_moves
 
 
 if __name__ == '__main__':
@@ -280,7 +351,18 @@ if __name__ == '__main__':
             "dialogue_partners": {
                 "player 1": "llm"
             },
-            "prompt_name": "single_player",
+            "n_tokens": 2,
+            "n_fields": 23,
+            "n_rolls": 20
+        },
+        {
+            "experiment_name": "multiplayer",
+            "n_instances": 1,
+            "dialogue_partners": {
+                "player 1": "llm",
+                "player 2": "programmatic"
+            },
+            "n_tokens": 1,
             "n_fields": 23,
             "n_rolls": 20
         }

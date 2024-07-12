@@ -4,7 +4,7 @@ of 'Ludo', describing intended behavior.
 """
 
 import sys
-from logging import Logger
+import logging
 from pathlib import Path
 
 sys.path.append(str(Path(__file__).parent.parent.parent))
@@ -12,14 +12,19 @@ sys.path.append(str(Path(__file__).parent.parent.parent))
 from backends import Model
 from clemgame.clemgame import GameBenchmark, GameMaster
 from game import Game
-from player import LudoPlayer, parse_text
+from player import LudoPlayer, HumanPlayer, ProgrammaticPlayer, parse_text
 from scoring import LudoGameScorer
 from clemgame import get_logger
 
 
 GAME_NAME: str = "ludo"
-logger: Logger = get_logger(__name__)
 REPROMPT_LIMIT = 3
+DIRECTORY_PATH: Path = Path(__file__).parent
+RESOURCE_PATH: Path = DIRECTORY_PATH / "resources"
+
+logger: logging.Logger = get_logger(__name__)
+
+
 class LudoGameMaster(GameMaster):
     """
     In carrying out the game 'Ludo' with a LLM, this class controls the general
@@ -50,12 +55,11 @@ class LudoGameMaster(GameMaster):
             reprompting (bool): allows for reprompting of the LLM if True
         """
         super().__init__(GAME_NAME, experiment, player_models)
-        self.player_models: list[Model] = player_models
         self.chain_of_thought: bool = chain_of_thought
         self.attempt_limit: int = REPROMPT_LIMIT if reprompting else 1
         self.do_reprompt = reprompting
         self.cot = chain_of_thought
-        self.error: str | None = None
+        self.error: tuple[str, str | None] | None = None
 
     def setup(self, **kwargs) -> None:
         """
@@ -63,18 +67,34 @@ class LudoGameMaster(GameMaster):
         with the player models, to the instance-specific Game object.
 
         Args:
-            game_id (str): an identifying string for each game instance
-            initial_prompt (str): the first message sent to the LLM
+            prompt_name (str): the name of the experiment, used to load the
+                               appropriate prompt
             n_fields (int): the number of fields on the board
-            rolls (list[int]): the specific die rolls for each turn
+            n_tokens (int): the number of tokens given to each player
+            rolls (list[int | tuple[int, int]]): contains the rolls for each
+                                                 turn, comprised of integers
+                                                 if single player or a tuple
+                                                 of integers if multiplayer
         """
-        self.game: Game = Game(
-            kwargs.get("prompt_name"),
-            kwargs.get("n_fields"),
-            kwargs.get("rolls"),
-            self.player_models,
-            self.chain_of_thought
+        # Loads the correct prompt, depending on chain-of-thought
+        prompt_name: str = kwargs.get("prompt_name")
+        initial_prompt: str = self.load_template(
+            str(RESOURCE_PATH / f"{prompt_name}_cot.template")
+            if self.chain_of_thought
+            else str(RESOURCE_PATH / f"{prompt_name}.template")
         )
+
+        # Creates the Game object
+        self.game: Game = Game(
+            initial_prompt=initial_prompt,
+            n_fields=kwargs.get("n_fields"),
+            n_tokens=kwargs.get("n_tokens"),
+            rolls=kwargs.get("rolls"),
+            player_models=self.player_models,
+            chain_of_thought=self.chain_of_thought
+        )
+
+        # Loads the players to a dict and logs it
         self.players_dic: dict[str: LudoPlayer] = {
             "Player 1": self.game.player_1
         }
@@ -89,7 +109,6 @@ class LudoGameMaster(GameMaster):
 
         self.log_players(self.player_log)
 
-    # TODO Adapt to react to chain-of-thought and reprompting flags
     def play(self) -> None:
         """
         Handles the basic gameplay loop. While the game is not finished, for
@@ -101,8 +120,7 @@ class LudoGameMaster(GameMaster):
         which time, the game is aborted.
         """
         while not self._check_game_status():
-            logger.info("Game turn: %d", self.game.turn)
-
+            logger.info(f"{GAME_NAME}: [GAME TURN] {self.game.turn}")
             self.log_next_turn()
             self.log_event(
                 from_="GM",
@@ -115,7 +133,7 @@ class LudoGameMaster(GameMaster):
                                 }
                 }
             )
-            logger.info(f"current_state: {self.game.current_state}")
+            logger.info(f"{GAME_NAME}: [CURRENT STATE] {self.game.current_state}")
             
             for index, player in enumerate(self.players_dic.keys()):
                 roll: int = (
@@ -125,11 +143,12 @@ class LudoGameMaster(GameMaster):
                 )
 
                 message: str = self._build_message(roll, player)
-                logger.info(f"message_to_llm: {message}")
+                logger.info(f"{GAME_NAME}: [GM->{player}]: {message}")
                 
                 # Checks if we can proceed with the game and logs Player to GM
                 can_proceed, response_text, move = self._does_game_proceed(player, message, roll)
-                logger.info(f'resp = {response_text}, move = {move}')
+                logger.info(f'{GAME_NAME}: [{player}->GM (RAW)]: {response_text}')
+                logger.info(f'{GAME_NAME}: [{player}->GM (PARSED)]: {move}')
 
                 # If so, the move is logged and we continue to next player
                 if can_proceed:
@@ -197,6 +216,7 @@ class LudoGameMaster(GameMaster):
     def _check_both_tokens_moved(
         self,
         tokens: dict[str: dict],
+        n_tokens: int,
         move: dict[str: int]
     ) -> bool:
         """
@@ -206,12 +226,20 @@ class LudoGameMaster(GameMaster):
             tokens (dict[str: dict]): specifies the positions of the player's
                                       token and whether or not they are on the
                                       board
+            n_tokens (int): the number of tokens given to each player
             move (dict[str: int]): contains token-position pairs
 
         Returns:
             bool: True if both tokens have been moved, False otherwise
         """
-        return bool(all(value for value in self._check_token_moved(tokens, move).values()))
+        match n_tokens:
+            case 1:
+                return False
+            case 2:
+                return all(
+                    value for value
+                    in self._check_token_moved(tokens, move).values()
+                )
     
     def _check_game_status(self) -> str | bool:
         """
@@ -241,6 +269,7 @@ class LudoGameMaster(GameMaster):
     def _check_move(
         self,
         tokens: dict[str: dict],
+        n_tokens: int,
         move: dict[str: int],
         roll: int,
         n_fields: int
@@ -253,21 +282,19 @@ class LudoGameMaster(GameMaster):
             tokens (dict[str: dict]): specifies the positions of the player's
                                       token and whether or not they are on the
                                       board
+            n_tokens (int): the number of tokens given to each player
             move (dict[str: int]): contains token-position pairs
             roll (int): the die roll for the current turn
             n_fields (int): indicates the size of the board
 
         Returns:
             bool: True if the move is valid
-
-        Raises:
-            ValueError: raised if the move is invalid, explaining why
         """
-        if self._check_both_tokens_moved(tokens, move):
-            self.error: str = ("simultaneous_move", None)
+        if self._check_both_tokens_moved(tokens, n_tokens, move):
+            self.error = ("simultaneous_move", None)
             return False
 
-        moved_token: str = self._get_moved_token(self._check_token_moved(tokens, move))
+        moved_token: str = self._get_moved_token(tokens, move)
         check_list: list = []
 
         for token in move.keys():
@@ -277,16 +304,19 @@ class LudoGameMaster(GameMaster):
                     if roll != 6:
                         check_list.append(True)
                         continue
-                    self.error: tuple = ("not_moved_to_board", token)
-                    self.game.error_count+=1
+                        
+                    self.error = ("not_moved_to_board", token)
+                    self.game.error_count +=1
                     return False
+                  
                 else:
                     if roll + current_position > n_fields:
                         check_list.append(True)
                         continue
-                    self.error: tuple = ("not_moved", token)
-                    self.game.error_count+=1
+                    self.error = ("not_moved", token)
+                    self.game.error_count +=1
                     return False
+                  
             else:
                 if not tokens[token]["in_play"]:
                     if (
@@ -301,9 +331,10 @@ class LudoGameMaster(GameMaster):
                         check_list.append(True)
                         continue
                     else:
-                        self.error: tuple = ("incorrect_move", token)
+                        self.error = ("incorrect_move", token)
                         self.game.error_count += 1
                         return False
+                      
                 else:
                     if (
                         token == moved_token
@@ -315,7 +346,7 @@ class LudoGameMaster(GameMaster):
                     elif token != moved_token:
                         check_list.append(True)
                     else:
-                        self.error: tuple = ("incorrect_move", token)
+                        self.error = ("incorrect_move", token)
                         self.game.error_count += 1
                         return False
 
@@ -349,7 +380,8 @@ class LudoGameMaster(GameMaster):
             self,
             player: str,
             message: str,
-            roll: int
+            roll: int,
+            n_tokens: int
     ) -> tuple[bool, str, dict]:
         """
         Checks if the game can proceed. If the player's move is valid, the
@@ -361,6 +393,7 @@ class LudoGameMaster(GameMaster):
             player (str): the name of the player whose move is being checked
             message (str): the message to be sent to the player
             roll (int): the roll of the dice for the current turn
+            n_tokens (int): the number of tokens given to each player
 
         Returns:
             tuple: contains a boolean (True if the game can proceed and False
@@ -393,10 +426,11 @@ class LudoGameMaster(GameMaster):
             # Updates game attributes if move is valid
             else:
                 if self._check_move(
-                    self.players_dic[player].tokens,
-                    move,
-                    roll,
-                    self.game.n_fields
+                    tokens=self.players_dic[player].tokens,
+                    n_tokens=n_tokens,
+                    move=move,
+                    roll=roll,
+                    n_fields=self.game.n_fields
                 ):
                     self.game.add_message(
                         response_text,
@@ -447,22 +481,31 @@ class LudoGameMaster(GameMaster):
             to=f"{player}",
             action={'type': 'reprompt', 'content': message}
         )
-    def _get_moved_token(self, tokens_moved: dict[str: bool]) -> str | None:
+
+    def _get_moved_token(
+            self,
+            tokens: dict[str: dict],
+            move: dict[str: int]
+    ) -> str | None:
         """
         Given token-bool pairs, where the boolean value is True if the token
         was moved, retrieves the token if it was moved.
 
         Args:
-            tokens_moved (dict[str: bool]): contains token-bool pairs, which
-                                            are True if said token has been
-                                            moved, False otherwise
+            tokens (dict[str: dict]): specifies the positions of the player's
+                                      token and whether or not they are on the
+                                      board
+            move (dict[str: int]): contains token-position pairs
 
         Returns:
             str | None: name of the token that was moved
         """
+        tokens_moved: dict[str: bool] = self._check_token_moved(tokens, move)
+        
         for token in tokens_moved.keys():
             if tokens_moved[token]:
                 return token
+
         return None
     
     def _get_response(self, player: str, message: str) -> tuple[dict, str]:
@@ -494,7 +537,11 @@ class LudoGameMaster(GameMaster):
             )
         )
 
-        move: dict[str: int] = parse_text(response_text, self.players_dic[player])
+        move: dict[str: int] = parse_text(
+            text=response_text,
+            player=self.players_dic[player]
+        )
+        
         if move:
             print()
             print(self.players_dic[player].tokens)
@@ -527,17 +574,12 @@ class LudoGameMaster(GameMaster):
             bool: True if the game is done, False otherwise
         """
         for player in self.players_dic.values():
-            token_list: list[str] = (
-                ['X', 'Y']
-                if type(player) is LudoPlayer
-                else ['A', 'B']
-            )
-            if (
-                player.tokens[token_list[0]]['position'] == self.game.n_fields and
-                player.tokens[token_list[1]]['position'] == self.game.n_fields
+            if all(
+                token["position"] == self.game.n_fields
+                for token in player.tokens.values()
             ):
                 return True
-
+            
         return False
     
     def _is_taken(self, tokens: dict[str: dict], pos: int) -> bool:
@@ -551,11 +593,10 @@ class LudoGameMaster(GameMaster):
         Returns:
             bool: True if the position is occupied, False otherwise
         """
-
-        for token in tokens.keys():
-            if tokens[token]["position"] == pos and pos != self.game.n_fields:
+        for token in tokens.values():
+            if token["position"] == pos and pos != self.game.n_fields:
                 return True
-
+            
         return False
 
     def _is_won(self) -> bool:
@@ -565,14 +606,10 @@ class LudoGameMaster(GameMaster):
         Returns:
             bool: True if player 1 has won the game, False otherwise
         """
-        if (
-            self.game.player_1.tokens['X']['position'] == self.game.n_fields and
-            self.game.player_1.tokens['Y']['position'] == self.game.n_fields
-        ):
-            return True
-
-        else:
-            return False
+        return all(
+            token["position"] == self.game.n_fields
+            for token in self.game.player_1.tokens.values()
+        )
     
     def _log_assets(self) -> None:
         """
@@ -580,6 +617,7 @@ class LudoGameMaster(GameMaster):
         """
         self.log_key('Board size', self.game.n_fields)
         self.log_key('Number of players', len(self.players_dic))
+        self.log_key('Number of tokens', self.game.n_tokens)
         self.log_key('Rolls', self.game.rolls)
         self.log_key('Played turns', self.game.turn)
         self.log_key('Turn limit', self.game.turn_limit)
@@ -591,6 +629,7 @@ class LudoGameMaster(GameMaster):
         self.log_key('Multiplayer', 1 if self.game.player_2 else 0)
         self.log_key('Reprompting', 1 if self.do_reprompt else 0)
         self.log_key('Chain of Thought', 1 if self.cot else 0)
+
     def _update_player_dict(self, move, player) -> None:
         """
         Updates the player's tokens' positions in the players dictionary based
@@ -610,7 +649,6 @@ class LudoGameBenchmark(GameBenchmark):
     """
     Organizes the running of an experiment of the game 'Ludo'.
     """
-    # TODO Determine if chain-of-thought and reprompting should be passed to LudoGameBenchmark at instantiation
     def __init__(
             self,
             chain_of_thought: bool = True,
@@ -692,18 +730,6 @@ class LudoGameBenchmark(GameBenchmark):
             "evaluate strategic model behavior."
         )
 
-    # TODO Adapt to single- and multiplayer
-    # TODO Determine if necessary
-    def is_single_player(self) -> bool:
-        """
-        An in-built function which determines if the game is single-player or
-        not.
-
-        Returns:
-            bool: True if single-player, False otherwise
-        """
-        return False
-
 
 if __name__ == "__main__":
     from clemgame import benchmark
@@ -712,7 +738,7 @@ if __name__ == "__main__":
     game_name: str = "ludo"
     model_specs: list[str] = ["gpt-3.5-turbo-1106"]
     gen_args: dict[str: str] = {"temperature": 0.0, "max_tokens": 400}
-    experiment_name: str | None = None
+    experiment_name: str | None = "single_player"
     instances_name: str = "instances"
     results_dir: str = "results"
 

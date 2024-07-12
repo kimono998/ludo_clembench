@@ -5,37 +5,80 @@ Describes custom behavior for human and programmatic participants in 'Ludo'.
 import re
 import sys
 from pathlib import Path
-from minimax import GameSim, minimax
 
 sys.path.append(str(Path(__file__).parent.parent.parent))
 
 from backends import CustomResponseModel, HumanModel, Model
 from clemgame.clemgame import Player
+from minimax import GameSim, minimax
+
+
+GM_PATTERN: re.Pattern = re.compile(
+    pattern=r"Current state:\s*(.*?)\s*Turn number:\s*(\d+),\s*Roll:\s*(\d+)\.",
+    flags=re.DOTALL
+)
 
 
 class LudoPlayer(Player):
     """
     Custom child class of Player which adds player-specific gameplay attributes.
     """
-    def __init__(self, model: Model) -> None:
+    def __init__(
+            self,
+            model: CustomResponseModel | HumanModel | Model,
+            n_tokens: int
+    ) -> None:
         """
         Passes along the Model object to the parent class and initializes
         player-specific attributes.
         
         Args:
             model (Model): associated Model object, or a child class thereof
+            n_tokens (int): the number of tokens assigned to the player
         """
         super().__init__(model)
-        self.tokens: dict[str: dict] = {
-            "X": {
-                "in_play": False,
-                "position": 0
-            },
-            "Y": {
-                "in_play": False,
-                "position": 0
-            }
-        }
+        self.n_tokens: int = n_tokens
+        self.tokens: dict = self._initialize_tokens()
+
+    def _create_token_dictionary(self, tokens: list[str]) -> dict[str: dict]:
+        """
+        Creates a token dictionary according to the specified token number and
+        names.
+        
+        Args:
+            tokens (list[str]): contains the name or names of the tokens
+        
+        Returns:
+            dict[str: dict]: for each token, contains the name and a
+                             dictionary which details its in-play status and
+                             its position on the board
+        """
+        match self.n_tokens:
+            case 1:
+                return {tokens[0]: {"in_play": False, "position": 0}}
+            case 2:
+                return {
+                    tokens[0]: {"in_play": False, "position": 0},
+                    tokens[1]: {"in_play": False, "position": 0}
+                }
+    
+    def _initialize_tokens(self) -> dict[str: dict]:
+        """
+        Creates the appropriate token dictionary depending on the type of the
+        input model.
+        
+        Returns:
+            dict[str: dict]: for each token, contains the name and a
+                             dictionary which details its in-play status and
+                             its position on the board
+        """
+        if type(self.model) == Model:
+            return self._create_token_dictionary(["X", "Y"])
+        elif (
+            type(self.model) == CustomResponseModel or
+            type(self.model) == HumanModel
+        ):
+            return self._create_token_dictionary(["A", "B"])
 
 
 class HumanPlayer(LudoPlayer):
@@ -43,24 +86,17 @@ class HumanPlayer(LudoPlayer):
     A human participant in the game 'Ludo'. Its custom response behavior is
     described in self._terminal_response.
     """
-    def __init__(self, model: HumanModel) -> None:
+    def __init__(self, model: HumanModel, n_tokens: int) -> None:
         """
         Passes along the input HumanModel object to the parent class.
 
         Args:
             model (HumanModel): the instantiated HumanModel
+            n_tokens (int): the number of tokens assigned to the player
         """
-        super().__init__(model)
-        self.tokens['A'] = {
-            "in_play": False,
-            "position": 0
-        }
-        self.tokens['B'] = {
-            "in_play": False,
-            "position": 0
-        }
+        super().__init__(model, n_tokens)
 
-    # TODO Test HumanPlayer
+    # TODO Adapt to single token
     def _terminal_response(self, messages: list[dict], turn_idx: int) -> str:
         """
         Describes the behavior of the human second player, given the
@@ -86,7 +122,11 @@ class HumanPlayer(LudoPlayer):
             latest_response = messages[-1]["content"]
 
         print(f"\n{latest_response}")
-        print('What is your next move? Please write:\nMY MOVE: A -> N ; B -> N')
+
+        examples: list[str] = [f"{token} -> N" for token in self.tokens]
+        
+        print('What is your next move? Please write:')
+        print(f"MY MOVE: {' ; '.join(examples)}")
         
         while True:
             user_input: str = input(f"Your response as {self.__class__.__name__} (turn: {turn_idx}):\n")
@@ -94,54 +134,57 @@ class HumanPlayer(LudoPlayer):
                 _ = parse_text(user_input)
             except ValueError:
                 print('Input format not valid! Please try again with the proper format.')
-                print('MY MOVE: A -> N ; B -> N')
+                print(f"MY MOVE: {' ; '.join(examples)}")
             else:
                 return user_input
 
 
-# TODO 2 objectives to select -> (1) win and (2) eliminate P1; implement functionality to eliminate P1
-# TODO Set that the objective switches to win once P1 is eliminated
 class ProgrammaticPlayer(LudoPlayer):
     """
     A programmatic participant in the game 'Ludo'. Its custom response behavior
     is described in self._custom_response.
     """
-    def __init__(self, model: CustomResponseModel, rolls: list[tuple]) -> None:
+    def __init__(
+            self,
+            model: CustomResponseModel,
+            n_tokens: int,
+            rolls: list[tuple]
+    ) -> None:
         """
         Passes along the input CustomResponseModel object to the parent class.
 
         Args:
             model (CustomResponseModel): the instantiated CustomResponseModel
+            n_tokens (int): the number of tokens assigned to the player
             rolls (list[tuple[int, int]]): the roll sequence list from the
                                            game instance
         """
-        super().__init__(model)
-        self.tokens['A'] = {
-            "in_play": False,
-            "position": 0
-        }
-        self.tokens['B'] = {
-            "in_play": False,
-            "position": 0
-        }
+        super().__init__(model, n_tokens)
         self.rolls: list[tuple[int, int]] = rolls
 
-    def _compose_response(self, move: tuple) -> str:
+    def _compose_response(self, move: tuple[str, int]) -> str:
         """
         Composes a response message based on the move.
 
         Args:
-            move (tuple): the move to be made
+            move (tuple[str, int]): the move to be made
 
         Returns:
             str: the response message
         """
-        temp: dict = self.tokens.copy()
-        temp[move[0]]['position'] = move[1]
+        # Creates and updates local token dictionary
+        tokens: dict = self.tokens.copy()
+        tokens[move[0]]["position"] = move[1]
 
-        return f"MY MOVE: A -> {temp['A']['position']} ; B -> {temp['B']['position']}"
+        # Composes response
+        prefix: str = "MY MOVE: "
+        move_messages: list[str] = [
+            f"{key} -> {value['position']}"
+            for key, value in tokens.items()
+        ]
 
-    # TODO Determine if turn_idx is expected in the output
+        return prefix + " ; ".join(move_messages)
+
     def _custom_response(self, messages: list[dict], turn_idx: int) -> str:
         """
         Describes the behavior of the programmatic second player, given the
@@ -157,11 +200,11 @@ class ProgrammaticPlayer(LudoPlayer):
             str: programmatic player's response
         """
         token_positions, turn_number, n_fields = self._parse_messages(messages)
-        move: tuple = self._make_move(
-            token_positions,
-            self.rolls,
-            n_fields,
-            turn_number
+        move: tuple[str, int] = self._make_move(
+            token_positions=token_positions,
+            rolls=self.rolls,
+            n_fields=n_fields,
+            turn_number=turn_number
         )
 
         return self._compose_response(move)
@@ -172,7 +215,7 @@ class ProgrammaticPlayer(LudoPlayer):
         rolls: list[tuple],
         n_fields: int,
         turn_number: int
-    ) -> tuple:
+    ) -> tuple[str, int]:
         """
         Makes a new move as a programmatic player based on the objective.
 
@@ -183,14 +226,17 @@ class ProgrammaticPlayer(LudoPlayer):
             turn_number (int): the current turn number
 
         Returns:
-            tuple: the move to be made
+            tuple[str, int]: the move to be made
         """
         game: GameSim = GameSim(n_fields, token_positions, rolls, turn_number)
         _, move = minimax(game, True)
 
         return move
 
-    def _parse_messages(self, input_message: str) -> list[dict, int, int]:
+    def _parse_messages(
+            self,
+            input_message: str
+    ) -> tuple[dict[str: int], int, int]:
         """
         Parses the input message to obtain the state of the board, as well as
         the current roll.
@@ -200,35 +246,36 @@ class ProgrammaticPlayer(LudoPlayer):
                             far
         
         Returns:
-            list[dict, int]: list with [dictionary with token positions, rolled
-                             number, board size]
+            tuple[dict[str: int], int, int]: contains a dictionary with token
+                                             positions, rolled number, and
+                                             board size
 
         Raises:
             Exception: raised if no matching pattern is found
         """
-        pattern_match: re.Match = re.search(
-            r"Current state:\s*(.*?)\s*Turn number:\s*(\d+),\s*Roll:\s*(\d+)\.",
-            input_message,
-            re.DOTALL
-        )
+        pattern_match: re.Match | None = GM_PATTERN.search(input_message)
 
-        if pattern_match:
-            current_state: str = pattern_match.group(1).strip()
-            turn_number: int = int(pattern_match.group(2))
-
-            # Identifies the positions of tokens (X, Y, A, B) in the current state
-            tokens: list = ["X", "Y", "A", "B"]
-            n_fields: int = len(current_state.split())
-            token_positions: dict = {token: 0 for token in tokens}
-
-            for index, char in enumerate(current_state.split()):
-                if char in tokens:
-                    token_positions[char] = index + 1
-
-            return token_positions, turn_number, n_fields
-
-        else:
+        if not pattern_match:
             raise Exception('No match found.')
+        
+        match self.n_tokens:
+            case 1:
+                tokens: list[str] = ["X", "A"]
+            case 2:
+                tokens: list[str] = ["X", "Y", "A", "B"]
+
+        token_positions: dict[str: int] = {token: 0 for token in tokens}
+        current_state: str = pattern_match.group(1).strip()
+        
+        for index, char in enumerate(current_state.split()):
+            if char in token_positions.keys():
+                token_positions[char] = index + 1
+
+        return (
+            token_positions,
+            int(pattern_match.group(2)),
+            len(current_state.split())
+        )
 
 
 def parse_text(text: str, player: LudoPlayer) -> dict[str: int]:
@@ -238,29 +285,32 @@ def parse_text(text: str, player: LudoPlayer) -> dict[str: int]:
 
     Args:
         text (str): raw input text
-        player (LudoPlayer): the player who the text was produced by
+        player (LudoPlayer): the player who produced the text
 
     Returns:
         dict[str: int]: contains token-position pairs
-
-    Raises:
-        ValueError: raises when the text does not match the expected
-                    format; prints a preview of the non-conforming text
     """
-    tokens: list[str] = ['X', 'Y'] if type(player) is LudoPlayer else ['A', 'B']
-    matches: re.Match = re.search(
-        rf"MY MOVE: {tokens[0]} -> (\d+) ; {tokens[1]} -> (\d+)",
-        text
-    )
+    tokens: list[str] = list(player.tokens.keys())
+    
+    match player.n_tokens:
+        case 1:
+            matches: re.Match = re.search(
+                rf"MY MOVE: {tokens[0]} -> (\d+)",
+                text
+            )
+            token_dict: dict[str: int] = {tokens[0]: int(matches.group(1))}
+        
+        case 2:
+            matches: re.Match = re.search(
+                rf"MY MOVE: {tokens[0]} -> (\d+) ; {tokens[1]} -> (\d+)",
+                text
+            )
+            token_dict: dict[str: int] = {
+                tokens[0]: int(matches.group(1)),
+                tokens[1]: int(matches.group(2))
+            }
 
-    if not matches:
-        return False
-        # raise ValueError(f"Invalid text format: {text[:20]}")
-
-    return {
-        f"{tokens[0]}": int(matches.group(1)),
-        f"{tokens[1]}": int(matches.group(2))
-    }
+    return token_dict if matches else False
 
 
 if __name__ == '__main__':
