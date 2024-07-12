@@ -82,7 +82,6 @@ class GameSim:
         """
         roll: int = self.rolls[self.turn][player]
         tokens: list[str] = self._get_tokens(player)
-        
         moves: list[tuple[str, int]] = []
         for token in tokens:
             # Calculates next move unless not possible

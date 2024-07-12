@@ -5,7 +5,7 @@ Describes custom behavior for human and programmatic participants in 'Ludo'.
 import re
 import sys
 from pathlib import Path
-
+import copy
 sys.path.append(str(Path(__file__).parent.parent.parent))
 
 from backends import CustomResponseModel, HumanModel, Model
@@ -173,11 +173,12 @@ class ProgrammaticPlayer(LudoPlayer):
         Returns:
             str: the response message
         """
-        # Creates and updates local token dictionary
-        tokens: dict = self.tokens.copy()
-        tokens[move[0]]["position"] = move[1]
 
+        # Creates and updates local token dictionary
+        tokens: dict = copy.deepcopy(self.tokens)
+        tokens[move[0]]["position"] = move[1]
         # Composes response
+
         prefix: str = "MY MOVE: "
         move_messages: list[str] = [
             f"{key} -> {value['position']}"
@@ -202,6 +203,7 @@ class ProgrammaticPlayer(LudoPlayer):
         """
         # token_positions, turn, n_fields = self._parse_messages(messages)
         turn, n_fields = self._parse_messages(messages)
+
         move: tuple[str, int] = self._make_move(
             rolls=self.rolls,
             n_fields=n_fields,
@@ -227,6 +229,7 @@ class ProgrammaticPlayer(LudoPlayer):
         Returns:
             tuple[str, int]: the move to be made
         """
+
         game: GameSim = GameSim(
             n_fields=n_fields,
             n_tokens=self.n_tokens,
@@ -234,6 +237,7 @@ class ProgrammaticPlayer(LudoPlayer):
             rolls=rolls,
             turn=turn
         )
+
         _, move = minimax(game, True)
 
         return move

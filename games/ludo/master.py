@@ -141,7 +141,7 @@ class LudoGameMaster(GameMaster):
                     if len(self.players_dic.keys()) > 1
                     else self.game.rolls[self.game.turn]
                 )
-
+                # print(f'tokens: {self.players_dic[player].tokens}')
                 message: str = self._build_message(roll, player)
                 logger.info(f"{GAME_NAME}: [GM->{player}]: {message}")
                 
@@ -291,6 +291,7 @@ class LudoGameMaster(GameMaster):
         Returns:
             bool: True if the move is valid
         """
+        # print(f'tokens: {tokens}')
         if self._check_both_tokens_moved(tokens, n_tokens, move):
             self.error = ("simultaneous_move", None)
             return False
@@ -406,6 +407,7 @@ class LudoGameMaster(GameMaster):
         """
         while self.game.reprompt_attempts < self.attempt_limit:
             # Gets the player's response and logs it
+
             move, response_text = self._get_response(player, message)
 
             # If parsing fails, reprompt for a valid format
@@ -519,12 +521,15 @@ class LudoGameMaster(GameMaster):
                                                False if parsing failed) and
                                                the response
         """
+        # print(f'tokens: {self.players_dic[player].tokens}')
+
         _, _, response_text = self.players_dic[player](
             self.game.context
             if type(self.players_dic[player]) is LudoPlayer
             else message,
             self.game.turn
         )
+
         self.log_event(
             from_=f"{player}",
             to="GM",
