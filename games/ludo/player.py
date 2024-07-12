@@ -38,7 +38,7 @@ class LudoPlayer(Player):
         """
         super().__init__(model)
         self.n_tokens: int = n_tokens
-        self.tokens: dict = self._initialize_tokens()
+        self.tokens: dict[str: dict] = self._initialize_tokens()
 
     def _create_token_dictionary(self, tokens: list[str]) -> dict[str: dict]:
         """
@@ -72,13 +72,13 @@ class LudoPlayer(Player):
                              dictionary which details its in-play status and
                              its position on the board
         """
-        if type(self.model) == Model:
-            return self._create_token_dictionary(["X", "Y"])
-        elif (
-            type(self.model) == CustomResponseModel or
-            type(self.model) == HumanModel
+        if (
+            type(self.model) is CustomResponseModel or
+            type(self.model) is HumanModel
         ):
             return self._create_token_dictionary(["A", "B"])
+        else:
+            return self._create_token_dictionary(["X", "Y"])
 
 
 class HumanPlayer(LudoPlayer):
@@ -278,7 +278,7 @@ class ProgrammaticPlayer(LudoPlayer):
         )
 
 
-def parse_text(text: str, player: LudoPlayer) -> dict[str: int]:
+def parse_text(text: str, player: LudoPlayer) -> dict[str: int] | bool:
     """
     Parses the input text according to an expected input format in order to
     extract per token moves.
@@ -288,7 +288,7 @@ def parse_text(text: str, player: LudoPlayer) -> dict[str: int]:
         player (LudoPlayer): the player who produced the text
 
     Returns:
-        dict[str: int]: contains token-position pairs
+        dict[str: int] | bool: contains token-position pairs or False
     """
     tokens: list[str] = list(player.tokens.keys())
     

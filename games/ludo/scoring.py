@@ -4,24 +4,17 @@ Contains custom scoring logic for the game 'Ludo'.
 
 import sys
 from pathlib import Path
-from clemgame.metrics import *
-from instancegenerator import LudoInstanceGenerator
+
 
 sys.path.append(str(Path(__file__).parent.parent.parent))
 
 from minimax import GameSim, minimax
 from clemgame.clemgame import GameScorer
-from clemgame.metrics import METRIC_ABORTED, METRIC_SUCCESS, METRIC_LOSE
-
+from clemgame.metrics import *
+from instancegenerator import LudoInstanceGenerator
 
 GAME_NAME: str = "ludo"
 ATTEMPT_LIMIT: int = 3
-METRIC_DRAW: str = "Draw"
-METRIC_EPISODE_ACCURACY: str = "Episode Accuracy"
-METRIC_EPISODE_EFFICIENCY: str = "Episode Efficiency"
-METRIC_SPEED: str = "Speed"
-METRIC_TURN_ACCURACY: str = "Turn Accuracy"
-METRIC_TURN_EFFICIENCY: str = "Turn Efficiency"
 
 
 class LudoGameScorer(GameScorer):
@@ -43,7 +36,7 @@ class LudoGameScorer(GameScorer):
         super().__init__(GAME_NAME, experiment, game_instance)
         self.min_moves = experiment['min_moves']
 
-    def compute_scores(self, episode_interactions: Dict) -> None:
+    def compute_scores(self, episode_interactions: dict) -> None:
         # first add the speed metric
 
         final_turn = episode_interactions['Turns played']
@@ -116,23 +109,6 @@ class LudoGameScorer(GameScorer):
         # error to accepted move ratio
         err_per_acc_move = (accepted_move_sum / error_episode_sum) * 100 if error_episode_sum > 0 else 0
         self.log_episode_score('Errors Per Accepted Move', err_per_acc_move)
-
-        Args:
-            status (str): the final status of the game
-            speed (float): the speed at which the game was completed,
-                           calculated by dividing the minimum number of moves
-                           required by the number of moves made
-            efficiency (float): the efficiency with which the game was played,
-                                calculated by dividing the number of reprompt
-                                attempts needed by the total possible number
-            accuracy (float): the accuracy with which the game was played,
-                              calculated by taking the average of the turn
-                              scores
-
-        Returns:
-            TODO float:
-        """
-        pass
 
     # single player and multi player move scoring functions. SP calls the DP Script from instance gen
     # MP uses AlphaBeta prunning

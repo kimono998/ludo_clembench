@@ -17,6 +17,7 @@ GAME_NAME: str = "ludo"
 
 logger: logging.Logger = get_logger("games.ludo.game")
 
+
 class Game:
     """
     A class which handles the game behavior of Ludo, namely prompting the model
@@ -45,8 +46,6 @@ class Game:
             player_models (list[Model]): contains the player model(s) to be
                                          turned into LudoPlayer object(s)
         """
-        super().__init__(GAME_NAME)
-
         # Board attributes
         self.n_fields: int = n_fields
         self.current_state: str = self._reset_board()

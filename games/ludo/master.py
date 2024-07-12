@@ -18,9 +18,9 @@ from clemgame import get_logger
 
 
 GAME_NAME: str = "ludo"
-REPROMPT_LIMIT = 3
 DIRECTORY_PATH: Path = Path(__file__).parent
 RESOURCE_PATH: Path = DIRECTORY_PATH / "resources"
+REPROMPT_LIMIT : int = 3
 
 logger: logging.Logger = get_logger(__name__)
 
@@ -56,9 +56,8 @@ class LudoGameMaster(GameMaster):
         """
         super().__init__(GAME_NAME, experiment, player_models)
         self.chain_of_thought: bool = chain_of_thought
+        self.reprompting: bool = reprompting
         self.attempt_limit: int = REPROMPT_LIMIT if reprompting else 1
-        self.do_reprompt = reprompting
-        self.cot = chain_of_thought
         self.error: tuple[str, str | None] | None = None
 
     def setup(self, **kwargs) -> None:
@@ -90,8 +89,7 @@ class LudoGameMaster(GameMaster):
             n_fields=kwargs.get("n_fields"),
             n_tokens=kwargs.get("n_tokens"),
             rolls=kwargs.get("rolls"),
-            player_models=self.player_models,
-            chain_of_thought=self.chain_of_thought
+            player_models=self.player_models
         )
 
         # Loads the players to a dict and logs it
@@ -127,10 +125,12 @@ class LudoGameMaster(GameMaster):
                 to="GM",
                 action={
                     'type': 'current state',
-                    'content': {token: value['position']
-                                for player in self.players_dic.keys()
-                                for token, value in self.players_dic[player].tokens.items()
-                                }
+                    'content': {
+                        token: value['position']
+                        for player in self.players_dic.keys()
+                        for token, value
+                        in self.players_dic[player].tokens.items()
+                    }
                 }
             )
             logger.info(f"{GAME_NAME}: [CURRENT STATE] {self.game.current_state}")
@@ -146,7 +146,12 @@ class LudoGameMaster(GameMaster):
                 logger.info(f"{GAME_NAME}: [GM->{player}]: {message}")
                 
                 # Checks if we can proceed with the game and logs Player to GM
-                can_proceed, response_text, move = self._does_game_proceed(player, message, roll)
+                can_proceed, response_text, move = self._does_game_proceed(
+                    player=player,
+                    message=message,
+                    roll=roll,
+                    n_tokens=self.game.n_tokens
+                )
                 logger.info(f'{GAME_NAME}: [{player}->GM (RAW)]: {response_text}')
                 logger.info(f'{GAME_NAME}: [{player}->GM (PARSED)]: {move}')
 
@@ -257,11 +262,7 @@ class LudoGameMaster(GameMaster):
             return 'DRAW'
         
         elif self._is_done():
-            if self._is_won():
-                return 'WIN'
-            
-            else:
-                return 'LOSE'
+            return "WIN" if self._is_won() else "LOSE"
         
         else:
             return False
@@ -382,7 +383,7 @@ class LudoGameMaster(GameMaster):
             message: str,
             roll: int,
             n_tokens: int
-    ) -> tuple[bool, str, dict]:
+    ) -> tuple[bool, str, dict[str: int]]:
         """
         Checks if the game can proceed. If the player's move is valid, the
         game proceeds. If the move is not valid, the player is reprompted up
@@ -396,15 +397,18 @@ class LudoGameMaster(GameMaster):
             n_tokens (int): the number of tokens given to each player
 
         Returns:
-            tuple: contains a boolean (True if the game can proceed and False
-                   otherwise), a string (the response text from the player),
-                   and a dictionary detailing the resulting move
+            tuple[bool, str, dict[str: int]]: contains a bool (True if the
+                                              game can proceed and False 
+                                              otherwise), a string (the
+                                              response text from the player),
+                                              and a dictionary detailing the
+                                              resulting move
         """
         while self.game.reprompt_attempts < self.attempt_limit:
             # Gets the player's response and logs it
             move, response_text = self._get_response(player, message)
 
-            # if parsing failes, reprompt so that we get a good format
+            # If parsing fails, reprompt for a valid format
             if not move:
                 self.error: str = ("parsing_failed", None)
                 self.log_event(
@@ -412,14 +416,14 @@ class LudoGameMaster(GameMaster):
                     to="GM",
                     action={'type': f'error', 'content': self.error[0]}
                 )
-                # if reprompting enabled, send to reprompting loop.
-                # else break the loop
-                if self.do_reprompt:
+
+                # Reprompt if enabled, otherwise break the loop
+                if self.reprompting:
                     self.game.add_message(
                         response_text,
                         role="assistant"
                     )
-                    self._reprompt_loop(player, message)
+                    self._reprompt_player(player, message)
                 else:
                     break
 
@@ -460,27 +464,16 @@ class LudoGameMaster(GameMaster):
                         to="GM",
                         action={'type': f'error', 'content': self.error[0]}
                     )
-                    if self.do_reprompt:
+                    if self.reprompting:
                         self.game.add_message(
                             response_text,
                             role="assistant"
                         )
-                        self._reprompt_loop(player, message)
+                        self._reprompt_player(player, message)
                     else:
                         break
+
         return False, response_text, move
-
-    def _reprompt_loop(self, player, msg):
-
-        self.game.reprompt(self.error[0], msg, self.error[1])
-        self.error = None
-        message = self.game.context[-1]
-        self.game.total_retry_count += 1
-        self.log_event(
-            from_="GM",
-            to=f"{player}",
-            action={'type': 'reprompt', 'content': message}
-        )
 
     def _get_moved_token(
             self,
@@ -508,7 +501,11 @@ class LudoGameMaster(GameMaster):
 
         return None
     
-    def _get_response(self, player: str, message: str) -> tuple[dict, str]:
+    def _get_response(
+            self,
+            player: str,
+            message: str
+    ) -> tuple[dict[str: int] | bool, str]:
         """
         Gets the player's response and logs it. The response is then parsed
         into a move.
@@ -518,7 +515,9 @@ class LudoGameMaster(GameMaster):
             message (str): the message to be sent to the player
 
         Returns:
-            tuple: contains the parsed move and the response text
+            tuple[dict[str: int] | bool, str]: contains the parsed move (or
+                                               False if parsing failed) and
+                                               the response
         """
         _, _, response_text = self.players_dic[player](
             self.game.context
@@ -626,10 +625,33 @@ class LudoGameMaster(GameMaster):
         self.log_key('Aborted', self.game.is_aborted)
         self.log_key('Error count', self.game.error_count)
         self.log_key('Turns played', self.game.turn)
-        self.log_key('Multiplayer', 1 if self.game.player_2 else 0)
-        self.log_key('Reprompting', 1 if self.do_reprompt else 0)
-        self.log_key('Chain of Thought', 1 if self.cot else 0)
+        self.log_key('Multiplayer', int(bool(self.game.player_2)))
+        self.log_key('Reprompting', int(self.reprompting))
+        self.log_key('Chain of Thought', int(self.chain_of_thought))
 
+    def _reprompt_player(self, player: str, message: str) -> None:
+        """
+        Reprompts the player upon getting an erroneous response, either in
+        terms of form or content.
+        
+        Args:
+            player (str): the name of the player
+            message (str): what is to be repeated to the player
+        """
+        # Reprompts the player
+        self.game.reprompt(self.error[0], message, self.error[1])
+
+        # Updates related attributes
+        self.error = None
+        self.game.total_retry_count += 1
+
+        # Logs the reprompting event
+        self.log_event(
+            from_="GM",
+            to=f"{player}",
+            action={'type': 'reprompt', 'content': self.game.context[-1]}
+        )
+    
     def _update_player_dict(self, move, player) -> None:
         """
         Updates the player's tokens' positions in the players dictionary based
