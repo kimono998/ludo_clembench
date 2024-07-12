@@ -251,9 +251,11 @@ class LudoGameMaster(GameMaster):
         else:
             return False
     
+    # TODO Adapt to single token
     def _check_move(
         self,
         tokens: dict[str: dict],
+        n_tokens: int,
         move: dict[str: int],
         roll: int,
         n_fields: int
@@ -266,6 +268,7 @@ class LudoGameMaster(GameMaster):
             tokens (dict[str: dict]): specifies the positions of the player's
                                       token and whether or not they are on the
                                       board
+            TODO n_tokens (int):
             move (dict[str: int]): contains token-position pairs
             roll (int): the die roll for the current turn
             n_fields (int): indicates the size of the board
@@ -362,11 +365,13 @@ class LudoGameMaster(GameMaster):
             for token, position in move.items()
         }
     
+    # TODO Adapt to single token
     def _does_game_proceed(
             self,
             player: str,
             message: str,
-            roll: int
+            roll: int,
+            n_tokens: int
     ) -> tuple[bool, str, dict]:
         """
         Checks if the game can proceed. If the player's move is valid, the
@@ -378,6 +383,7 @@ class LudoGameMaster(GameMaster):
             player (str): the name of the player whose move is being checked
             message (str): the message to be sent to the player
             roll (int): the roll of the dice for the current turn
+            TODO n_tokens (int):
 
         Returns:
             tuple: contains a boolean (True if the game can proceed and False
@@ -396,10 +402,10 @@ class LudoGameMaster(GameMaster):
             # Updates game attributes if move is valid
             else:
                 if self._check_move(
-                    self.players_dic[player].tokens,
-                    move,
-                    roll,
-                    self.game.n_fields
+                    tokens=self.players_dic[player].tokens,
+                    move=move,
+                    roll=roll,
+                    n_fields=self.game.n_fields
                 ):
                     self.game.add_message(
                         response_text,

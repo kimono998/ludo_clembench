@@ -60,12 +60,15 @@ class Game:
         self.is_aborted: bool = False
 
         # Game mechanic attributes
+        self.n_tokens: int = n_tokens
         self.turn_limit: int = len(rolls)
         self.turn: int = 0
         self.rolls: list[tuple[int, int] | int] = rolls
 
-        # Player attributes
-        self._initialize_players(player_models)
+        # Initializes then loads in players
+        self.player_1: LudoPlayer | None = None
+        self.player_2: HumanPlayer | ProgrammaticPlayer | None = None
+        self._load_players(player_models)
 
     def add_message(self, message: str, role: str = "user") -> None:
         """
@@ -142,7 +145,7 @@ class Game:
 
         self.current_state = " ".join(split_board).strip()
 
-    def _initialize_players(self, player_models: list[Model]) -> None:
+    def _load_players(self, player_models: list[Model]) -> None:
         """
         Given a list of player models, initializes the first player as a
         LudoPlayer, indicating it is the LLM player, and the second player as
@@ -150,18 +153,21 @@ class Game:
         model passed.
         
         Args:
-            player_models (list[Model]): contains a maximum of two player models
+            player_models (list[Model]): contains a maximum of 2 player models
         """
-        self.player_1: LudoPlayer = LudoPlayer(player_models[0])
+        self.player_1 = LudoPlayer(player_models[0], self.n_tokens)
 
         if len(player_models) > 1:
-            match player_models[1]:
-                case HumanModel():
-                    self.player_2: LudoPlayer = HumanPlayer(player_models[1])
-                case CustomResponseModel():
-                    self.player_2: LudoPlayer = ProgrammaticPlayer(player_models[1], self.rolls)
-                case _:
-                    self.player_2: None = None
+            if type(player_models[1]) == CustomResponseModel:
+                self.player_2 = ProgrammaticPlayer(
+                    model=player_models[1],
+                    n_tokens=self.n_tokens
+                )
+            elif type(player_models[1]) == HumanModel:
+                self.player_2 = HumanPlayer(
+                    model=player_models[1],
+                    n_tokens=self.n_tokens
+                )
 
     def _reset_board(self) -> str:
         """
