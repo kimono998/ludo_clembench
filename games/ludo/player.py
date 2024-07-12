@@ -13,6 +13,12 @@ from clemgame.clemgame import Player
 from minimax import GameSim, minimax
 
 
+GM_PATTERN: re.Pattern = re.compile(
+    pattern=r"Current state:\s*(.*?)\s*Turn number:\s*(\d+),\s*Roll:\s*(\d+)\.",
+    flags=re.DOTALL
+)
+
+
 class LudoPlayer(Player):
     """
     Custom child class of Player which adds player-specific gameplay attributes.
@@ -156,12 +162,12 @@ class ProgrammaticPlayer(LudoPlayer):
         super().__init__(model, n_tokens)
         self.rolls: list[tuple[int, int]] = rolls
 
-    def _compose_response(self, move: tuple) -> str:
+    def _compose_response(self, move: tuple[str, int]) -> str:
         """
         Composes a response message based on the move.
 
         Args:
-            move (tuple): the move to be made
+            move (tuple[str, int]): the move to be made
 
         Returns:
             str: the response message
@@ -173,8 +179,8 @@ class ProgrammaticPlayer(LudoPlayer):
         # Composes response
         prefix: str = "MY MOVE: "
         move_messages: list[str] = [
-            f"{token} -> {tokens[token]['position']}"
-            for token in tokens
+            f"{key} -> {value['position']}"
+            for key, value in tokens.items()
         ]
 
         return prefix + " ; ".join(move_messages)
@@ -194,11 +200,11 @@ class ProgrammaticPlayer(LudoPlayer):
             str: programmatic player's response
         """
         token_positions, turn_number, n_fields = self._parse_messages(messages)
-        move: tuple = self._make_move(
-            token_positions,
-            self.rolls,
-            n_fields,
-            turn_number
+        move: tuple[str, int] = self._make_move(
+            token_positions=token_positions,
+            rolls=self.rolls,
+            n_fields=n_fields,
+            turn_number=turn_number
         )
 
         return self._compose_response(move)
@@ -209,7 +215,7 @@ class ProgrammaticPlayer(LudoPlayer):
         rolls: list[tuple],
         n_fields: int,
         turn_number: int
-    ) -> tuple:
+    ) -> tuple[str, int]:
         """
         Makes a new move as a programmatic player based on the objective.
 
@@ -220,14 +226,17 @@ class ProgrammaticPlayer(LudoPlayer):
             turn_number (int): the current turn number
 
         Returns:
-            tuple: the move to be made
+            tuple[str, int]: the move to be made
         """
         game: GameSim = GameSim(n_fields, token_positions, rolls, turn_number)
         _, move = minimax(game, True)
 
         return move
 
-    def _parse_messages(self, input_message: str) -> list[dict, int, int]:
+    def _parse_messages(
+            self,
+            input_message: str
+    ) -> tuple[dict[str: int], int, int]:
         """
         Parses the input message to obtain the state of the board, as well as
         the current roll.
@@ -237,35 +246,36 @@ class ProgrammaticPlayer(LudoPlayer):
                             far
         
         Returns:
-            list[dict, int]: list with [dictionary with token positions, rolled
-                             number, board size]
+            tuple[dict[str: int], int, int]: contains a dictionary with token
+                                             positions, rolled number, and
+                                             board size
 
         Raises:
             Exception: raised if no matching pattern is found
         """
-        pattern_match: re.Match = re.search(
-            r"Current state:\s*(.*?)\s*Turn number:\s*(\d+),\s*Roll:\s*(\d+)\.",
-            input_message,
-            re.DOTALL
-        )
+        pattern_match: re.Match | None = GM_PATTERN.search(input_message)
 
-        if pattern_match:
-            current_state: str = pattern_match.group(1).strip()
-            turn_number: int = int(pattern_match.group(2))
-
-            # Identifies the positions of tokens (X, Y, A, B) in the current state
-            tokens: list = ["X", "Y", "A", "B"]
-            n_fields: int = len(current_state.split())
-            token_positions: dict = {token: 0 for token in tokens}
-
-            for index, char in enumerate(current_state.split()):
-                if char in tokens:
-                    token_positions[char] = index + 1
-
-            return token_positions, turn_number, n_fields
-
-        else:
+        if not pattern_match:
             raise Exception('No match found.')
+        
+        match self.n_tokens:
+            case 1:
+                tokens: list[str] = ["X", "A"]
+            case 2:
+                tokens: list[str] = ["X", "Y", "A", "B"]
+
+        token_positions: dict[str: int] = {token: 0 for token in tokens}
+        current_state: str = pattern_match.group(1).strip()
+        
+        for index, char in enumerate(current_state.split()):
+            if char in token_positions.keys():
+                token_positions[char] = index + 1
+
+        return (
+            token_positions,
+            int(pattern_match.group(2)),
+            len(current_state.split())
+        )
 
 
 def parse_text(text: str, player: LudoPlayer) -> dict[str: int]:
@@ -275,7 +285,7 @@ def parse_text(text: str, player: LudoPlayer) -> dict[str: int]:
 
     Args:
         text (str): raw input text
-        player (LudoPlayer): the player who the text was produced by
+        player (LudoPlayer): the player who produced the text
 
     Returns:
         dict[str: int]: contains token-position pairs
@@ -289,6 +299,7 @@ def parse_text(text: str, player: LudoPlayer) -> dict[str: int]:
                 text
             )
             token_dict: dict[str: int] = {tokens[0]: int(matches.group(1))}
+        
         case 2:
             matches: re.Match = re.search(
                 rf"MY MOVE: {tokens[0]} -> (\d+) ; {tokens[1]} -> (\d+)",

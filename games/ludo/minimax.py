@@ -13,6 +13,7 @@ class GameSim:
     def __init__(
             self,
             n_fields: int,
+            n_tokens: int,
             token_positions: dict,
             rolls: list[tuple],
             turn: int
@@ -22,12 +23,13 @@ class GameSim:
 
         Args:
             n_fields (int): the number of fields in the game
+            TODO n_tokens (int):
             player_tokens (dict): the tokens associated with the player
             rolls (list[tuple]): the rolls for the game
             turn (int): the current turn number
         """
         self.n_fields: int = n_fields
-        self.n_tokens: int = len(token_positions)
+        self.n_tokens: int = n_tokens
         self.token_positions: dict = token_positions
         self.rolls: list = rolls
         self.turn: int = turn
@@ -46,10 +48,9 @@ class GameSim:
         """
         new_token_positions: dict = self.token_positions.copy()
         new_token_positions[move[0]] = move[1]
-        opponent_tokens: list[str] = self._get_tokens(1 - player)
 
         # Opponent not removed if token occupies the final position
-        for opponent_token in opponent_tokens:
+        for opponent_token in self._get_tokens(1 - player):
             if (
                 new_token_positions[opponent_token] == move[1] and
                 move[1] != self.n_fields
@@ -58,6 +59,7 @@ class GameSim:
 
         return GameSim(
             self.n_fields,
+            self.n_tokens,
             new_token_positions,
             self.rolls,
             (
@@ -67,7 +69,10 @@ class GameSim:
             )
         )
     
-    def get_possible_moves(self, player: int) -> list:
+    def get_possible_moves(
+            self,
+            player: int
+    ) -> list[tuple[str, tuple[str, int]]]:
         """
         Gets the possible moves for the player.
 
@@ -76,12 +81,12 @@ class GameSim:
                           and 1 represents the maximizing player
 
         Returns:
-            list: the possible moves for the player
+            list[tuple[str, tuple[str, int]]]: possible moves for the player
         """
         roll: int = self.rolls[self.turn][player]
         tokens: list[str] = self._get_tokens(player)
         
-        moves: list = []
+        moves: list[tuple[str, tuple[str, int]]] = []
         for token in tokens:
             # Calculates next move unless not possible
             move: tuple[str, int] = self.token_positions[token] + roll
@@ -105,23 +110,36 @@ class GameSim:
                 moves.append((token, self.token_positions[token]))
 
         return moves
-    
-    def is_terminal(self) -> bool:
+
+    def is_terminal(self) -> tuple[bool, int | None]:
         """
-        Checks whether we have reached the terminal state (game is done).
+        Checks whether either player has all of their tokens in the end field,
+        meaning that the game has reached its terminal state.
 
         Returns:
-            bool: True if the game is done, False otherwise.
+            tuple[bool, int | None]: contains a bool which is True if the game
+                                     is over, False otherwise, and an
+                                     indicator of which player won
         """
-        return (
-            (
-                self.token_positions["X"] == self.n_fields and
-                self.token_positions["Y"] == self.n_fields
-            ) or (
-                self.token_positions["A"] == self.n_fields and
-                self.token_positions["B"] == self.n_fields
-            )
+        # Checks if either player finished the game
+        p1_terminal: bool = all(
+            self.token_positions[token]
+            for token in self._get_tokens(0)
         )
+        p2_terminal: bool = all(
+            self.token_positions[token]
+            for token in self._get_tokens(0)
+        )
+        
+        # Determines the winning player
+        if p1_terminal:
+            winner: int = 0
+        elif p2_terminal:
+            winner: int = 1
+        else:
+            winner: None = None
+
+        return any((p1_terminal, p2_terminal)), winner
     
     def score(self) -> int:
         """
@@ -132,36 +150,19 @@ class GameSim:
         Returns:
             int: the score of the game
         """
-        # if self.is_terminal():
-        #     if (
-        #         self.token_positions['X'] == self.n_fields and
-        #         self.token_positions['Y'] == self.n_fields
-        #     ):
-        #         return -100
+        # If the game has finished, scores 100 if winner is p1, -100 if p2
+        terminal, winner = self.is_terminal()
+        if terminal:
+            return -100 if winner else 100
 
-        #     elif (
-        #         self.token_positions['A'] == self.n_fields and
-        #         self.token_positions['B'] == self.n_fields
-        #     ):
-        #         return 100
-
-        # TODO Fix -- does token_positions contain all two/four tokens?
-        # If game is terminal, score according to player
-        if self.is_terminal() and all(
-            self.token_positions[token] == self.n_fields
-            for token in self.token_positions
-        ):      
-            return -100 if self.token_positions["X"] else 100
-            
-
-        # Heuristic: Calculate the progress of each player's tokens
+        # Calculate the progress of each player's tokens otherwise
         progress: int = sum(
             self.token_positions[token]
-            for token in ['A', 'B']
+            for token in self._get_tokens(0)
         )
         opponent_progress: int = sum(
             self.token_positions[token]
-            for token in ['X', 'Y']
+            for token in self._get_tokens(1)
         )
 
         return progress - opponent_progress
@@ -178,9 +179,9 @@ class GameSim:
         """
         match self.n_tokens:
             case 1:
-                return ["A"] if player == 1 else ["X"]
+                return ["A"] if player == 0 else ["X"]
             case 2:
-                return ['A', 'B'] if player == 1 else ['X', 'Y']
+                return ['A', 'B'] if player == 0 else ['X', 'Y']
         
     def _is_out(self, token: str) -> bool:
         """
@@ -217,7 +218,7 @@ def minimax(
     maximizing_player : bool,
     alpha: float = float('-inf'),
     beta: float = float('inf')
-) -> tuple[int, tuple]:
+) -> tuple[int, tuple[str, int] | None]:
     """
     Implements the minimax algorithm to find the optimal move.
 
@@ -229,11 +230,11 @@ def minimax(
         beta (float): the beta value for alpha-beta pruning
 
     Returns:
-        tuple[int, tuple]: the score of the game and the best move
+        tuple[int, tuple[str, int] | None]: score of the game and best move
     """
     # If the game is at its terminal state, it is scored
     if (
-        game_state.is_terminal() or
+        game_state.is_terminal()[0] or
         game_state.turn > len(game_state.rolls) - 1
     ):
         return game_state.score(), None
