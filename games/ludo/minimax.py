@@ -120,11 +120,11 @@ class GameSim:
         """
         # Checks if either player finished the game
         p1_terminal: bool = all(
-            self.token_positions[token]
+            self.token_positions[token] == self.n_fields
             for token in self._get_tokens(0)
         )
         p2_terminal: bool = all(
-            self.token_positions[token]
+            self.token_positions[token] == self.n_fields
             for token in self._get_tokens(0)
         )
         
@@ -176,9 +176,9 @@ class GameSim:
         """
         match self.n_tokens:
             case 1:
-                return ["A"] if player == 0 else ["X"]
+                return ["A"] if player == 1 else ["X"]
             case 2:
-                return ['A', 'B'] if player == 0 else ['X', 'Y']
+                return ['A', 'B'] if player == 1 else ['X', 'Y']
         
     def _is_out(self, token: str) -> bool:
         """

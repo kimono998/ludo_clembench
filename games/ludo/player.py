@@ -175,7 +175,6 @@ class ProgrammaticPlayer(LudoPlayer):
         """
         # Creates and updates local token dictionary
         tokens: dict = self.tokens.copy()
-        print(tokens.keys())
         tokens[move[0]]["position"] = move[1]
 
         # Composes response
@@ -274,7 +273,7 @@ class ProgrammaticPlayer(LudoPlayer):
         current_state: str = pattern_match.group(1).strip()
         
         for index, char in enumerate(current_state.split()):
-            if char in token_positions.keys():
+            if char in tokens:
                 token_positions[char] = index + 1
 
         self.token_positions = token_positions
