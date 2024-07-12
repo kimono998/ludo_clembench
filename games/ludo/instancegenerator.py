@@ -170,75 +170,6 @@ class LudoInstanceGenerator(GameInstanceGenerator):
             return False
         
         return min_move_count != -1, min_move_count
-
-    def _check_monotoken_sequence(self, n_fields: int, rolls: list[int]) -> tuple:
-        """
-        TODO Method description
-        
-        Args:
-            TODO n_fields (int):
-            TODO rolls (list[int]):
-        
-        Returns:
-            TODO tuple:
-        """
-        memorized_moves: dict = {}
-
-        def find_minimum(position: int, idx: int) -> tuple:
-            """
-            TODO Method description
-            
-            Args:
-                TODO position (int):
-                TODO idx (int):
-            
-            Returns:
-                TODO tuple:
-            """
-            if position == n_fields:
-                return 0, []
-            
-            if idx >= len(rolls):
-                return float("inf"), []
-            
-            if (position, idx) in memorized_moves:
-                return memorized_moves[(position, idx)]
-            
-            roll: int = rolls[idx]
-            next_idx: int = idx + 1
-            min_move_count: float = float("inf")
-            best_sequence: list = []
-
-            if position != 0:
-                if position + roll <= n_fields:
-                    next_position: int = position + roll
-                else:
-                    next_position: int = position
-
-                if next_position == n_fields:
-                    next_moves, sequence = find_minimum(next_position, next_idx)
-                    if next_moves + 1 < min_move_count:
-                        min_move_count = next_moves + 1
-                        best_sequence = [f"Move X from {position } to {next_position}"] + sequence
-
-            if roll == 6:
-                if position == 0:
-                    next_moves, sequence = find_minimum(1, next_idx)
-                    if next_moves + 1 < min_move_count:
-                        min_move_count = next_moves + 1
-                        best_sequence = ["Place X on 1"] + sequence
-
-            memorized_moves[(position, idx)] = (min_move_count, best_sequence)
-
-            return min_move_count, best_sequence
-        
-        initial_position: int = 0
-        min_move_count, _ = find_minimum(initial_position, 0)
-
-        if min_move_count == float("inf"):
-            return False
-        
-        return min_move_count != -1, min_move_count
     
     def _generate_experiment(
             self,
@@ -312,7 +243,7 @@ class LudoInstanceGenerator(GameInstanceGenerator):
             n_rolls (int): the number of rolls; also the maximum number of
                            turns
         """
-        rolls, min_moves = self._generate_rolls(
+        rolls, min_moves = self._get_rolls(
             dialogue_partners=dialogue_partners,
             n_tokens=n_tokens,
             n_fields=n_fields,
@@ -327,8 +258,7 @@ class LudoInstanceGenerator(GameInstanceGenerator):
         game_instance["rolls"] = rolls
         game_instance["min_moves"] = min_moves
 
-    # TODO Incorporate n_tokens
-    def _generate_rolls(
+    def _get_rolls(
             self,
             dialogue_partners: dict[str: str],
             n_tokens: int,
@@ -336,7 +266,9 @@ class LudoInstanceGenerator(GameInstanceGenerator):
             n_rolls: int
     ) -> tuple[list[int | tuple[int, int]], int]:
         """
-        TODO
+        Generates valid die rolls resulting in a solvable sequence, depending
+        on the number of dialogue partners and the number of tokens in the
+        game variant.
 
         Args:
             dialogue_partners (dict[str: str]): the players in the game
@@ -347,16 +279,21 @@ class LudoInstanceGenerator(GameInstanceGenerator):
                            turns
         
         Returns:
-            TODO tuple[list[int | tuple[int, int]], int]: 
+            tuple[list[int | tuple[int, int]], int]: contains a list of either
+                                                     single or pairs of die
+                                                     rolls, as well as the
+                                                     minimum number of moves
+                                                     required to solve the
+                                                     sequence
         """
-        p1_rolls, min_moves = self._generate_valid_sequence(n_tokens, n_fields, n_rolls)
+        p1_rolls, min_moves = self._generate_valid_rolls(n_tokens, n_fields, n_rolls)
         
         match len(dialogue_partners):
             case 1:
                 rolls: list[int] = p1_rolls
 
             case 2:
-                p2_rolls, _ = self._generate_valid_sequence(n_tokens, n_fields, n_rolls)
+                p2_rolls, _ = self._generate_valid_rolls(n_tokens, n_fields, n_rolls)
                 rolls: list[int] = [
                     (p1_roll, p2_roll)
                     for p1_roll, p2_roll
@@ -365,14 +302,17 @@ class LudoInstanceGenerator(GameInstanceGenerator):
 
         return rolls, min_moves
 
-    def _generate_valid_sequence(
+    # TODO Adapt to single token
+    def _generate_valid_rolls(
             self,
             n_tokens: int,
             n_fields: int,
             n_rolls: int
     ) -> tuple[list[int], int]:
         """
-        TODO Method description
+        Generates a sequence of die rolls which result in a solvable game,
+        then returns the die rolls and the minimum number of moves required to
+        solve the sequence.
         
         Args:
             n_tokens (int): the number of tokens to be given to each player
@@ -381,13 +321,15 @@ class LudoInstanceGenerator(GameInstanceGenerator):
                            turns
         
         Returns:
-            TODO tuple[list[int], int]:
+            tuple[list[int], int]: contains a list of die rolls and the
+                                   minimum number of moves required to solve
+                                   the sequence
         """
         while True:
             rolls: list[int] = [np.random.randint(1, 7) for _ in range(n_rolls)]
             match n_tokens:
                 case 1:
-                    min_moves: tuple | bool = self._check_monotoken_sequence(n_fields, rolls)
+                    min_moves: tuple | bool = self._check_sequence(n_fields, rolls)
                 case 2:
                     min_moves: tuple | bool = self._check_sequence(n_fields, rolls)
             if min_moves:
