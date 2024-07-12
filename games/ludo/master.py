@@ -758,9 +758,10 @@ if __name__ == "__main__":
     from scripts.cli import read_model_specs
 
     game_name: str = "ludo"
-    model_specs: list[str] = ["gpt-3.5-turbo-1106"]
+    model_specs: list[str] = ["gpt-3.5-turbo-1106", "programmatic"]
     gen_args: dict[str: str] = {"temperature": 0.0, "max_tokens": 400}
-    experiment_name: str | None = "single_player"
+    # experiment_name: str | None = "single_player"
+    experiment_name: str | None = "multiplayer"
     instances_name: str = "instances"
     results_dir: str = "results"
 

@@ -161,7 +161,8 @@ class Game:
             if type(player_models[1]) == CustomResponseModel:
                 self.player_2 = ProgrammaticPlayer(
                     model=player_models[1],
-                    n_tokens=self.n_tokens
+                    n_tokens=self.n_tokens,
+                    rolls=self.rolls
                 )
             elif type(player_models[1]) == HumanModel:
                 self.player_2 = HumanPlayer(

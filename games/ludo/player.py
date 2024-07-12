@@ -161,6 +161,7 @@ class ProgrammaticPlayer(LudoPlayer):
         """
         super().__init__(model, n_tokens)
         self.rolls: list[tuple[int, int]] = rolls
+        self.token_positions: dict[str: int] | None = None
 
     def _compose_response(self, move: tuple[str, int]) -> str:
         """
@@ -174,6 +175,7 @@ class ProgrammaticPlayer(LudoPlayer):
         """
         # Creates and updates local token dictionary
         tokens: dict = self.tokens.copy()
+        print(tokens.keys())
         tokens[move[0]]["position"] = move[1]
 
         # Composes response
@@ -199,36 +201,40 @@ class ProgrammaticPlayer(LudoPlayer):
         Returns:
             str: programmatic player's response
         """
-        token_positions, turn_number, n_fields = self._parse_messages(messages)
+        # token_positions, turn, n_fields = self._parse_messages(messages)
+        turn, n_fields = self._parse_messages(messages)
         move: tuple[str, int] = self._make_move(
-            token_positions=token_positions,
             rolls=self.rolls,
             n_fields=n_fields,
-            turn_number=turn_number
+            turn=turn
         )
 
         return self._compose_response(move)
     
     def _make_move(
         self,
-        token_positions: dict,
         rolls: list[tuple],
         n_fields: int,
-        turn_number: int
+        turn: int
     ) -> tuple[str, int]:
         """
         Makes a new move as a programmatic player based on the objective.
 
         Args:
-            token_positions (dict): the positions of the tokens
             rolls (list[tuple]): the rolls for the game
             n_fields (int): the size of the board
-            turn_number (int): the current turn number
+            turn (int): the current turn number
 
         Returns:
             tuple[str, int]: the move to be made
         """
-        game: GameSim = GameSim(n_fields, token_positions, rolls, turn_number)
+        game: GameSim = GameSim(
+            n_fields=n_fields,
+            n_tokens=self.n_tokens,
+            token_positions=self.token_positions,
+            rolls=rolls,
+            turn=turn
+        )
         _, move = minimax(game, True)
 
         return move
@@ -236,7 +242,7 @@ class ProgrammaticPlayer(LudoPlayer):
     def _parse_messages(
             self,
             input_message: str
-    ) -> tuple[dict[str: int], int, int]:
+    ) -> tuple[int, int]:
         """
         Parses the input message to obtain the state of the board, as well as
         the current roll.
@@ -271,11 +277,14 @@ class ProgrammaticPlayer(LudoPlayer):
             if char in token_positions.keys():
                 token_positions[char] = index + 1
 
-        return (
-            token_positions,
-            int(pattern_match.group(2)),
-            len(current_state.split())
-        )
+        self.token_positions = token_positions
+        
+        # return (
+        #     token_positions,
+        #     int(pattern_match.group(2)),
+        #     len(current_state.split())
+        # )
+        return int(pattern_match.group(2)), len(current_state.split())
 
 
 def parse_text(text: str, player: LudoPlayer) -> dict[str: int] | bool:

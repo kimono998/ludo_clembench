@@ -69,10 +69,7 @@ class GameSim:
             )
         )
     
-    def get_possible_moves(
-            self,
-            player: int
-    ) -> list[tuple[str, tuple[str, int]]]:
+    def get_possible_moves(self, player: int) -> list[tuple[str, int]]:
         """
         Gets the possible moves for the player.
 
@@ -81,21 +78,21 @@ class GameSim:
                           and 1 represents the maximizing player
 
         Returns:
-            list[tuple[str, tuple[str, int]]]: possible moves for the player
+            list[tuple[str, int]]: possible moves for the player
         """
         roll: int = self.rolls[self.turn][player]
         tokens: list[str] = self._get_tokens(player)
         
-        moves: list[tuple[str, tuple[str, int]]] = []
+        moves: list[tuple[str, int]] = []
         for token in tokens:
             # Calculates next move unless not possible
-            move: tuple[str, int] = self.token_positions[token] + roll
+            destination: int = self.token_positions[token] + roll
             if (
-                not self._is_taken(tokens, move) and
-                move <= self.n_fields and
+                not self._is_taken(tokens, destination) and
+                destination <= self.n_fields and
                 self._is_out(token)
             ):
-                moves.append((token, move))
+                moves.append((token, destination))
 
             # If a token can be moved out, it is added to possible moves
             if (
@@ -215,7 +212,7 @@ class GameSim:
 
 def minimax(
     game_state: GameSim,
-    maximizing_player : bool,
+    maximizing_player: bool,
     alpha: float = float('-inf'),
     beta: float = float('inf')
 ) -> tuple[int, tuple[str, int] | None]:
@@ -239,38 +236,41 @@ def minimax(
     ):
         return game_state.score(), None
     
-    # Otherwise, the current game state is analyzed for the given player
-    best_move_score: float = float('-inf')
-    possible_moves: list = game_state.get_possible_moves(int(maximizing_player))
-    
-    for move in possible_moves:
-        move_score: int = minimax(
-                game_state.get_new_state(move, int(maximizing_player)),
-                maximizing_player=not maximizing_player,
-                alpha=alpha,
-                beta=beta
-            )[0]
-        if maximizing_player:
-            if move_score > best_move_score:
-                best_move_score = move_score
-                best_move: tuple[str, int] = move
+    player: int = int(maximizing_player)
+    best_move: tuple[str, int] | None = None
+    best_score: float = float("-inf") if maximizing_player else float("inf")
 
-            if best_move_score >= beta:
+    possible_moves: list[tuple[str, int]] = game_state.get_possible_moves(player)
+
+    if maximizing_player:
+        for move in possible_moves:
+            child: GameSim = game_state.get_new_state(move, player)
+            score: int = minimax(child, False, alpha, beta)[0]
+
+            if score > best_score:
+                best_score = score
+                best_move = move
+
+            if best_score >= beta:
                 break
 
-            alpha = max(alpha, best_move_score)
+            alpha = max(alpha, best_score)
 
-        else:
-            if move_score < best_move_score:
-                best_move_score = move_score
-                best_move: tuple[str, int] = move
+    else:
+        for move in possible_moves:
+            child: GameSim = game_state.get_new_state(move, player)
+            score: int = minimax(child, True, alpha, beta)[0]
 
-            if best_move_score <= alpha:
+            if score < best_score:
+                best_score = score
+                best_move = move
+
+            if best_score <= beta:
                 break
 
-            beta = min(beta, best_move_score)
+            beta = min(alpha, best_score)
 
-    return best_move_score, best_move
+    return best_score, best_move
 
 
 if __name__ == '__main__':
