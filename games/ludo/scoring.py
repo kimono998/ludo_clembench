@@ -13,6 +13,7 @@ from clemgame.clemgame import GameScorer
 from clemgame.metrics import *
 from instancegenerator import find_multitoken_minimum
 
+
 GAME_NAME: str = "ludo"
 ATTEMPT_LIMIT: int = 3
 
@@ -37,6 +38,12 @@ class LudoGameScorer(GameScorer):
         self.min_moves = game_instance['min_moves']
 
     def compute_scores(self, episode_interactions: dict) -> None:
+        """
+        TODO
+
+        Args:
+            TODO espisodic_interactions (dict):
+        """
         # first add the speed metric
 
         final_turn = episode_interactions['Turns played']
@@ -129,7 +136,19 @@ class LudoGameScorer(GameScorer):
 
     # single player and multi player move scoring functions. SP calls the DP Script from instance gen
     # MP uses AlphaBeta prunning
-    def _sp_move_score(self, episode_interactions, current_state: dict, idx: int, updated_state: dict):
+    def _sp_move_score(self, episode_interactions, current_state: dict, idx: int, updated_state: dict) -> None:
+        """
+        TODO
+
+        Args:
+            TODO episodic_interactions:
+            TODO current_state (dict):
+            TODO idx (int):
+            TODO updated_state (dict):
+
+        Returns:
+            TODO
+        """
         memorized_moves = {}
         tokens = current_state.keys()
         _, moves = find_multitoken_minimum(
@@ -139,6 +158,7 @@ class LudoGameScorer(GameScorer):
             X=current_state[tokens[0]],
             Y=current_state[tokens[1]],
             index=idx
+        )
 
         simulated_move = moves[0]
         selected_move = current_state.copy()
@@ -160,18 +180,28 @@ class LudoGameScorer(GameScorer):
         print(simulated_move)
         return self._check_equivalence(updated_state, selected_move)
 
+    def _check_equivalence(
+            self,
+            updated_state: dict[str: int],
+            selected_move: dict[str: int]
+    ) -> float:
+        """
+        Checks for equivalence between the updated state and selected move.
 
-    def _check_equivalence(self, updated_state, selected_move):
-        # check for equivalence
-        matches = []
-        for token in updated_state.keys():
-            if updated_state[token] == selected_move[token]:
-                matches.append(True)
-            else:
-                matches.append(False)
+        Args:
+            TODO updated_state (dict[str: int]):
+            TODO selected_move (dict[str: int]):
 
-        score = 1.00 if all(matches) else 0
-        return score
+        Returns:
+            float: a float version of the boolean representation of
+                   equivalence, that is '1.0' for True and '0.0' for False
+        """
+        matches: list[bool] = [
+            value == selected_move[token]
+            for token, value in updated_state.items()
+        ]
+
+        return float(all(matches))
 
     def score_turns(self, episodic_interactions: dict) -> None:
         """

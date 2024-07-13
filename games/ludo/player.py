@@ -2,10 +2,11 @@
 Describes custom behavior for human and programmatic participants in 'Ludo'.
 """
 
+import copy
 import re
 import sys
 from pathlib import Path
-import copy
+
 sys.path.append(str(Path(__file__).parent.parent.parent))
 
 from backends import CustomResponseModel, HumanModel, Model
@@ -173,12 +174,11 @@ class ProgrammaticPlayer(LudoPlayer):
         Returns:
             str: the response message
         """
-
         # Creates and updates local token dictionary
         tokens: dict = copy.deepcopy(self.tokens)
         tokens[move[0]]["position"] = move[1]
+        
         # Composes response
-
         prefix: str = "MY MOVE: "
         move_messages: list[str] = [
             f"{key} -> {value['position']}"
@@ -229,7 +229,6 @@ class ProgrammaticPlayer(LudoPlayer):
         Returns:
             tuple[str, int]: the move to be made
         """
-
         game: GameSim = GameSim(
             n_fields=n_fields,
             n_tokens=self.n_tokens,
@@ -281,12 +280,7 @@ class ProgrammaticPlayer(LudoPlayer):
                 token_positions[char] = index + 1
 
         self.token_positions = token_positions
-        
-        # return (
-        #     token_positions,
-        #     int(pattern_match.group(2)),
-        #     len(current_state.split())
-        # )
+
         return int(pattern_match.group(2)), len(current_state.split())
 
 
