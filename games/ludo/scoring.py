@@ -34,7 +34,7 @@ class LudoGameScorer(GameScorer):
                                   individual game instance
         """
         super().__init__(GAME_NAME, experiment, game_instance)
-        self.min_moves = experiment['min_moves']
+        self.min_moves = game_instance['min_moves']
 
     def compute_scores(self, episode_interactions: dict) -> None:
         # first add the speed metric
@@ -49,11 +49,15 @@ class LudoGameScorer(GameScorer):
         move_accuracy_sum = 0
         episode_parsing_errors = 0
         accepted_move_sum = 0
+        total_request_count = 0
+        total_accepted_move_count = 0
 
         for idx, turn in enumerate(episode_interactions['turns']):
             turn_reprompts = 0
             turn_parsing_errors = 0
             error_turn_sum = 0
+            turn_request_count = 0
+            turn_accepted_move_count = 0
             for event in turn:
                 action = event['action']
                 if action['type'] == "current state": # current state
@@ -69,6 +73,12 @@ class LudoGameScorer(GameScorer):
                 if action['type'] == 'error':
                     error_turn_sum += 1
                     error_episode_sum += 1
+                if action['type'] == 'get message':
+                    turn_request_count += 1
+                if action['type'] == 'accepted move':
+                    turn_accepted_move_count += 1
+            total_request_count += turn_request_count
+            total_accepted_move_count += turn_accepted_move_count
 
             if is_multiplayer == 1:
                 score = self._mp_move_score(episode_interactions, current_state, idx, updated_state)
@@ -78,17 +88,23 @@ class LudoGameScorer(GameScorer):
             move_accuracy_sum += score
             # log move accuracy
             self.log_turn_score(idx, 'Turn Accuracy', score)
-            self.log_turn_score('Turn Efficiency', 1-(turn_reprompts/ATTEMPT_LIMIT)) # efficiency in terms of reprompting attempts.
-
-            turn_parsing_err_rate = (turn_parsing_errors/error_turn_sum)*100 if error_turn_sum > 0 else 0
-            self.log_turn_score('Parsing Error Share', turn_parsing_err_rate)
+            self.log_turn_score(idx, 'Turn Efficiency', (turn_accepted_move_count/turn_request_count))
+            self.log_turn_score(idx,'Reprompt Efficiency', 1-(turn_reprompts/ATTEMPT_LIMIT)) # efficiency in terms of reprompting attempts.
+            self.log_turn_score(idx, 'Violated Request Count', turn_request_count-turn_accepted_move_count)
+            turn_parsing_err_rate = (turn_parsing_errors/error_turn_sum) if error_turn_sum > 0 else 0
+            self.log_turn_score(idx,'Parsing Error Share', turn_parsing_err_rate)
+            self.log_turn_score(idx, 'Successful Request Count', turn_accepted_move_count)
+            self.log_turn_score(idx, 'Total Request Count', turn_request_count)
+            self.log_turn_score(idx, 'Error Count', error_turn_sum)
+            self.log_turn_score(idx, 'Parsing Error Count', turn_parsing_errors)
+            self.log_turn_score(idx, 'Reprompt Attempts Made', turn_reprompts)
 
 
         # log speed
         if episode_interactions['Aborted']:
             self.log_episode_score('Speed', 0)
         else:
-            self.log_episode_score('Speed', (self.min_moves*1.0/(final_turn+1)) * 100)
+            self.log_episode_score('Speed', (self.min_moves*1.0/(final_turn+1)))
 
         # log game status
         self.log_episode_score(METRIC_ABORTED, 1 if status == "ABORTED" else 0)
@@ -97,17 +113,18 @@ class LudoGameScorer(GameScorer):
         self.log_episode_score("Turn limit reached", 1 if status == "DRAW" else 0)
 
         # percentage of maximum possible reprompting attempts - we can use that score in the final calculation.
-        self.log_episode_score("Episode Efficiency", 1-(retries/max_retries))
+        self.log_episode_score("Episode Efficiency", (total_accepted_move_count/total_request_count))
+        self.log_episode_score("Episode Reprompt Efficiency", (1-(retries/max_retries)))
 
         # calculate the accuracy on episode level.
-        self.log_episode_score("Move Accuracy", (move_accuracy_sum / (final_turn + 1)) * 100)
+        self.log_episode_score("Move Accuracy", (move_accuracy_sum / (final_turn + 1)))
 
         # parsing error share on episode level
-        episode_parsing_err_share = (episode_parsing_errors / error_episode_sum) * 100 if error_episode_sum > 0 else 0
+        episode_parsing_err_share = (episode_parsing_errors / error_episode_sum) if error_episode_sum > 0 else 0
         self.log_episode_score('Episode Parsing Error Share', episode_parsing_err_share)
 
         # error to accepted move ratio
-        err_per_acc_move = (accepted_move_sum / error_episode_sum) * 100 if error_episode_sum > 0 else 0
+        err_per_acc_move = (accepted_move_sum / error_episode_sum) if error_episode_sum > 0 else 0
         self.log_episode_score('Errors Per Accepted Move', err_per_acc_move)
 
     # single player and multi player move scoring functions. SP calls the DP Script from instance gen
@@ -122,7 +139,6 @@ class LudoGameScorer(GameScorer):
             X=current_state[tokens[0]],
             Y=current_state[tokens[1]],
             index=idx
-        )
 
         simulated_move = moves[0]
         selected_move = current_state.copy()
