@@ -10,22 +10,14 @@ sys.path.append(str(Path(__file__).parent.parent.parent))
 from minimax import GameSim, minimax
 from clemgame.clemgame import GameScorer
 from clemgame.metrics import METRIC_ABORTED, METRIC_LOSE, METRIC_SUCCESS
-from instancegenerator import find_multitoken_minimum
+from instancegenerator import find_monotoken_minimum, find_multitoken_minimum
 
 
 GAME_NAME: str = "ludo"
 ATTEMPT_LIMIT: int = 3
 
-# TODO Adapt rest of the metrics
-METRIC_DRAW: str = "Draw"
-METRIC_EPISODE_ACCURACY: str = "Episode Accuracy"
-METRIC_EPISODE_EFFICIENCY: str = "Episode Efficiency"
-METRIC_EPISODE_SPEED: str = "Episode Speed"
-METRIC_TURN_ACCURACY: str = "Turn Accuracy"
-METRIC_TURN_EFFICIENCY: str = "Turn Efficiency"
-METRIC_TURN_SPEED: str = "Turn Speed"
 
-
+# TODO Incorporate 'n_tokens' into episode_interactions logging
 class LudoGameScorer(GameScorer):
     """
     Handles the scoring of the game 'Ludo' on a per-turn, episodic, and
@@ -43,199 +35,169 @@ class LudoGameScorer(GameScorer):
                                   individual game instance
         """
         super().__init__(GAME_NAME, experiment, game_instance)
-        self.min_moves = game_instance['min_moves']
+        self.min_moves: int = game_instance['min_moves']
 
-    def compute_scores(self, episode_interactions: dict) -> None:
+    # TODO Determine final bench score calculation and logging destination
+    def log_main_score(self, episode_interactions: dict) -> None:
         """
-        Computes turn and episodic scores, then logs them.
+        TODO
 
         Args:
             episodic_interactions (dict): contains relevant information about
                                           played episode, including the per
                                           turn interactions
         """
-        # first add the speed metric
-        final_turn: int = episode_interactions['Turns played']
-        max_retries: int = (final_turn + 1) * ATTEMPT_LIMIT
-        retries: int = episode_interactions['Reprompt attempts']
-        status: str = episode_interactions["Final status"]
-        is_multiplayer: int = episode_interactions["Multiplayer"]
+        self._score_episode(episode_interactions)
+        # TODO Calculate main score
+        # TODO Log main score
+    
+    def score_turns(self, episode_interactions: dict) -> None:
+        """
+        For each turn in the episode, gleans from the events beginning and end
+        board state information, as well as relevant metric counts. This
+        information is then used to calculate a number of turn metrics,which
+        are then logged.
 
-        error_episode_sum: int = 0
-        move_accuracy_sum: int = 0
-        episode_parsing_errors: int = 0
-        accepted_move_sum: int = 0
-        total_request_count: int = 0
-        total_accepted_move_count: int = 0
+        Args:
+            episodic_interactions (dict): contains relevant information about
+                                          played episode, including the per
+                                          turn interactions
+        """
+        for idx, turn in enumerate(episode_interactions["turns"]):
+            # Classifies events in the turn, gets moves and metric counts
+            current_state, updated_state, counts = self._classify_events(turn)
 
-        for idx, turn in enumerate(episode_interactions['turns']):
-            turn_reprompts: int = 0
-            turn_parsing_errors: int = 0
-            error_turn_sum: int = 0
-            turn_request_count: int = 0
-            turn_accepted_move_count: int = 0
-            
-            for event in turn:
-                action: dict = event['action']
-                if action['type'] == "current state":
-                    current_state: dict[str: int] = action["content"]
-                if action['type'] == "accepted move":
-                    updated_state: dict[str: int] = action["content"]
-                    accepted_move_sum += 1
-                if action['type'] == 'reprompt':
-                    turn_reprompts += 1
-                if action['type'] == 'parsing failed':
-                    turn_parsing_errors += 1
-                    episode_parsing_errors += 1
-                if action['type'] == 'error':
-                    error_turn_sum += 1
-                    error_episode_sum += 1
-                if action['type'] == 'get message':
-                    turn_request_count += 1
-                if action['type'] == 'accepted move':
-                    turn_accepted_move_count += 1
+            # Scores moves and counts
+            scores: dict[str: int] = self._calculate_turn_scores(
+                n_fields=episode_interactions["Board size"],
+                n_tokens=episode_interactions["n_tokens"],
+                rolls=episode_interactions["Rolls"],
+                turn=idx,
+                current_state=current_state,
+                updated_state=updated_state,
+                counts=counts,
+                multiplayer=bool(episode_interactions["Multiplayer"])
+            )
 
-            total_request_count += turn_request_count
-            total_accepted_move_count += turn_accepted_move_count
+            # Logs scores
+            self._log_turn_scores(idx, scores)
 
-            if is_multiplayer:
-                score: float = self._score_multiplayer_move(episode_interactions, idx, current_state, updated_state)
-            else:
-                score: float = self._score_single_player_move(episode_interactions, current_state, idx, updated_state)
+    def _calculate_episode_scores(self, counts: dict) -> dict[str: int]:
+        """
+        Given relevant episode-level metric counts, calculates numerous
+        episode-level scores.
 
-            move_accuracy_sum += score
-            
-            # Logs move accuracy
-            self.log_turn_score(idx, 'Turn Accuracy', score)
-            self.log_turn_score(idx, 'Turn Efficiency', (turn_accepted_move_count/turn_request_count))
-            self.log_turn_score(idx, 'Reprompt Efficiency', 1 - (turn_reprompts / ATTEMPT_LIMIT))
-            self.log_turn_score(idx, 'Violated Request Count', turn_request_count-turn_accepted_move_count)
-            turn_parsing_err_rate = (turn_parsing_errors/error_turn_sum) if error_turn_sum > 0 else 0
-            self.log_turn_score(idx, 'Parsing Error Share', turn_parsing_err_rate)
-            self.log_turn_score(idx, 'Successful Request Count', turn_accepted_move_count)
-            self.log_turn_score(idx, 'Total Request Count', turn_request_count)
-            self.log_turn_score(idx, 'Error Count', error_turn_sum)
-            self.log_turn_score(idx, 'Parsing Error Count', turn_parsing_errors)
-            self.log_turn_score(idx, 'Reprompt Attempts Made', turn_reprompts)
+        Args:
+            counts (dict): contains various episode-level metric counts used
+                           in the calculation of episode scores
 
-        # Logs speed
-        if episode_interactions['Aborted']:
-            self.log_episode_score('Speed', 0)
+        Returns:
+            dict[str: int]: contains numerous episode-level scores
+        """
+        max_retries: int = (counts["final_turn"] + 1) * ATTEMPT_LIMIT
+        
+        return {
+            "speed": (
+                0 if counts["status"] == "ABORTED"
+                else self.min_moves * 1.0 / (counts["final_turn"] + 1)
+            ),
+            "aborted": 1 if counts["status"] == "ABORTED" else 0,
+            "success": 1 if counts["status"] == "SUCCESS" else 0,
+            "lose": 1 if counts["status"] == "LOSE" else 0,
+            "draw": 1 if counts["status"] == "DRAW" else 0,
+            "efficiency": counts["total_accepted_moves"] / counts["total_requests"],
+            "reprompt_efficiency": 1 - counts["retries"] / max_retries,
+            "accuracy": counts["total_accuracy"] / (counts["final_turn"] + 1),
+            "parsing_error_share": (
+                counts["total_parsing_errors"] / counts["total_errors"]
+                if counts["total_errors"] > 0 else 0
+            ),
+            "errors_per_accepted": (
+                counts["total_accepted_moves"] / counts["total_errors"]
+                if counts["total_errors"] > 0 else 0
+            )
+        }
+    
+    # TODO Determine main score calculation
+    def _calculate_main_score(self) -> float:
+        """
+        TODO
+        """
+        ...
+    
+    def _calculate_turn_scores(
+            self,
+            n_fields: int,
+            n_tokens: int,
+            rolls: list[int],
+            turn: int,
+            current_state: dict[str: int],
+            updated_state: dict[str: int],
+            counts: dict[str: int],
+            multiplayer: bool
+    ) -> dict[str: int]:
+        """
+        Given turn-level metrics, calculates numerous turn-level scores.
+
+        Args:
+            n_fields (int): the size of the board
+            n_tokens (int): the number of tokens given to each player
+            rolls (list[int]): contains die rolls
+            turn (int): the turn number
+            current_state (dict[str: int]): for the board at the beginning of
+                                            the turn, contains the position of
+                                            each token
+            updated_state (dict[str: int]): for the board at the end of the
+                                            turn, contains the position of
+                                            each token
+            counts (dict[str: int]): various turn-level metric counts
+            multiplayer (bool): True if the episode was multiplayer, False
+                                otherwise
+
+        Returns:
+            dict[str: int]: contains numerous turn-level scores
+        """
+        # Calculates move accuracy
+        if multiplayer:
+            accuracy: float = self._score_multiplayer_move(
+                n_fields=n_fields,
+                n_tokens=n_tokens,
+                rolls=rolls,
+                turn=turn,
+                current_state=current_state,
+                updated_state=updated_state
+            )
         else:
-            self.log_episode_score('Speed', (self.min_moves*1.0/(final_turn+1)))
-
-        # Logs game status
-        self.log_episode_score(METRIC_ABORTED, 1 if status == "ABORTED" else 0)
-        self.log_episode_score(METRIC_SUCCESS, 1 if status == "WIN" else 0)
-        self.log_episode_score(METRIC_LOSE, 1 if status == "LOSE" else 0)
-        self.log_episode_score("Turn limit reached", 1 if status == "DRAW" else 0)
-
-        # Percentage of maximum possible reprompting attempts - we can use that score in the final calculation.
-        self.log_episode_score(METRIC_EPISODE_EFFICIENCY, total_accepted_move_count / total_request_count)
-        self.log_episode_score("Episode Reprompt Efficiency", 1 - retries / max_retries)
-
-        # Calculate the accuracy on episode level.
-        self.log_episode_score("Move Accuracy", move_accuracy_sum / (final_turn + 1))
-
-        # Parsing error share on episode level
-        episode_parsing_err_share = episode_parsing_errors / error_episode_sum if error_episode_sum > 0 else 0
-        self.log_episode_score('Episode Parsing Error Share', episode_parsing_err_share)
-
-        # Error to accepted move ratio
-        err_per_acc_move = (accepted_move_sum / error_episode_sum) if error_episode_sum > 0 else 0
-        self.log_episode_score('Errors Per Accepted Move', err_per_acc_move)
-
-    # TODO Adapt to single token using n_tokens
-    def _score_single_player_move(
-            self,
-            episode_interactions: dict,
-            turn: int,
-            current_state: dict[str: int],
-            updated_state: dict[str: int]
-    ) -> None:
-        """
-        Scores the move made during a turn in a single player game by first
-        calculating the best move in the given game state, then comparing the
-        player's move against it and scoring accordingly.
-
-        Args:
-            episodic_interactions (dict): contains relevant information about
-                                          played episode, including the per
-                                          turn interactions
-            turn (int): the turn number
-            current_state (dict[str: int]): for the board at the beginning of
-                                            the turn, contains the position of
-                                            each token
-            updated_state (dict[str: int]): for the board at the end of the
-                                            turn, contains the position of
-                                            each token
-
-        Returns:
-            float: the score of the move, '1.0' if it matches the best move or
-                   '0.0' if not
-        """
-        memorized_moves: dict = {}
-        tokens: set[str] = current_state.keys()
-        _, moves = find_multitoken_minimum(
-            rolls=episode_interactions["Rolls"],
-            n_fields=episode_interactions["Board size"],
-            memorized_moves=memorized_moves,
-            X=current_state[tokens[0]],
-            Y=current_state[tokens[1]],
-            index=turn
+            accuracy: float = self._score_single_player_move(
+                n_fields=n_fields,
+                n_tokens=n_tokens,
+                rolls=rolls,
+                turn=turn,
+                current_state=current_state,
+                updated_state=updated_state
+            )
+        
+        # Calculates count-based metrics
+        efficiency: float = counts["accepted_moves"] / counts["requests"]
+        reprompt_efficiency: float = 1 - (counts["reprompts"] / ATTEMPT_LIMIT)
+        violated_requests: int = counts["requests"] - counts["accepted_moves"]
+        parsing_error_share: int = (
+            counts["parsing_errors"] / counts["errors"]
+            if counts["errors"] > 0 else 0
         )
 
-        simulated_move: tuple[str, int] = moves[0]
-        selected_move: dict[str: int] = current_state.copy()
-        selected_move[simulated_move[0]] = simulated_move[1]
-
-        return self._check_equivalence(updated_state, selected_move)
-
-    # TODO Adapt to single token using n_tokens
-    def _score_multiplayer_move(
-            self,
-            episode_interactions: dict,
-            turn: int,
-            current_state: dict[str: int],
-            updated_state: dict[str: int]
-    ) -> float:
-        """
-        Scores the move made during a turn in a multiplayer game by first
-        calculating the best move in the given game state, then comparing the
-        player's move against it and scoring accordingly.
-
-        Args:
-            episodic_interactions (dict): contains relevant information about
-                                          played episode, including the per
-                                          turn interactions
-            turn (int): the turn number
-            current_state (dict[str: int]): for the board at the beginning of
-                                            the turn, contains the position of
-                                            each token
-            updated_state (dict[str: int]): for the board at the end of the
-                                            turn, contains the position of
-                                            each token
-
-        Returns:
-            float: the score of the move, '1.0' if it matches the best move or
-                   '0.0' if not
-        """
-        # Simulates the game each turn to get the best move
-        game: GameSim = GameSim(
-            n_fields=episode_interactions['Board size'],
-            n_tokens=episode_interactions["n_tokens"], # TODO incorporate into logging
-            token_positions=current_state,
-            rolls=episode_interactions["Rolls"],
-            turn=turn
-        )
-        _, simulated_move = minimax(game, False)  
-
-        # Simulates the move
-        selected_move = current_state.copy()
-        selected_move[simulated_move[0]] = simulated_move[1]
-        print(simulated_move)
-
-        return self._check_equivalence(updated_state, selected_move)
+        return {
+            "accuracy": accuracy,
+            "efficiency": efficiency,
+            "reprompt_efficiency": reprompt_efficiency,
+            "violated_requests": violated_requests,
+            "parsing_error_share": parsing_error_share,
+            "accepted_moves": counts["accepted_moves"],
+            "requests": counts["requests"],
+            "errors": counts["errors"],
+            "parsing_errors": counts["parsing_errors"],
+            "reprompts": counts["reprompts"]
+        }
 
     def _check_equivalence(
             self,
@@ -265,54 +227,255 @@ class LudoGameScorer(GameScorer):
         ]
 
         return float(all(matches))
-
-    def score_turns(self, episodic_interactions: dict) -> None:
+    
+    def _classify_events(self, turn: list[dict]) -> tuple[dict, dict, dict]:
         """
-        Given the the episodic scores, logs the final game status, speed,
-        efficiency, and accuracy metrics.
+        Given a list of the events which took place during a given turn,
+        classifies the events, gleaning from them the beginning and end
+        positions of the tokens, as well as various turn-level metric counts.
 
         Args:
-            status (str): the final status of the game
-            speed (float): the speed at which the game was completed,
-                           calculated by dividing the minimum number of moves
-                           required by the number of moves made
-            efficiency (float): the efficiency with which the game was played,
-                                calculated by dividing the number of reprompt
-                                attempts needed by the total possible number
-            accuracy (float): the accuracy with which the game was played,
-                              calculated by taking the average of the turn
-                              scores
-        """
-        # E.g., score LLM performance against optimal decision at each turn,
-        # given the information available at that turn. Then, add this
-        # information to self.scores in the form of turn_number: turn_score
-        for turn in episodic_interactions.values():
-            pass
-
-    # TODO Determine final bench score calculation and logging destination
-    def log_main_score(self, episodic_interactions: dict) -> None:
-        """
-        Categorizes the events which took place in a turn, ultimately
-        calculating the turn score and the number of reprompts which took
-        place during the turn.
-
-        Args:
-            turn_number (int): the current turn number
-            interaction (list[dict[str: str]]): contains dictionaries, which
-                                                each represent an event which
-                                                took place during the turn
-            n_fields (int): the size of the board in terms of fields
-            rolls (list[tuple]): contains the die rolls for the game
+            turn (list[dict]): contains one dict per event which took place in
+                               the turn
 
         Returns:
-            tuple[float, int]: contains the turn score, calculated by
-                               comparing the move made to the optimal move,
-                               and the number or reprompt attempts made during
-                               the turn
+            tuple[dict, dict, dict]: contains three dictionaries, one
+                                     representing the token positions at the
+                                     beginning of the turn, one representing
+                                     the token positions at the end of then
+                                     turn, and the third containing various
+                                     turn-level metric counts 
         """
-        # Replace this function call with a function that logs your main score
-        # aka BENCH_SCORE
-        pass
+        counts: dict[str: int] = {
+            "accepted_moves": 0,
+            "errors": 0,
+            "parsing_errors": 0,
+            "reprompts": 0,
+            "requests": 0
+        }
+
+        for event in turn:
+            match event["action"]["type"]:
+                case "accepted move":
+                    updated_state: dict[str: int] = event["action"]["content"]
+                    counts["accepted_moves"] += 1
+                case "current state":
+                    current_state: dict[str: int] = event["action"]["content"]
+                case 'error':
+                    counts["errors"] += 1
+                case 'get message':
+                    counts["requests"] += 1
+                case 'parsing failed':
+                    counts["parsing_errors"] += 1
+                case 'reprompt':
+                    counts["reprompts"] += 1
+
+        return current_state, updated_state, counts
+
+    def _log_episode_scores(self, scores: dict[str: int]) -> None:
+        """
+        Given episode-level scores, logs them and stores them in an instance
+        attribute.
+
+        Args:
+            scores (dict[str: int]): contains numerous episode-level scores
+        """
+        score_names: list[str] = [
+            "Episode Speed",
+            METRIC_ABORTED,
+            METRIC_SUCCESS,
+            METRIC_LOSE,
+            "Draw",
+            "Episode Efficiency",
+            "Episode Reprompt Efficiency",
+            "Episode Accuracy",
+            "Episode Parsing Error Share",
+            "Episode Errors per Accepted Move"
+        ]
+
+        for score_name, score_value in zip(score_names, scores.values()):
+            self.log_episode_score(score_name, score_value)
+    
+    def _log_turn_scores(self, turn: int, scores: dict[str: int]) -> None:
+        """
+        Given the turn number and the calculates scores of the interactions
+        during that turn, logs the scores and stores them in an instance
+        attribute.
+
+        Args:
+            scores (dict[str: int]): contains numerous turn-level scores
+        """
+        score_names: list[str] = [
+            "Turn Accuracy",
+            "Turn Efficiency",
+            "Turn Reprompt Efficiency",
+            "Turn Violated Requests",
+            "Turn Parsing Error Share",
+            "Turn Accepted Moves",
+            "Turn Requests",
+            "Turn Errors",
+            "Turn Parsing Errors",
+            "Turn Reprompts"
+        ]
+
+        for score_name, score_value in zip(score_names, scores.values()):
+            self.log_turn_score(turn, score_name, score_value)
+
+    def _get_episode_counts(self, episode_interactions: dict) -> dict:
+        """
+        Given an episode interaction, gets various episode-level metric
+        counts, some from the episode interactions and some by summing totals
+        across turn scores.
+
+        Args:
+            episodic_interactions (dict): contains relevant information about
+                                          played episode, including the per
+                                          turn interactions
+        """
+        # Sums counts in all turns
+        total_accepted_moves: int = 0
+        total_requests: int = 0
+        total_accuracy: int = 0
+        total_parsing_errors: int = 0
+        total_errors: int = 0
+        for turn in self.scores["turn scores"].values():
+            total_accepted_moves += turn["Turn Accepted Moves"]
+            total_requests += turn["Turn Requests"]
+            total_accuracy += turn["Turn Accuracy"]
+            total_parsing_errors += turn["Turn Parsing Errors"]
+            total_errors += turn["Turn Errors"]
+
+        return {
+            "status": episode_interactions["Final status"],
+            "final_turn": episode_interactions['Turns played'],
+            "retries": episode_interactions['Reprompt attempts'],
+            "total_accepted_moves": total_accepted_moves,
+            "total_requests": total_requests,
+            "total_accuracy": total_accuracy,
+            "total_parsing_errors": total_parsing_errors,
+            "total_errors": total_errors
+        }
+
+    def _score_episode(self, episode_interactions: dict) -> None:
+        """
+        Given episode interactions and previously calculated turn-level
+        scores, calculates numerous episode-level scores, then logs the scores
+        and stores them in an instance attribute.
+
+        Args:
+            episodic_interactions (dict): contains relevant information about
+                                          played episode, including the per
+                                          turn interactions
+        """
+        counts: dict = self._get_episode_counts(episode_interactions)
+        scores: dict = self._calculate_episode_scores(counts)
+        self._log_episode_scores(scores)
+
+    def _score_single_player_move(
+            self,
+            n_fields: int,
+            n_tokens: int,
+            rolls: list[int],
+            turn: int,
+            current_state: dict[str: int],
+            updated_state: dict[str: int]
+    ) -> None:
+        """
+        Scores the move made during a turn in a single player game by first
+        calculating the best move in the given game state, then comparing the
+        player's move against it and scoring accordingly.
+
+        Args:
+            n_fields (int): the size of the board
+            n_tokens (int): the number of tokens given to each player
+            rolls (list[int]): contains die rolls
+            turn (int): the turn number
+            current_state (dict[str: int]): for the board at the beginning of
+                                            the turn, contains the position of
+                                            each token
+            updated_state (dict[str: int]): for the board at the end of the
+                                            turn, contains the position of
+                                            each token
+
+        Returns:
+            float: the score of the move, '1.0' if it matches the best move or
+                   '0.0' if not
+        """
+        memorized_moves: dict = {}
+        tokens: set[str] = current_state.keys()
+
+        match n_tokens:
+            case 1:
+                _, moves = find_monotoken_minimum(
+                    rolls=rolls,
+                    n_fields=n_fields,
+                    memorized_moves=memorized_moves,
+                    X=current_state[tokens[0]],
+                    index=turn
+                )
+            case 2:
+                _, moves = find_multitoken_minimum(
+                    rolls=rolls,
+                    n_fields=n_fields,
+                    memorized_moves=memorized_moves,
+                    X=current_state[tokens[0]],
+                    Y=current_state[tokens[1]],
+                    index=turn
+                )
+
+        simulated_move: tuple[str, int] = moves[0]
+        selected_move: dict[str: int] = current_state.copy()
+        selected_move[simulated_move[0]] = simulated_move[1]
+
+        return self._check_equivalence(updated_state, selected_move)
+
+    def _score_multiplayer_move(
+            self,
+            n_fields: int,
+            n_tokens: int,
+            rolls: list[int],
+            turn: int,
+            current_state: dict[str: int],
+            updated_state: dict[str: int]
+    ) -> float:
+        """
+        Scores the move made during a turn in a multiplayer game by first
+        calculating the best move in the given game state, then comparing the
+        player's move against it and scoring accordingly.
+
+        Args:
+            n_fields (int): the size of the board
+            n_tokens (int): the number of tokens given to each player
+            rolls (list[int]): contains die rolls
+            turn (int): the turn number
+            current_state (dict[str: int]): for the board at the beginning of
+                                            the turn, contains the position of
+                                            each token
+            updated_state (dict[str: int]): for the board at the end of the
+                                            turn, contains the position of
+                                            each token
+
+        Returns:
+            float: the score of the move, '1.0' if it matches the best move or
+                   '0.0' if not
+        """
+        # Simulates the game each turn to get the best move
+        game: GameSim = GameSim(
+            n_fields=n_fields,
+            n_tokens=n_tokens,
+            token_positions=current_state,
+            rolls=rolls,
+            turn=turn
+        )
+        _, simulated_move = minimax(game, False)  
+
+        # Simulates the move
+        selected_move = current_state.copy()
+        selected_move[simulated_move[0]] = simulated_move[1]
+        print(simulated_move)
+
+        return self._check_equivalence(updated_state, selected_move)
+
 
 if __name__ == '__main__':
     pass
