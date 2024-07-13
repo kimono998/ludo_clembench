@@ -323,7 +323,7 @@ def find_monotoken_minimum(
                 # Seeks minimum required moves to solve the sequence
                 if next_moves + 1 < min_move_count:
                     min_move_count = next_moves + 1
-                    best_sequence = ['X', new_X] + sequence
+                    best_sequence = [('X', new_X)] + sequence
 
         # If a 6 is rolled and either token can be moved to the board
         if roll == 6:
@@ -337,7 +337,7 @@ def find_monotoken_minimum(
                 )
                 if next_moves + 1 < min_move_count:
                     min_move_count = next_moves + 1
-                    best_sequence = ['X', 1] + sequence
+                    best_sequence = [('X', 1)] + sequence
 
         memorized_moves[(X, index)] = (min_move_count, best_sequence)
 
@@ -406,7 +406,7 @@ def find_multitoken_minimum(
                 # Seeks minimum required moves to solve the sequence
                 if next_moves + 1 < min_move_count:
                     min_move_count = next_moves + 1
-                    best_sequence = ['X', new_X] + sequence
+                    best_sequence = [('X', new_X)] + sequence
 
         # If Y is in play, calculates its next position
         if Y != 0:
@@ -426,7 +426,7 @@ def find_multitoken_minimum(
                 # Seeks minimum required moves to solve the sequence
                 if next_moves + 1 < min_move_count:
                     min_move_count = next_moves + 1
-                    best_sequence = ['Y', new_Y] + sequence
+                    best_sequence = [('Y', new_Y)] + sequence
 
         # If a 6 is rolled and either token can be moved to the board
         if roll == 6:
@@ -441,7 +441,7 @@ def find_multitoken_minimum(
                 )
                 if next_moves + 1 < min_move_count:
                     min_move_count = next_moves + 1
-                    best_sequence = ['X', 1] + sequence
+                    best_sequence = [('X', 1)] + sequence
 
             if Y == 0 and 1 != X:
                 next_moves, sequence = find_multitoken_minimum(
@@ -454,7 +454,7 @@ def find_multitoken_minimum(
                 )
                 if next_moves + 1 < min_move_count:
                     min_move_count = next_moves + 1
-                    best_sequence = ['Y', 1] + sequence
+                    best_sequence = [('Y', 1)] + sequence
 
         memorized_moves[(X, Y, index)] = (min_move_count, best_sequence)
 

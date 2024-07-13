@@ -306,23 +306,32 @@ def parse_text(text: str, player: LudoPlayer) -> dict[str: int] | bool:
     
     match player.n_tokens:
         case 1:
+            # print(f'token: {tokens[0]}')
             matches: re.Match = re.search(
                 rf"MY MOVE: {tokens[0]} -> (\d+)",
                 text
             )
-            token_dict: dict[str: int] = {tokens[0]: int(matches.group(1))}
-        
+            # print(tokens)
+            # print(text)
+            if not matches:
+                return False
+            else:
+                token_dict: dict[str: int] = {tokens[0]: int(matches.group(1))}
+
         case 2:
             matches: re.Match = re.search(
                 rf"MY MOVE: {tokens[0]} -> (\d+) ; {tokens[1]} -> (\d+)",
                 text
             )
-            token_dict: dict[str: int] = {
-                tokens[0]: int(matches.group(1)),
-                tokens[1]: int(matches.group(2))
-            }
+            if not matches:
+                return False
+            else:
+                token_dict: dict[str: int] = {
+                    tokens[0]: int(matches.group(1)),
+                    tokens[1]: int(matches.group(2))
+                }
 
-    return token_dict if matches else False
+    return token_dict
 
 
 if __name__ == '__main__':
