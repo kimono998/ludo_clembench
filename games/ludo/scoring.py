@@ -4,22 +4,23 @@ Contains custom scoring logic for the game 'Ludo'.
 
 import sys
 from pathlib import Path
-from typing import Dict
-from minimax import GameSim, minimax
-from clemgame.metrics import *
-from instancegenerator import LudoInstanceGenerator
+
+
 sys.path.append(str(Path(__file__).parent.parent.parent))
 
+from minimax import GameSim, minimax
 from clemgame.clemgame import GameScorer
+from clemgame.metrics import *
+from instancegenerator import find_multitoken_minimum
 
-ATTEMPT_LIMIT = 3
 GAME_NAME: str = "ludo"
+ATTEMPT_LIMIT: int = 3
 
 
 class LudoGameScorer(GameScorer):
     """
-    Handles the scoring of the game 'Ludo' on a per-turn, episodic, and overall
-    basis.
+    Handles the scoring of the game 'Ludo' on a per-turn, episodic, and
+    overall basis.
     """
     def __init__(self, experiment: dict, game_instance: dict):
         """
@@ -35,7 +36,7 @@ class LudoGameScorer(GameScorer):
         super().__init__(GAME_NAME, experiment, game_instance)
         self.min_moves = game_instance['min_moves']
 
-    def compute_scores(self, episode_interactions: Dict) -> None:
+    def compute_scores(self, episode_interactions: dict) -> None:
         # first add the speed metric
 
         final_turn = episode_interactions['Turns played']
@@ -126,21 +127,18 @@ class LudoGameScorer(GameScorer):
         err_per_acc_move = (accepted_move_sum / error_episode_sum) if error_episode_sum > 0 else 0
         self.log_episode_score('Errors Per Accepted Move', err_per_acc_move)
 
-
-
     # single player and multi player move scoring functions. SP calls the DP Script from instance gen
     # MP uses AlphaBeta prunning
     def _sp_move_score(self, episode_interactions, current_state: dict, idx: int, updated_state: dict):
         memorized_moves = {}
-        tokens = list(current_state.keys())
-        generator = LudoInstanceGenerator()
-        _, moves = generator.find_minimum(current_state[tokens[0]],
-                                       current_state[tokens[1]],
-                                       idx,
-                                       episode_interactions["Rolls"],
-                                       episode_interactions["Board size"],
-                                       memorized_moves
-                                       )
+        tokens = current_state.keys()
+        _, moves = find_multitoken_minimum(
+            rolls=episode_interactions["Rolls"],
+            n_fields=episode_interactions["Board size"],
+            memorized_moves=memorized_moves,
+            X=current_state[tokens[0]],
+            Y=current_state[tokens[1]],
+            index=idx
 
         simulated_move = moves[0]
         selected_move = current_state.copy()
@@ -177,10 +175,20 @@ class LudoGameScorer(GameScorer):
 
     def score_turns(self, episodic_interactions: dict) -> None:
         """
-        TODO Method description
+        Given the the episodic scores, logs the final game status, speed,
+        efficiency, and accuracy metrics.
 
         Args:
-            TODO episodic_interactions (dict):
+            status (str): the final status of the game
+            speed (float): the speed at which the game was completed,
+                           calculated by dividing the minimum number of moves
+                           required by the number of moves made
+            efficiency (float): the efficiency with which the game was played,
+                                calculated by dividing the number of reprompt
+                                attempts needed by the total possible number
+            accuracy (float): the accuracy with which the game was played,
+                              calculated by taking the average of the turn
+                              scores
         """
         # E.g., score LLM performance against optimal decision at each turn,
         # given the information available at that turn. Then, add this
@@ -191,10 +199,23 @@ class LudoGameScorer(GameScorer):
     # TODO Determine final bench score calculation and logging destination
     def log_main_score(self, episodic_interactions: dict) -> None:
         """
-        TODO Method description
+        Categorizes the events which took place in a turn, ultimately
+        calculating the turn score and the number of reprompts which took
+        place during the turn.
 
         Args:
-            TODO episodic_interactions (dict):
+            turn_number (int): the current turn number
+            interaction (list[dict[str: str]]): contains dictionaries, which
+                                                each represent an event which
+                                                took place during the turn
+            n_fields (int): the size of the board in terms of fields
+            rolls (list[tuple]): contains the die rolls for the game
+
+        Returns:
+            tuple[float, int]: contains the turn score, calculated by
+                               comparing the move made to the optimal move,
+                               and the number or reprompt attempts made during
+                               the turn
         """
         # Replace this function call with a function that logs your main score
         # aka BENCH_SCORE
