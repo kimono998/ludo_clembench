@@ -35,7 +35,6 @@ class LudoGameScorer(GameScorer):
                                   individual game instance
         """
         super().__init__(GAME_NAME, experiment, game_instance)
-        self.min_moves: int = game_instance['min_moves']
 
     # TODO Determine final bench score calculation and logging destination
     def log_main_score(self, episode_interactions: dict) -> None:
@@ -69,9 +68,6 @@ class LudoGameScorer(GameScorer):
 
             # Scores moves and counts
             scores: dict[str: int] = self._calculate_turn_scores(
-                n_fields=episode_interactions["Board size"],
-                n_tokens=episode_interactions["n_tokens"],
-                rolls=episode_interactions["Rolls"],
                 turn=idx,
                 current_state=current_state,
                 updated_state=updated_state,
@@ -79,7 +75,7 @@ class LudoGameScorer(GameScorer):
                 multiplayer=bool(episode_interactions["Multiplayer"])
             )
 
-            # Logs scores
+            # Logs and stores scores
             self._log_turn_scores(idx, scores)
 
     def _calculate_episode_scores(self, counts: dict) -> dict[str: int]:
@@ -99,7 +95,7 @@ class LudoGameScorer(GameScorer):
         return {
             "speed": (
                 0 if counts["status"] == "ABORTED"
-                else self.min_moves * 1.0 / (counts["final_turn"] + 1)
+                else self.game_instance["min_moves"] * 1.0 / (counts["final_turn"] + 1)
             ),
             "aborted": 1 if counts["status"] == "ABORTED" else 0,
             "success": 1 if counts["status"] == "SUCCESS" else 0,
@@ -127,9 +123,6 @@ class LudoGameScorer(GameScorer):
     
     def _calculate_turn_scores(
             self,
-            n_fields: int,
-            n_tokens: int,
-            rolls: list[int],
             turn: int,
             current_state: dict[str: int],
             updated_state: dict[str: int],
@@ -140,9 +133,6 @@ class LudoGameScorer(GameScorer):
         Given turn-level metrics, calculates numerous turn-level scores.
 
         Args:
-            n_fields (int): the size of the board
-            n_tokens (int): the number of tokens given to each player
-            rolls (list[int]): contains die rolls
             turn (int): the turn number
             current_state (dict[str: int]): for the board at the beginning of
                                             the turn, contains the position of
@@ -160,18 +150,12 @@ class LudoGameScorer(GameScorer):
         # Calculates move accuracy
         if multiplayer:
             accuracy: float = self._score_multiplayer_move(
-                n_fields=n_fields,
-                n_tokens=n_tokens,
-                rolls=rolls,
                 turn=turn,
                 current_state=current_state,
                 updated_state=updated_state
             )
         else:
             accuracy: float = self._score_single_player_move(
-                n_fields=n_fields,
-                n_tokens=n_tokens,
-                rolls=rolls,
                 turn=turn,
                 current_state=current_state,
                 updated_state=updated_state
@@ -373,9 +357,6 @@ class LudoGameScorer(GameScorer):
 
     def _score_single_player_move(
             self,
-            n_fields: int,
-            n_tokens: int,
-            rolls: list[int],
             turn: int,
             current_state: dict[str: int],
             updated_state: dict[str: int]
@@ -386,9 +367,6 @@ class LudoGameScorer(GameScorer):
         player's move against it and scoring accordingly.
 
         Args:
-            n_fields (int): the size of the board
-            n_tokens (int): the number of tokens given to each player
-            rolls (list[int]): contains die rolls
             turn (int): the turn number
             current_state (dict[str: int]): for the board at the beginning of
                                             the turn, contains the position of
@@ -404,19 +382,19 @@ class LudoGameScorer(GameScorer):
         memorized_moves: dict = {}
         tokens: set[str] = current_state.keys()
 
-        match n_tokens:
+        match self.game_instance["n_tokens"]:
             case 1:
                 _, moves = find_monotoken_minimum(
-                    rolls=rolls,
-                    n_fields=n_fields,
+                    rolls=self.game_instance["rolls"],
+                    n_fields=self.game_instance["n_fields"],
                     memorized_moves=memorized_moves,
                     X=current_state[tokens[0]],
                     index=turn
                 )
             case 2:
                 _, moves = find_multitoken_minimum(
-                    rolls=rolls,
-                    n_fields=n_fields,
+                    rolls=self.game_instance["rolls"],
+                    n_fields=self.game_instance["n_fields"],
                     memorized_moves=memorized_moves,
                     X=current_state[tokens[0]],
                     Y=current_state[tokens[1]],
@@ -431,9 +409,6 @@ class LudoGameScorer(GameScorer):
 
     def _score_multiplayer_move(
             self,
-            n_fields: int,
-            n_tokens: int,
-            rolls: list[int],
             turn: int,
             current_state: dict[str: int],
             updated_state: dict[str: int]
@@ -444,9 +419,6 @@ class LudoGameScorer(GameScorer):
         player's move against it and scoring accordingly.
 
         Args:
-            n_fields (int): the size of the board
-            n_tokens (int): the number of tokens given to each player
-            rolls (list[int]): contains die rolls
             turn (int): the turn number
             current_state (dict[str: int]): for the board at the beginning of
                                             the turn, contains the position of
@@ -461,10 +433,10 @@ class LudoGameScorer(GameScorer):
         """
         # Simulates the game each turn to get the best move
         game: GameSim = GameSim(
-            n_fields=n_fields,
-            n_tokens=n_tokens,
+            n_fields=self.game_instance["n_fields"],
+            n_tokens=self.game_instance["n_tokens"],
             token_positions=current_state,
-            rolls=rolls,
+            rolls=self.game_instance["rolls"],
             turn=turn
         )
         _, simulated_move = minimax(game, False)  
