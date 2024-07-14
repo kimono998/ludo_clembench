@@ -25,7 +25,7 @@ EPISODE_SCORE_NAMES: dict[str: str] = {
     "reprompt_efficiency": "Episode Reprompt Efficiency",
     "accuracy": "Episode Accuracy",
     "parsing_error_share": "Episode Parsing Error Share",
-    "errors_per_accepted": "Episode Errors per Accepted Move"
+    "accepted_per_error": "Episode Accepted Moves per Error"
 }
 TURN_SCORE_NAMES: dict[str: str] = {
     "accuracy": "Accuracy",
@@ -71,11 +71,11 @@ class LudoGameScorer(GameScorer):
         speed, accuracy, efficiency = self._score_episode(episode_interactions)
         main_score: float = self._calculate_main_score(speed, accuracy, efficiency)
         
-        if BENCH_SCORE in self.scores["main score"]:
+        if BENCH_SCORE in self.scores["episode scores"]:
             self.logger.warning(f"{self.name}: Main score overwritten!")
 
-        self.scores["main score"][BENCH_SCORE] = main_score
-        self.logger.info(f"{self.name}: Logged main score={main_score}.")
+        self.scores["episode scores"][BENCH_SCORE] = main_score
+        self.logger.info(f"{self.name}: Logged episode score {BENCH_SCORE}={main_score}.")
     
     def score_turns(self, episode_interactions: dict) -> None:
         """
@@ -134,7 +134,7 @@ class LudoGameScorer(GameScorer):
                 counts["total_parsing_errors"] / counts["total_errors"]
                 if counts["total_errors"] > 0 else 0
             ),
-            "errors_per_accepted": (
+            "accepted_per_error": (
                 counts["total_accepted_moves"] / counts["total_errors"]
                 if counts["total_errors"] > 0 else 0
             )
