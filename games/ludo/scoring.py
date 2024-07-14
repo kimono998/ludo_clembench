@@ -58,7 +58,7 @@ class LudoGameScorer(GameScorer):
                                   individual game instance
         """
         super().__init__(GAME_NAME, experiment, game_instance)
-
+        self.turn_scores = {}
     def log_main_score(self, episode_interactions: dict) -> None:
         """
         TODO
@@ -74,7 +74,7 @@ class LudoGameScorer(GameScorer):
         if BENCH_SCORE in self.scores["episode scores"]:
             self.logger.warning(f"{self.name}: Main score overwritten!")
 
-        self.scores["episode scores"][BENCH_SCORE] = main_score
+        self.scores["episode scores"][BENCH_SCORE] = main_score*100
         self.logger.info(f"{self.name}: Logged episode score {BENCH_SCORE}={main_score}.")
     
     def score_turns(self, episode_interactions: dict) -> None:
@@ -103,7 +103,7 @@ class LudoGameScorer(GameScorer):
                 counts=counts,
                 multiplayer=bool(episode_interactions["Multiplayer"])
             )
-
+            self.turn_scores[idx] = scores
             # Logs and stores scores
             self._log_turn_scores(idx, scores)
     
@@ -119,8 +119,14 @@ class LudoGameScorer(GameScorer):
         Returns:
             dict[str: int]: contains numerous episode-level scores
         """
-        max_retries: int = (counts["final_turn"] + 1) * ATTEMPT_LIMIT
-        
+        counter = 0
+        reprompt_sum = 0
+        for idx, turn in self.turn_scores.items():
+            counter += 1 if turn['reprompt_efficiency'] != None else 0
+            reprompt_sum += turn['reprompt_efficiency'] if turn['reprompt_efficiency'] != None else 0
+
+        reprompt_efficiency = reprompt_sum/counter if counter > 0 else None
+
         return {
             "speed": (
                 0 if counts["status"] == "ABORTED"
@@ -128,7 +134,7 @@ class LudoGameScorer(GameScorer):
             ),
             "draw": 1 if counts["status"] == "DRAW" else 0,
             "efficiency": counts["total_accepted_moves"] / counts["total_requests"],
-            "reprompt_efficiency": 1 - counts["retries"] / max_retries,
+            "reprompt_efficiency": reprompt_efficiency,
             "accuracy": counts["total_accuracy"] / (counts["final_turn"] + 1),
             "parsing_error_share": (
                 counts["total_parsing_errors"] / counts["total_errors"]
@@ -204,7 +210,7 @@ class LudoGameScorer(GameScorer):
         
         # Calculates count-based metrics
         efficiency: float = counts["accepted_moves"] / counts["requests"]
-        reprompt_efficiency: float = 1 - (counts["reprompts"] / ATTEMPT_LIMIT)
+        reprompt_efficiency: float = counts["accepted_moves"] / counts["reprompts"] if counts['reprompts'] > 0 else None
         violated_requests: int = counts["requests"] - counts["accepted_moves"]
         parsing_error_share: int = (
             counts["parsing_errors"] / counts["errors"]
@@ -317,6 +323,7 @@ class LudoGameScorer(GameScorer):
             scores (dict[str: int]): contains numerous episode-level scores
         """
         for score_name, score_value in zip(EPISODE_SCORE_NAMES.values(), scores.values()):
+            print(f"{score_name} : {score_value}")
             self.log_episode_score(score_name, score_value)
     
     def _log_turn_scores(self, turn: int, scores: dict[str: int]) -> None:
@@ -348,11 +355,15 @@ class LudoGameScorer(GameScorer):
         total_accuracy: int = 0
         total_parsing_errors: int = 0
         total_errors: int = 0
+        counter = 0
         for turn in self.scores["turn scores"].values():
+            counter += 1
             total_accepted_moves += turn["Accepted Moves"]
             total_requests += turn[METRIC_REQUEST_COUNT]
             total_errors += turn["Errors"]
-
+            total_parsing_errors += turn['Parsing Errors']
+            total_accuracy += turn['Accuracy']
+        # total_accuracy = total_accuracy/counter if counter > 0 else None
         return {
             "status": episode_interactions["Final status"],
             "final_turn": episode_interactions['Turns played'],
@@ -379,6 +390,7 @@ class LudoGameScorer(GameScorer):
             TODO tuple[float, float, float]
         """
         counts: dict = self._get_episode_counts(episode_interactions)
+        print(counts)
         scores: dict = self._calculate_episode_scores(counts)
         self._log_episode_scores(scores)
 

@@ -526,7 +526,6 @@ class LudoGameMaster(GameMaster):
             else message,
             self.game.turn
         )
-
         self.log_event(
             from_=f"{player}",
             to="GM",
@@ -537,8 +536,9 @@ class LudoGameMaster(GameMaster):
                 else None
             )
         )
+        if player == "Player 1":
 
-        self.game.requests += 1
+            self.game.requests += 1
 
         move: dict[str: int] = parse_text(
             text=response_text,
@@ -557,8 +557,8 @@ class LudoGameMaster(GameMaster):
                 to="GM",
                 action={'type': 'parse', 'content': move}
             )
-
-            self.game.requests_parsed += 1
+            if player == "Player 1":
+                self.game.requests_parsed += 1
 
             return move, response_text
 
@@ -569,6 +569,7 @@ class LudoGameMaster(GameMaster):
                 action={'type': 'parsing failed', 'content': response_text}
             )
 
+        if player == "Player 1":
             self.game.requests_violated += 1
 
         return False, response_text
@@ -775,15 +776,15 @@ if __name__ == "__main__":
     experiment_name: str | None = "multiplayer"
     instances_name: str = "instances"
     results_dir: str = "results"
-
-    benchmark.run(
-        game_name=game_name,
-        model_specs=read_model_specs(model_specs),
-        gen_args=gen_args,
-        experiment_name=experiment_name,
-        instances_name=instances_name,
-        results_dir=results_dir
-    )
+    #
+    # benchmark.run(
+    #     game_name=game_name,
+    #     model_specs=read_model_specs(model_specs),
+    #     gen_args=gen_args,
+    #     experiment_name=experiment_name,
+    #     instances_name=instances_name,
+    #     results_dir=results_dir
+    # )
     benchmark.score(
         game_name=game_name,
         experiment_name=experiment_name,
