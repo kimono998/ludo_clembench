@@ -23,7 +23,7 @@ class GameSim:
 
         Args:
             n_fields (int): the number of fields in the game
-            TODO n_tokens (int):
+            n_tokens (int): the number of tokens given to each player
             player_tokens (dict): the tokens associated with the player
             rolls (list[tuple]): the rolls for the game
             turn (int): the current turn number

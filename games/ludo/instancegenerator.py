@@ -271,23 +271,25 @@ def find_monotoken_minimum(
             memorized_moves: dict,
             X: int = 0,
             index: int = 0,
-    ) -> tuple[int, list[str]]:
+    ) -> tuple[int, list[tuple[str, int]]]:
         """
         Finds the minimum number of moves required to solve a sequence of
         die rolls, as well as the moves associated with that minimum.
 
         Args:
-            TODO rolls (list[int]):
-            TODO n_fields (int):
-            TODO memorized_moves (dict[tuple: tuple]):
+            rolls (list[int]): contains die rolls
+            n_fields (int): the size of the board
+            memorized_moves (dict[tuple: tuple]): used to contain the moves as
+                                                  they are evaluated
             X (int): position of the token 'X' in terms of the field
                      number it is currently occupying
             index (int): the index of the current roll being considered
 
         Returns:
-            tuple[int, list[str]]: contains the minimum number of moves
-                                   required to solve the sequence and the
-                                   associated move sequence
+            tuple[int, list[tuple[str, int]]]: contains the minimum number of
+                                               moves required to solve the
+                                               sequence and the associated
+                                               move sequence
         """
         # For completed sequences
         if X == n_fields:
@@ -351,15 +353,16 @@ def find_multitoken_minimum(
             X: int = 0,
             Y: int = 0,
             index: int = 0,
-    ) -> tuple[int, list[str]]:
+    ) -> tuple[int, list[tuple[str, int]]]:
         """
         Finds the minimum number of moves required to solve a sequence of
         die rolls, as well as the moves associated with that minimum.
 
         Args:
-            TODO rolls (list[int]):
-            TODO n_fields (int):
-            TODO memorized_moves (dict[tuple: tuple]):
+            rolls (list[int]): contains die rolls
+            n_fields (int): the size of the board
+            memorized_moves (dict[tuple: tuple]): used to contain the moves as
+                                                  they are evaluated
             X (int): position of the token 'X' in terms of the field
                      number it is currently occupying
             Y (int): position of the token 'Y' in terms of the field
@@ -367,9 +370,10 @@ def find_multitoken_minimum(
             index (int): the index of the current roll being considered
 
         Returns:
-            tuple[int, list[str]]: contains the minimum number of moves
-                                   required to solve the sequence and the
-                                   associated move sequence
+            tuple[int, list[tuple[str, int]]]: contains the minimum number of
+                                               moves required to solve the
+                                               sequence and the associated
+                                               move sequence
         """
         # For completed sequences
         if X == n_fields and Y == n_fields:
