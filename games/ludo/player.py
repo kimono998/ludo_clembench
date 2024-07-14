@@ -162,7 +162,6 @@ class ProgrammaticPlayer(LudoPlayer):
         """
         super().__init__(model, n_tokens)
         self.rolls: list[tuple[int, int]] = rolls
-        self.token_positions: dict[str: int] | None = None
 
     def _compose_response(self, move: tuple[str, int]) -> str:
         """
@@ -201,10 +200,9 @@ class ProgrammaticPlayer(LudoPlayer):
         Returns:
             str: programmatic player's response
         """
-        # token_positions, turn, n_fields = self._parse_messages(messages)
-        turn, n_fields = self._parse_messages(messages)
-
+        token_positions, turn, n_fields = self._parse_messages(messages)
         move: tuple[str, int] = self._make_move(
+            token_positions=token_positions,
             rolls=self.rolls,
             n_fields=n_fields,
             turn=turn
@@ -214,6 +212,7 @@ class ProgrammaticPlayer(LudoPlayer):
     
     def _make_move(
         self,
+        token_positions: dict[str: int],
         rolls: list[tuple],
         n_fields: int,
         turn: int
@@ -232,7 +231,7 @@ class ProgrammaticPlayer(LudoPlayer):
         game: GameSim = GameSim(
             n_fields=n_fields,
             n_tokens=self.n_tokens,
-            token_positions=self.token_positions,
+            token_positions=token_positions,
             rolls=rolls,
             turn=turn
         )
@@ -244,7 +243,7 @@ class ProgrammaticPlayer(LudoPlayer):
     def _parse_messages(
             self,
             input_message: str
-    ) -> tuple[int, int]:
+    ) -> tuple[dict[str: int], int, int]:
         """
         Parses the input message to obtain the state of the board, as well as
         the current roll.
@@ -278,10 +277,12 @@ class ProgrammaticPlayer(LudoPlayer):
         for index, char in enumerate(current_state.split()):
             if char in tokens:
                 token_positions[char] = index + 1
-
-        self.token_positions = token_positions
-
-        return int(pattern_match.group(2)), len(current_state.split())
+    
+        return (
+            token_positions,
+            int(pattern_match.group(2)),
+            len(current_state.split())
+        )
 
 
 def parse_text(text: str, player: LudoPlayer) -> dict[str: int] | bool:
@@ -300,7 +301,6 @@ def parse_text(text: str, player: LudoPlayer) -> dict[str: int] | bool:
     
     match player.n_tokens:
         case 1:
-            # print(f'token: {tokens[0]}')
             matches: re.Match = re.search(
                 rf"MY MOVE: {tokens[0]} -> (\d+)",
                 text

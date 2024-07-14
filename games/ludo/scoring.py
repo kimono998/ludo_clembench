@@ -18,6 +18,28 @@ from instancegenerator import find_monotoken_minimum, find_multitoken_minimum
 GAME_NAME: str = "ludo"
 ATTEMPT_LIMIT: int = 3
 
+EPISODE_SCORE_NAMES: list[str] = [
+            "Episode Speed",
+            "Draw",
+            "Episode Efficiency",
+            "Episode Reprompt Efficiency",
+            "Episode Accuracy",
+            "Episode Parsing Error Share",
+            "Episode Errors per Accepted Move"
+]
+TURN_SCORE_NAMES: list[str] = [
+            "Accuracy",
+            "Efficiency",
+            "Reprompt Efficiency",
+            METRIC_REQUEST_COUNT_VIOLATED, # TODO
+            "Parsing Error Share",
+            "Accepted Moves",
+            METRIC_REQUEST_COUNT, # TODO
+            "Errors",
+            "Parsing Errors",
+            "Reprompts"
+]
+
 
 class LudoGameScorer(GameScorer):
     """
@@ -48,8 +70,13 @@ class LudoGameScorer(GameScorer):
                                           turn interactions
         """
         self._score_episode(episode_interactions)
-        # TODO Calculate main score
-        # TODO Log main score
+        # main_score: float = self._calculate_main_score() # TODO
+        
+        # if BENCH_SCORE in self.scores["main score"]:
+        #     self.logger.warning(f"{self.name}: Main score overwritten!")
+
+        # self.scores["main score"][BENCH_SCORE] = main_score
+        # self.logger.info(f"{self.name}: Logged main score={main_score}.")
     
     def score_turns(self, episode_interactions: dict) -> None:
         """
@@ -78,7 +105,7 @@ class LudoGameScorer(GameScorer):
 
             # Logs and stores scores
             self._log_turn_scores(idx, scores)
-
+    
     def _calculate_episode_scores(self, counts: dict) -> dict[str: int]:
         """
         Given relevant episode-level metric counts, calculates numerous
@@ -267,17 +294,7 @@ class LudoGameScorer(GameScorer):
         Args:
             scores (dict[str: int]): contains numerous episode-level scores
         """
-        score_names: list[str] = [
-            "Episode Speed",
-            "Draw",
-            "Episode Efficiency",
-            "Episode Reprompt Efficiency",
-            "Episode Accuracy",
-            "Episode Parsing Error Share",
-            "Episode Errors per Accepted Move"
-        ]
-
-        for score_name, score_value in zip(score_names, scores.values()):
+        for score_name, score_value in zip(EPISODE_SCORE_NAMES, scores.values()):
             self.log_episode_score(score_name, score_value)
     
     def _log_turn_scores(self, turn: int, scores: dict[str: int]) -> None:
@@ -289,20 +306,7 @@ class LudoGameScorer(GameScorer):
         Args:
             scores (dict[str: int]): contains numerous turn-level scores
         """
-        score_names: list[str] = [
-            "Accuracy",
-            "Efficiency",
-            "Reprompt Efficiency",
-            METRIC_REQUEST_COUNT_VIOLATED, # TODO
-            "Parsing Error Share",
-            "Accepted Moves",
-            METRIC_REQUEST_COUNT, # TODO
-            "Errors",
-            "Parsing Errors",
-            "Reprompts"
-        ]
-
-        for score_name, score_value in zip(score_names, scores.values()):
+        for score_name, score_value in zip(TURN_SCORE_NAMES, scores.values()):
             self.log_turn_score(turn, score_name, score_value)
 
     def _get_episode_counts(self, episode_interactions: dict) -> dict:
@@ -447,4 +451,12 @@ class LudoGameScorer(GameScorer):
 
 
 if __name__ == '__main__':
-    pass
+    from clemgame import benchmark
+
+    game_name: str = "ludo"
+    model_specs: list[str] = ["gpt-3.5-turbo-1106", "programmatic"]
+    gen_args: dict[str: str] = {"temperature": 0.0, "max_tokens": 400}
+    instances_name: str = "instances"
+    results_dir: str = "results"
+
+    benchmark.score(game_name=game_name)
