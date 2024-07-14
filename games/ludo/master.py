@@ -656,7 +656,7 @@ class LudoGameMaster(GameMaster):
             to=f"{player}",
             action={'type': 'reprompt', 'content': self.game.context[-1]}
         )
-    
+
     def _update_player_dict(self, move, player) -> None:
         """
         Updates the player's tokens' positions in the players dictionary based
@@ -778,11 +778,11 @@ if __name__ == "__main__":
         instances_name=instances_name,
         results_dir=results_dir
     )
-    # benchmark.score(
-    #     game_name=game_name,
-    #     experiment_name=experiment_name,
-    #     results_dir=results_dir
-    # )
+    benchmark.score(
+        game_name=game_name,
+        experiment_name=experiment_name,
+        results_dir=results_dir
+    )
     # benchmark.transcripts(
     #     game_name=game_name,
     #     experiment_name=experiment_name,
