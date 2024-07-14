@@ -109,6 +109,7 @@ class Game:
             case "parsing_failed":
                 reason: str = (
                     "The response format is not correct.\n"
+                    f"Please make sure you are using tokens assigned to you: {list(self.player_1.tokens.keys())}!"
                     "Please state your answer in this format\n"
                     "MY MOVE: X -> N ; Y -> N"
                 )

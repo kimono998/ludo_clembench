@@ -404,9 +404,9 @@ class LudoGameMaster(GameMaster):
         """
         while self.game.reprompt_attempts < self.attempt_limit:
             # Gets the player's response and logs it
+            print(player)
 
             move, response_text = self._get_response(player, message)
-
             # If parsing fails, reprompt for a valid format
             if not move:
                 self.error: str = ("parsing_failed", None)
