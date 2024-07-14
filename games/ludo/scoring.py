@@ -289,7 +289,8 @@ class LudoGameScorer(GameScorer):
                 case 'error':
                     counts["errors"] += 1
                 case 'get message':
-                    counts["requests"] += 1
+                    if event['from'] == 'Player 1':
+                        counts["requests"] += 1
                 case 'parsing failed':
                     counts["parsing_errors"] += 1
                 case 'reprompt':
