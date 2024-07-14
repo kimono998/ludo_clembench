@@ -53,6 +53,9 @@ class Game:
         # Conversation attributes
         self.initial_prompt: str = initial_prompt
         self.context: list[str] = []
+        self.requests: int = 0
+        self.requests_parsed: int = 0
+        self.requests_violated: int = 0
         self.reprompt_attempts: int = 0
         self.total_retry_count: int = 0
         self.error_count: int = 0

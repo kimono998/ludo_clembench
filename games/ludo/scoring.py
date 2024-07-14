@@ -9,7 +9,9 @@ sys.path.append(str(Path(__file__).parent.parent.parent))
 
 from minimax import GameSim, minimax
 from clemgame.clemgame import GameScorer
-from clemgame.metrics import METRIC_ABORTED, METRIC_LOSE, METRIC_SUCCESS
+from clemgame.metrics import METRIC_REQUEST_COUNT, \
+    METRIC_REQUEST_COUNT_PARSED, METRIC_REQUEST_COUNT_VIOLATED, \
+        METRIC_REQUEST_SUCCESS, BENCH_SCORE, METRIC_PLAYED
 from instancegenerator import find_monotoken_minimum, find_multitoken_minimum
 
 
@@ -96,9 +98,6 @@ class LudoGameScorer(GameScorer):
                 0 if counts["status"] == "ABORTED"
                 else self.game_instance["min_moves"] * 1.0 / (counts["final_turn"] + 1)
             ),
-            "aborted": 1 if counts["status"] == "ABORTED" else 0,
-            "success": 1 if counts["status"] == "SUCCESS" else 0,
-            "lose": 1 if counts["status"] == "LOSE" else 0,
             "draw": 1 if counts["status"] == "DRAW" else 0,
             "efficiency": counts["total_accepted_moves"] / counts["total_requests"],
             "reprompt_efficiency": 1 - counts["retries"] / max_retries,
@@ -146,19 +145,22 @@ class LudoGameScorer(GameScorer):
         Returns:
             dict[str: int]: contains numerous turn-level scores
         """
-        # Calculates move accuracy
-        if multiplayer:
-            accuracy: float = self._score_multiplayer_move(
-                turn=turn,
-                current_state=current_state,
-                updated_state=updated_state
-            )
+        if updated_state:
+            # Calculates move accuracy
+            if multiplayer:
+                accuracy: float = self._score_multiplayer_move(
+                    turn=turn,
+                    current_state=current_state,
+                    updated_state=updated_state
+                )
+            else:
+                accuracy: float = self._score_single_player_move(
+                    turn=turn,
+                    current_state=current_state,
+                    updated_state=updated_state
+                )
         else:
-            accuracy: float = self._score_single_player_move(
-                turn=turn,
-                current_state=current_state,
-                updated_state=updated_state
-            )
+            accuracy: float = 0
         
         # Calculates count-based metrics
         efficiency: float = counts["accepted_moves"] / counts["requests"]
@@ -267,9 +269,6 @@ class LudoGameScorer(GameScorer):
         """
         score_names: list[str] = [
             "Episode Speed",
-            METRIC_ABORTED,
-            METRIC_SUCCESS,
-            METRIC_LOSE,
             "Draw",
             "Episode Efficiency",
             "Episode Reprompt Efficiency",
@@ -291,16 +290,16 @@ class LudoGameScorer(GameScorer):
             scores (dict[str: int]): contains numerous turn-level scores
         """
         score_names: list[str] = [
-            "Turn Accuracy",
-            "Turn Efficiency",
-            "Turn Reprompt Efficiency",
-            "Turn Violated Requests",
-            "Turn Parsing Error Share",
-            "Turn Accepted Moves",
-            "Turn Requests",
-            "Turn Errors",
-            "Turn Parsing Errors",
-            "Turn Reprompts"
+            "Accuracy",
+            "Efficiency",
+            "Reprompt Efficiency",
+            METRIC_REQUEST_COUNT_VIOLATED, # TODO
+            "Parsing Error Share",
+            "Accepted Moves",
+            METRIC_REQUEST_COUNT, # TODO
+            "Errors",
+            "Parsing Errors",
+            "Reprompts"
         ]
 
         for score_name, score_value in zip(score_names, scores.values()):
@@ -324,11 +323,9 @@ class LudoGameScorer(GameScorer):
         total_parsing_errors: int = 0
         total_errors: int = 0
         for turn in self.scores["turn scores"].values():
-            total_accepted_moves += turn["Turn Accepted Moves"]
-            total_requests += turn["Turn Requests"]
-            total_accuracy += turn["Turn Accuracy"]
-            total_parsing_errors += turn["Turn Parsing Errors"]
-            total_errors += turn["Turn Errors"]
+            total_accepted_moves += turn["Accepted Moves"]
+            total_requests += turn[METRIC_REQUEST_COUNT]
+            total_errors += turn["Errors"]
 
         return {
             "status": episode_interactions["Final status"],

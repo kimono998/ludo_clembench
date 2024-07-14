@@ -12,6 +12,9 @@ sys.path.append(str(Path(__file__).parent.parent.parent))
 from backends import Model
 from clemgame import get_logger
 from clemgame.clemgame import GameBenchmark, GameMaster
+from clemgame.metrics import METRIC_ABORTED, METRIC_LOSE, \
+    METRIC_REQUEST_COUNT, METRIC_REQUEST_COUNT_PARSED, \
+        METRIC_REQUEST_COUNT_VIOLATED
 from game import Game
 from player import LudoPlayer, parse_text
 from scoring import LudoGameScorer
@@ -536,6 +539,8 @@ class LudoGameMaster(GameMaster):
             )
         )
 
+        self.game.requests += 1
+
         move: dict[str: int] = parse_text(
             text=response_text,
             player=self.players_dic[player]
@@ -554,6 +559,8 @@ class LudoGameMaster(GameMaster):
                 action={'type': 'parse', 'content': move}
             )
 
+            self.game.requests_parsed += 1
+
             return move, response_text
 
         else:
@@ -562,6 +569,8 @@ class LudoGameMaster(GameMaster):
                 to="GM",
                 action={'type': 'parsing failed', 'content': response_text}
             )
+
+            self.game.requests_violated += 1
 
         return False, response_text
 
@@ -614,15 +623,17 @@ class LudoGameMaster(GameMaster):
         """
         Logs the key game assets.
         """
-        self.log_key('Board size', self.game.n_fields)
         self.log_key('Number of players', len(self.players_dic))
         self.log_key('Number of tokens', self.game.n_tokens)
-        self.log_key('Rolls', self.game.rolls)
         self.log_key('Played turns', self.game.turn)
         self.log_key('Turn limit', self.game.turn_limit)
         self.log_key('Reprompt attempts', self.game.total_retry_count)
         self.log_key('Final status', self._check_game_status())
-        self.log_key('Aborted', self.game.is_aborted)
+        self.log_key(METRIC_ABORTED, self.game.is_aborted)
+        self.log_key(METRIC_LOSE, 1 if self._check_game_status() == "LOSE" else 0)
+        self.log_key(METRIC_REQUEST_COUNT, self.game.requests)
+        self.log_key(METRIC_REQUEST_COUNT_PARSED, self.game.requests_parsed)
+        self.log_key(METRIC_REQUEST_COUNT_VIOLATED, self.game.requests_violated)
         self.log_key('Error count', self.game.error_count)
         self.log_key('Turns played', self.game.turn)
         self.log_key('Multiplayer', int(bool(self.game.player_2)))
@@ -765,14 +776,14 @@ if __name__ == "__main__":
     instances_name: str = "instances"
     results_dir: str = "results"
 
-    # benchmark.run(
-    #     game_name=game_name,
-    #     model_specs=read_model_specs(model_specs),
-    #     gen_args=gen_args,
-    #     experiment_name=experiment_name,
-    #     instances_name=instances_name,
-    #     results_dir=results_dir
-    # )
+    benchmark.run(
+        game_name=game_name,
+        model_specs=read_model_specs(model_specs),
+        gen_args=gen_args,
+        experiment_name=experiment_name,
+        instances_name=instances_name,
+        results_dir=results_dir
+    )
     benchmark.score(
         game_name=game_name,
         experiment_name=experiment_name,
