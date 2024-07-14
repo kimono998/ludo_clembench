@@ -277,9 +277,10 @@ def find_monotoken_minimum(
         die rolls, as well as the moves associated with that minimum.
 
         Args:
-            TODO rolls (list[int]):
-            TODO n_fields (int):
-            TODO memorized_moves (dict[tuple: tuple]):
+            rolls (list[int]): contains die rolls
+            n_fields (int): the size of the board
+            memorized_moves (dict[tuple: tuple]): used to contain the moves as
+                                                  they are evaluated
             X (int): position of the token 'X' in terms of the field
                      number it is currently occupying
             index (int): the index of the current roll being considered
@@ -324,7 +325,7 @@ def find_monotoken_minimum(
                 # Seeks minimum required moves to solve the sequence
                 if next_moves + 1 < min_move_count:
                     min_move_count = next_moves + 1
-                    best_sequence = ['X', new_X] + sequence
+                    best_sequence = [('X', new_X)] + sequence
 
         # If a 6 is rolled and either token can be moved to the board
         if roll == 6:
@@ -338,7 +339,7 @@ def find_monotoken_minimum(
                 )
                 if next_moves + 1 < min_move_count:
                     min_move_count = next_moves + 1
-                    best_sequence = ['X', 1] + sequence
+                    best_sequence = [('X', 1)] + sequence
 
         memorized_moves[(X, index)] = (min_move_count, best_sequence)
 
@@ -358,9 +359,10 @@ def find_multitoken_minimum(
         die rolls, as well as the moves associated with that minimum.
 
         Args:
-            TODO rolls (list[int]):
-            TODO n_fields (int):
-            TODO memorized_moves (dict[tuple: tuple]):
+            rolls (list[int]): contains die rolls
+            n_fields (int): the size of the board
+            memorized_moves (dict[tuple: tuple]): used to contain the moves as
+                                                  they are evaluated
             X (int): position of the token 'X' in terms of the field
                      number it is currently occupying
             Y (int): position of the token 'Y' in terms of the field
@@ -456,7 +458,7 @@ def find_multitoken_minimum(
                 )
                 if next_moves + 1 < min_move_count:
                     min_move_count = next_moves + 1
-                    best_sequence = ['Y', 1] + sequence
+                    best_sequence = [('Y', 1)] + sequence
 
         memorized_moves[(X, Y, index)] = (min_move_count, best_sequence)
 

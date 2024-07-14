@@ -107,10 +107,16 @@ class Game:
 
         match error_type:
             case "parsing_failed":
-                message += ("The response format is not correct.\n"
-                            "Please state your answer in this format\n MY MOVE: X -> N ; Y -> N")
+                reason: str = (
+                    "The response format is not correct.\n"
+                    "Please state your answer in this format\n"
+                    "MY MOVE: X -> N ; Y -> N"
+                )
             case "simultaneous_move":
-                reason: str = "Both of your in-play tokens were moved simultaneously. Please re-count the positions and think this through! "
+                reason: str = (
+                    "Both of your in-play tokens were moved simultaneously."
+                    "Please re-count the positions and think this through! "
+                )
             case "not_moved_to_board":
                 reason: str = f"Token {token} can be played to the board but wasn't. "
             case "not_moved":

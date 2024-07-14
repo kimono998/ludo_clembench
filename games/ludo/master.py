@@ -140,7 +140,6 @@ class LudoGameMaster(GameMaster):
                     if len(self.players_dic.keys()) > 1
                     else self.game.rolls[self.game.turn]
                 )
-                # print(f'tokens: {self.players_dic[player].tokens}')
                 message: str = self._build_message(roll, player)
                 logger.info(f"{GAME_NAME}: [GM->{player}]: {message}")
                 
@@ -290,7 +289,6 @@ class LudoGameMaster(GameMaster):
         Returns:
             bool: True if the move is valid
         """
-        # print(f'tokens: {tokens}')
         if self._check_both_tokens_moved(tokens, n_tokens, move):
             self.error = ("simultaneous_move", None)
             return False
@@ -520,8 +518,6 @@ class LudoGameMaster(GameMaster):
                                                False if parsing failed) and
                                                the response
         """
-        # print(f'tokens: {self.players_dic[player].tokens}')
-
         _, _, response_text = self.players_dic[player](
             self.game.context
             if type(self.players_dic[player]) is LudoPlayer
@@ -769,14 +765,14 @@ if __name__ == "__main__":
     instances_name: str = "instances"
     results_dir: str = "results"
 
-    benchmark.run(
-        game_name=game_name,
-        model_specs=read_model_specs(model_specs),
-        gen_args=gen_args,
-        experiment_name=experiment_name,
-        instances_name=instances_name,
-        results_dir=results_dir
-    )
+    # benchmark.run(
+    #     game_name=game_name,
+    #     model_specs=read_model_specs(model_specs),
+    #     gen_args=gen_args,
+    #     experiment_name=experiment_name,
+    #     instances_name=instances_name,
+    #     results_dir=results_dir
+    # )
     benchmark.score(
         game_name=game_name,
         experiment_name=experiment_name,

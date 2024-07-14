@@ -304,6 +304,9 @@ def parse_text(text: str, player: LudoPlayer) -> dict[str: int] | bool:
                 rf"MY MOVE: {tokens[0]} -> (\d+)",
                 text
             )
+            if not matches:
+                return False
+            
             token_dict: dict[str: int] = {tokens[0]: int(matches.group(1))}
         
         case 2:
@@ -311,12 +314,15 @@ def parse_text(text: str, player: LudoPlayer) -> dict[str: int] | bool:
                 rf"MY MOVE: {tokens[0]} -> (\d+) ; {tokens[1]} -> (\d+)",
                 text
             )
+            if not matches:
+                return False
+            
             token_dict: dict[str: int] = {
                 tokens[0]: int(matches.group(1)),
                 tokens[1]: int(matches.group(2))
             }
 
-    return token_dict if matches else False
+    return token_dict
 
 
 if __name__ == '__main__':

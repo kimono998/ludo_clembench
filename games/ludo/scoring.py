@@ -17,7 +17,6 @@ GAME_NAME: str = "ludo"
 ATTEMPT_LIMIT: int = 3
 
 
-# TODO Incorporate 'n_tokens' into episode_interactions logging
 class LudoGameScorer(GameScorer):
     """
     Handles the scoring of the game 'Ludo' on a per-turn, episodic, and
@@ -237,14 +236,16 @@ class LudoGameScorer(GameScorer):
             "reprompts": 0,
             "requests": 0
         }
+        current_state: dict[str: int] | None = None
+        updated_state: dict[str: int] | None = None
 
         for event in turn:
             match event["action"]["type"]:
                 case "accepted move":
-                    updated_state: dict[str: int] = event["action"]["content"]
+                    updated_state = event["action"]["content"]
                     counts["accepted_moves"] += 1
                 case "current state":
-                    current_state: dict[str: int] = event["action"]["content"]
+                    current_state = event["action"]["content"]
                 case 'error':
                     counts["errors"] += 1
                 case 'get message':
@@ -355,6 +356,46 @@ class LudoGameScorer(GameScorer):
         scores: dict = self._calculate_episode_scores(counts)
         self._log_episode_scores(scores)
 
+    def _score_multiplayer_move(
+            self,
+            turn: int,
+            current_state: dict[str: int],
+            updated_state: dict[str: int]
+    ) -> float:
+        """
+        Scores the move made during a turn in a multiplayer game by first
+        calculating the best move in the given game state, then comparing the
+        player's move against it and scoring accordingly.
+
+        Args:
+            turn (int): the turn number
+            current_state (dict[str: int]): for the board at the beginning of
+                                            the turn, contains the position of
+                                            each token
+            updated_state (dict[str: int]): for the board at the end of the
+                                            turn, contains the position of
+                                            each token
+
+        Returns:
+            float: the score of the move, '1.0' if it matches the best move or
+                   '0.0' if not
+        """
+        # Simulates the game each turn to get the best move
+        game: GameSim = GameSim(
+            n_fields=self.game_instance["n_fields"],
+            n_tokens=self.game_instance["n_tokens"],
+            token_positions=current_state,
+            rolls=self.game_instance["rolls"],
+            turn=turn
+        )
+        _, simulated_move = minimax(game, False)  
+
+        # Simulates the move
+        selected_move = current_state.copy()
+        selected_move[simulated_move[0]] = simulated_move[1]
+
+        return self._check_equivalence(updated_state, selected_move)
+    
     def _score_single_player_move(
             self,
             turn: int,
@@ -404,47 +445,6 @@ class LudoGameScorer(GameScorer):
         simulated_move: tuple[str, int] = moves[0]
         selected_move: dict[str: int] = current_state.copy()
         selected_move[simulated_move[0]] = simulated_move[1]
-
-        return self._check_equivalence(updated_state, selected_move)
-
-    def _score_multiplayer_move(
-            self,
-            turn: int,
-            current_state: dict[str: int],
-            updated_state: dict[str: int]
-    ) -> float:
-        """
-        Scores the move made during a turn in a multiplayer game by first
-        calculating the best move in the given game state, then comparing the
-        player's move against it and scoring accordingly.
-
-        Args:
-            turn (int): the turn number
-            current_state (dict[str: int]): for the board at the beginning of
-                                            the turn, contains the position of
-                                            each token
-            updated_state (dict[str: int]): for the board at the end of the
-                                            turn, contains the position of
-                                            each token
-
-        Returns:
-            float: the score of the move, '1.0' if it matches the best move or
-                   '0.0' if not
-        """
-        # Simulates the game each turn to get the best move
-        game: GameSim = GameSim(
-            n_fields=self.game_instance["n_fields"],
-            n_tokens=self.game_instance["n_tokens"],
-            token_positions=current_state,
-            rolls=self.game_instance["rolls"],
-            turn=turn
-        )
-        _, simulated_move = minimax(game, False)  
-
-        # Simulates the move
-        selected_move = current_state.copy()
-        selected_move[simulated_move[0]] = simulated_move[1]
-        print(simulated_move)
 
         return self._check_equivalence(updated_state, selected_move)
 
