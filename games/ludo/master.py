@@ -624,6 +624,7 @@ class LudoGameMaster(GameMaster):
         """
         self.log_key('Number of players', len(self.players_dic))
         self.log_key('Number of tokens', self.game.n_tokens)
+        self.log_key('LLM Tokens', [token for token in self.game.player_1.tokens])
         self.log_key('Played turns', self.game.turn)
         self.log_key('Turn limit', self.game.turn_limit)
         self.log_key('Reprompt attempts', self.game.total_retry_count)

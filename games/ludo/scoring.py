@@ -3,6 +3,7 @@ Contains custom scoring logic for the game 'Ludo'.
 """
 
 import sys
+import numpy as np
 from pathlib import Path
 
 sys.path.append(str(Path(__file__).parent.parent.parent))
@@ -90,9 +91,11 @@ class LudoGameScorer(GameScorer):
                                           played episode, including the per
                                           turn interactions
         """
+        tokens: dict = {item: True for item in episode_interactions["LLM Tokens"]}
+
         for idx, turn in enumerate(episode_interactions["turns"]):
             # Classifies events in the turn, gets moves and metric counts
-            current_state, updated_state, counts = self._classify_events(turn)
+            current_state, updated_state, counts = self._classify_events(turn, tokens)
 
             # Scores moves and counts
             scores: dict[str: int] = self._calculate_turn_scores(
@@ -240,7 +243,11 @@ class LudoGameScorer(GameScorer):
 
         return float(all(matches))
     
-    def _classify_events(self, turn: list[dict]) -> tuple[dict, dict, dict]:
+    def _classify_events(
+            self,
+            turn: list[dict],
+            tokens: dict
+    ) -> tuple[dict, dict, dict]:
         """
         Given a list of the events which took place during a given turn,
         classifies the events, gleaning from them the beginning and end
@@ -249,6 +256,7 @@ class LudoGameScorer(GameScorer):
         Args:
             turn (list[dict]): contains one dict per event which took place in
                                the turn
+            TODO tokens (dict):
 
         Returns:
             tuple[dict, dict, dict]: contains three dictionaries, one
@@ -271,8 +279,11 @@ class LudoGameScorer(GameScorer):
         for event in turn:
             match event["action"]["type"]:
                 case "accepted move":
-                    updated_state = event["action"]["content"]
-                    counts["accepted_moves"] += 1
+                    keys: list[str] = list(event["action"]["content"].keys())
+                    req: list[bool] = [tokens.get(item, False) for item in keys]
+                    if np.all(req):
+                        updated_state = event["action"]["content"]
+                        counts["accepted_moves"] += 1
                 case "current state":
                     current_state = event["action"]["content"]
                 case 'error':
