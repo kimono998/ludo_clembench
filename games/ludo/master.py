@@ -18,8 +18,7 @@ from scoring import LudoGameScorer
 
 
 GAME_NAME: str = "ludo"
-DIRECTORY_PATH: Path = Path(__file__).parent
-RESOURCE_PATH: Path = DIRECTORY_PATH / "resources"
+RESOURCE_PATH: Path = Path(__file__).parent / "resources"
 REPROMPT_LIMIT : int = 3
 
 logger: logging.Logger = get_logger(__name__)
