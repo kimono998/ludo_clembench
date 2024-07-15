@@ -178,7 +178,7 @@ class ProgrammaticPlayer(LudoPlayer):
         tokens[move[0]]["position"] = move[1]
         
         # Composes response
-        prefix: str = "MY MOVE: "
+        prefix: str = "Player 2 Answered:\nMY MOVE: "
         move_messages: list[str] = [
             f"{key} -> {value['position']}"
             for key, value in tokens.items()

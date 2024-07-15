@@ -71,7 +71,16 @@ class Game:
         self.player_1: LudoPlayer | None = None
         self.player_2: HumanPlayer | ProgrammaticPlayer | None = None
         self._load_players(player_models)
+        print(player_models)
+        print(len(player_models))
+        if (len(player_models) > 1
+                and (type(player_models[1]) == CustomResponseModel or type(player_models[1]) == HumanModel)):
 
+            players = [self.player_1, self.player_2]
+            self.current_state_dict = {token: 0 for player in players for token in list(player.tokens.keys())}
+        else:
+            self.current_state_dict = {token: 0 for token in list(self.player_1.tokens.keys())}
+        print(self.current_state_dict)
     def add_message(self, message: str, role: str = "user") -> None:
         """
         Adds a message to the conversation context. If it is the first message
@@ -114,27 +123,26 @@ class Game:
                     "The response format is not correct.\n"
                     f"Please make sure you are using tokens assigned to you: {list(self.player_1.tokens.keys())}! "
                     "Please state your answer in this format\n"
-                    "MY MOVE: X -> N ; Y -> N"
+                    "MY MOVE: X -> N ; Y -> N\n"
                 )
             case "simultaneous_move":
                 reason: str = (
-                    "Both of your in-play tokens were moved simultaneously."
-                    "Please re-count the positions and think this through! "
+                    "Both of your in-play tokens were moved simultaneously.\n"
+                    "Please re-count the positions and think this through! \n"
                 )
             case "not_moved_to_board":
-                reason: str = f"Token {token} can be played to the board but wasn't. "
+                reason: str = f"Token {token} can be played to the board but wasn't. \n"
             case "not_moved":
-                reason: str =  f"Token {token} can be moved but wasn't. "
+                reason: str =  f"Token {token} can be moved but wasn't. \n"
             case "incorrect_move":
-                reason: str =  f"Token {token} was moved incorrectly. "
+                reason: str =  f"Token {token} was moved incorrectly. \n"
 
         message += reason
-        message += "Please try again."
+        message += "Please try again.\n"
         message += msg
 
         self.add_message(message)
         logger.error(f"{GAME_NAME}: [MOVE ERROR] {reason}")
-
         self.reprompt_attempts += 1
 
     def update_board(self, player: LudoPlayer, move: dict[str: int]) -> None:
@@ -148,13 +156,17 @@ class Game:
             move (dict[str: int]): contains the desired position for all tokens
         """
         split_board: list[str] = self._reset_board().split()
-        print(move)
-        for token in move.keys():
-            if player.tokens[token]["in_play"]:
-                split_board[move[token] -1] = token
+        # print(move)
+        for token in self.current_state_dict.keys():
+            # if player.tokens[token]["in_play"]:
+            #     split_board[move[token] -1] = token
+            # self.current_state_dict[token] = move[token]
+            if self.current_state_dict[token] != 0:
+                split_board[self.current_state_dict[token]-1] = token
 
         self.current_state = " ".join(split_board).strip()
-
+        # print('state dict')
+        # print(self.current_state_dict)
     def _load_players(self, player_models: list[Model]) -> None:
         """
         Given a list of player models, initializes the first player as a
