@@ -54,6 +54,7 @@ class LudoGameMaster(GameMaster):
         super().__init__(GAME_NAME, experiment, player_models)
         self.chain_of_thought: bool = experiment['chain_of_thought']
         self.reprompting: bool = experiment['reprompting']
+        self.no_board: bool = experiment['no_board']
         self.attempt_limit: int = REPROMPT_LIMIT if self.reprompting else 1
         self.error: tuple[str, str | None] | None = None
 
@@ -74,11 +75,11 @@ class LudoGameMaster(GameMaster):
         """
         # Loads the correct prompt, depending on chain-of-thought
         prompt_name: str = kwargs.get("prompt_name")
-        initial_prompt: str = self.load_template(
-            str(RESOURCE_PATH / f"{prompt_name}_cot.template")
-            if self.chain_of_thought
-            else str(RESOURCE_PATH / f"{prompt_name}.template")
-        )
+        prompt_name += '_multitoken' if kwargs.get("n_tokens") > 1 else '_monotoken'
+        if self.chain_of_thought:
+            prompt_name += '_cot'
+
+        initial_prompt: str = self.load_template(str(RESOURCE_PATH / f"{prompt_name}"))
 
         # Creates the Game object
         self.game: Game = Game(
@@ -201,7 +202,7 @@ class LudoGameMaster(GameMaster):
         Returns:
             str: the constructed message
         """
-        message: str = f"Current state: {self.game.current_state}\n"
+        message: str = f"Current state: {self.game.current_state_dict if self.no_board else self.game.current_state}\n"
         message += f"Turn number: {self.game.turn}, Roll: {roll}. "
         message += "Where will you move your token?"
         self.game.add_message(message)
@@ -669,10 +670,41 @@ class LudoGameMaster(GameMaster):
             player (str): the name of the player whose tokens' positions are
                           to be updated
         """
+
+        player_tokens = list(self.players_dic[player].tokens.keys())
+        print(f'player_tokens {player_tokens}')
+        player_list = list(self.players_dic.keys())
+        print(f'player_list {player_list}')
+
+        enemy_player = [p for p in player_list if p != player][0]
+        print(f'enemy_player {enemy_player}')
+        enemy_tokens = list(self.players_dic[enemy_player].tokens.keys())
+        print(f'enemy_tokens {enemy_tokens}')
+
+        if len(player_list) > 1 :
+            for token in player_tokens:
+                self._kill_enemy(enemy_tokens, enemy_player, move[token])
+
         for token in move.keys():
             self.players_dic[player].tokens[token]["in_play"] = move[token] > 0
             self.players_dic[player].tokens[token]["position"] = move[token]
+            self.game.current_state_dict[token] = move[token]
+    def _kill_enemy(self, tokens: list[str], enemy, pos: int) -> bool:
+        """
+        Checks if the position is occupied by enemy token. If yes, reset the enemy to 0
 
+        Args:
+            tokens (list[str]): the tokens to check
+            pos (int): the position to check
+
+        Returns:
+            bool: True if the position is occupied, False otherwise
+        """
+        for token in tokens:
+            if self.players_dic[enemy].tokens[token]['position'] == pos and pos != self.game.n_fields:
+                self.players_dic[enemy].tokens[token]['position'] = 0
+                self.players_dic[enemy].tokens[token]['in_play'] = False
+                self.game.current_state_dict[token] = 0
 
 class LudoGameBenchmark(GameBenchmark):
     """

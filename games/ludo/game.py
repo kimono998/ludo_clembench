@@ -71,7 +71,16 @@ class Game:
         self.player_1: LudoPlayer | None = None
         self.player_2: HumanPlayer | ProgrammaticPlayer | None = None
         self._load_players(player_models)
+        print(player_models)
+        print(len(player_models))
+        if (len(player_models) > 1
+                and (type(player_models[1]) == CustomResponseModel or type(player_models[1]) == HumanModel)):
 
+            players = [self.player_1, self.player_2]
+            self.current_state_dict = {token: 0 for player in players for token in list(player.tokens.keys())}
+        else:
+            self.current_state_dict = {token: 0 for token in list(self.player_1.tokens.keys())}
+        print(self.current_state_dict)
     def add_message(self, message: str, role: str = "user") -> None:
         """
         Adds a message to the conversation context. If it is the first message
@@ -148,13 +157,15 @@ class Game:
             move (dict[str: int]): contains the desired position for all tokens
         """
         split_board: list[str] = self._reset_board().split()
-        print(move)
+        # print(move)
         for token in move.keys():
             if player.tokens[token]["in_play"]:
                 split_board[move[token] -1] = token
+            # self.current_state_dict[token] = move[token]
 
         self.current_state = " ".join(split_board).strip()
-
+        # print('state dict')
+        # print(self.current_state_dict)
     def _load_players(self, player_models: list[Model]) -> None:
         """
         Given a list of player models, initializes the first player as a

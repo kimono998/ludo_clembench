@@ -17,6 +17,7 @@ EXP_VARIANTS = ["single_player", "multiplayer"]
 COT = [True, False]
 REPROMPT = [True, False]
 SINGLE_TOKEN = [True, False]
+NO_BOARD = [True, False]
 
 GAME_NAME: str = "ludo"
 RANDOM_SEED: int = 42
@@ -68,17 +69,19 @@ class LudoInstanceGenerator(GameInstanceGenerator):
         for item in EXP_VARIANTS:
             for c in COT:
                 for r in REPROMPT:
-                    if item == 'multiplayer':
-                        for s in SINGLE_TOKEN:
-                            self._generate_experiment(item, c, r, s)
-                    else:
-                        self._generate_experiment(item, c, r)
+                    for b in NO_BOARD:
+                        if item == 'multiplayer':
+                            for s in SINGLE_TOKEN:
+                                self._generate_experiment(item, c, r, b, s)
+                        else:
+                            self._generate_experiment(item, c, r, b)
 
     def _generate_experiment(
             self,
             experiment_name: str,
             chain_of_thought,
             reprompt,
+            no_board,
             n_tokens=False
     ) -> None:
         """
@@ -96,10 +99,11 @@ class LudoInstanceGenerator(GameInstanceGenerator):
         # Creates an experiment
         num_players = 1 if experiment_name == 'single_player' else 2
         num_tokens = 1 if n_tokens == True else 2
-        experiment: dict = self.add_experiment(f'{experiment_name}_{chain_of_thought}_{reprompt}_{num_tokens}')
+        experiment: dict = self.add_experiment(f'{experiment_name}_{chain_of_thought}_{reprompt}_{no_board}_{num_tokens}')
         experiment['chain_of_thought'] = chain_of_thought
         experiment['reprompting'] = reprompt
         experiment['n_tokens'] = num_tokens
+        experiment['no_board'] = no_board
 
         # Generates and attaches game instances to the experiment
         for index in range(N_INSTANCES):
