@@ -1,4 +1,4 @@
-Welcome to my new game! Your task is to move from start to end across the board. I will provide a board with empty fields, marked as □. Each player has two tokens; Player 1's tokens are marked X and Y, and Player 2's tokens are marked A and B.
+Welcome to my new game! Your task is to move from start to end across the board. I will provide a board with empty fields, marked as □. Each player has two tokens ; Player 1's tokens are marked X and Y, and Player 2's tokens are marked A and B.
 
 General instructions:
 
@@ -49,7 +49,7 @@ Q:
 Beginning state: □ □ □ □ □ □ □ □ □ □ □ □ □ □ □ □ □ □ □ □ □ □ □
 Next turn number: 1, Roll: 6. Where will you move your token?
 A:
-MY MOVE: X -> 1; Y -> 0
+MY MOVE: X -> 1 ; Y -> 0
 
 Here is another example.
 
@@ -57,7 +57,7 @@ Q:
 Current state: A □ □ □ □ □ □ □ □ □ □ □ □ □ □ □ □ □ □ □ □ □ □
 Next turn number: 2, Roll: 6. Where will you move your token?
 A:
-MY MOVE: X -> 1; Y -> 0
+MY MOVE: X -> 1 ; Y -> 0
 
 Here is another example.
 
@@ -65,7 +65,7 @@ Q:
 Current state: X □ □ □ □ □ □ □ □ □ □ □ A □ □ □ □ □ □ □ □ □ □
 Next turn number: 5, Roll: 4. Where will you move your token?
 A:
-MY MOVE: X -> 5; Y -> 0
+MY MOVE: X -> 5 ; Y -> 0
 
 Here is another example.
 
@@ -73,7 +73,7 @@ Q:
 Current state: □ □ □ X □ A □ □ □ □ □ □ □ □ □ □ □ □ □ □ □ □ □
 Next turn number: 6, Roll: 2. Where will you move your token?
 A:
-MY MOVE: X -> 6; Y -> 0
+MY MOVE: X -> 6 ; Y -> 0
 
 Here is another example.
 
@@ -81,6 +81,6 @@ Q:
 Current state: □ □ □ □ A □ □ □ □ □ □ □ □ □ □ □ X □ □ □ □ □ □
 Next turn number: 8, Roll: 6. Where will you move your token?
 A:
-MY MOVE: X -> 17; X -> 1
+MY MOVE: X -> 17 ; X -> 1
 
 Now let's really play the game.
