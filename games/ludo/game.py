@@ -148,7 +148,7 @@ class Game:
             move (dict[str: int]): contains the desired position for all tokens
         """
         split_board: list[str] = self._reset_board().split()
-
+        print(move)
         for token in move.keys():
             if player.tokens[token]["in_play"]:
                 split_board[move[token] -1] = token

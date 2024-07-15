@@ -40,8 +40,6 @@ class LudoGameMaster(GameMaster):
         self,
         experiment: dict[str: dict],
         player_models: list[Model],
-        chain_of_thought: bool,
-        reprompting: bool
     ) -> None:
         """
         Initializes attributes from the passed in arguments, as well as
@@ -52,14 +50,11 @@ class LudoGameMaster(GameMaster):
                                           details for a game instance
             player_models (list[Model]): contains instantiated Model objects,
                                          representing each of the players
-            chain_of_thought (bool): allows for chain-of-thought functionality
-                                     if True
-            reprompting (bool): allows for reprompting of the LLM if True
         """
         super().__init__(GAME_NAME, experiment, player_models)
-        self.chain_of_thought: bool = chain_of_thought
-        self.reprompting: bool = reprompting
-        self.attempt_limit: int = REPROMPT_LIMIT if reprompting else 1
+        self.chain_of_thought: bool = experiment['chain_of_thought']
+        self.reprompting: bool = experiment['reprompting']
+        self.attempt_limit: int = REPROMPT_LIMIT if self.reprompting else 1
         self.error: tuple[str, str | None] | None = None
 
     def setup(self, **kwargs) -> None:
@@ -684,22 +679,13 @@ class LudoGameBenchmark(GameBenchmark):
     Organizes the running of an experiment of the game 'Ludo'.
     """
     def __init__(
-            self,
-            chain_of_thought: bool = True,
-            reprompting: bool = True
+            self
     ):
         """
         Passes along the game name and allows for the creation of the game
         master.
-
-        Args:
-            chain_of_thought (bool): allows for chain-of-thought functionality
-                                     if True
-            reprompting (bool): allows for reprompting of the LLM if True
         """
         super().__init__(GAME_NAME)
-        self.chain_of_thought: bool = chain_of_thought
-        self.reprompting: bool = reprompting
 
     def create_game_master(
         self,
@@ -716,18 +702,12 @@ class LudoGameBenchmark(GameBenchmark):
             player_models (list[Model]): contains two player models, being of
                                          different child classes depending on
                                          the game variant
-            chain_of_thought (bool): allows for chain-of-thought functionality
-                                     if True
-            reprompting (bool): allows for reprompting of the LLM if True
-
         Returns:
             LudoGameMaster: instantiated LudoGameMaster object
         """
         return LudoGameMaster(
             experiment,
-            player_models,
-            self.chain_of_thought,
-            self.reprompting
+            player_models
         )
 
     def create_game_scorer(

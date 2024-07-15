@@ -10,6 +10,13 @@ sys.path.append(str(Path(__file__).parent.parent.parent))
 
 from clemgame.clemgame import GameInstanceGenerator
 
+N_FIELDS = 23
+N_INSTANCES = 5
+N_ROLLS = 25
+EXP_VARIANTS = ["single_player", "multiplayer"]
+COT = [True, False]
+REPROMPT = [True, False]
+SINGLE_TOKEN = [True, False]
 
 GAME_NAME: str = "ludo"
 RANDOM_SEED: int = 42
@@ -29,33 +36,83 @@ class LudoInstanceGenerator(GameInstanceGenerator):
         """
         super().__init__(GAME_NAME)
     
-    def on_generate(self, **kwargs) -> None:
+    # def on_generate(self, **kwargs) -> None:
+    #     """
+    #     Given a list of experiment configurations, generates the appropriate
+    #     amount of instances for each experiment, attaches them, then creates
+    #     the experiment.
+    #
+    #     Args:
+    #         experiments (list[dict]): contains a dictionary for each
+    #                                   experiment, detailing the experiment
+    #                                   name, the number of instances to be
+    #                                   generated, the initial prompt, the size
+    #                                   of the board, the number of rolls to be
+    #                                   generated, and the intended dialogue
+    #                                   partners for the experiment
+    #     """
+    #     experiments: list[dict] = kwargs.get("experiments")
+    #     for experiment in experiments:
+    #         self._generate_experiment(
+    #             experiment["experiment_name"],
+    #             experiment["n_instances"],
+    #             experiment["dialogue_partners"],
+    #             experiment["experiment_name"],
+    #             experiment["n_tokens"],
+    #             experiment["n_fields"],
+    #             experiment["n_rolls"]
+    #         )
+
+
+    def on_generate(self):
+        for item in EXP_VARIANTS:
+            for c in COT:
+                for r in REPROMPT:
+                    if item == 'multiplayer':
+                        for s in SINGLE_TOKEN:
+                            self._generate_experiment(item, c, r, s)
+                    else:
+                        self._generate_experiment(item, c, r)
+
+    def _generate_experiment(
+            self,
+            experiment_name: str,
+            chain_of_thought,
+            reprompt,
+            n_tokens=False
+    ) -> None:
         """
-        Given a list of experiment configurations, generates the appropriate
-        amount of instances for each experiment, attaches them, then creates
-        the experiment.
+        Given experiment specifications, generates an experiment as well as a
+        number of game instances, then attaches the game instances to the
+        experiment.
 
         Args:
-            experiments (list[dict]): contains a dictionary for each
-                                      experiment, detailing the experiment
-                                      name, the number of instances to be
-                                      generated, the initial prompt, the size
-                                      of the board, the number of rolls to be
-                                      generated, and the intended dialogue
-                                      partners for the experiment
+            experiment_name (str): name of the experiment, which matches the game variant.
+            chain_of_thought (bool): is CoT enabled.
+            reprompt (bool): is reprompting enabled.
+
+            n_tokens (bool): is it single or multiplayer.
         """
-        experiments: list[dict] = kwargs.get("experiments")
-        for experiment in experiments:
-            self._generate_experiment(
-                experiment["experiment_name"],
-                experiment["n_instances"],
-                experiment["dialogue_partners"],
-                experiment["experiment_name"],
-                experiment["n_tokens"],
-                experiment["n_fields"],
-                experiment["n_rolls"]
+        # Creates an experiment
+        num_players = 1 if experiment_name == 'single_player' else 2
+        num_tokens = 1 if n_tokens == True else 2
+        experiment: dict = self.add_experiment(f'{experiment_name}_{chain_of_thought}_{reprompt}_{num_tokens}')
+        experiment['chain_of_thought'] = chain_of_thought
+        experiment['reprompting'] = reprompt
+        experiment['n_tokens'] = num_tokens
+
+        # Generates and attaches game instances to the experiment
+        for index in range(N_INSTANCES):
+            self._generate_instance(
+                experiment,
+                f"in{index + 1:03}",
+                experiment_name,
+                num_tokens,
+                N_FIELDS,
+                N_ROLLS,
+                num_players
             )
-    
+
     def _check_sequence(
             self,
             n_fields: int,
@@ -93,59 +150,59 @@ class LudoInstanceGenerator(GameInstanceGenerator):
 
         return min_moves
 
-    def _generate_experiment(
-            self,
-            experiment_name: str,
-            n_instances: int,
-            dialogue_partners: list[tuple[str, str]],
-            prompt_name: str,
-            n_tokens: int,
-            n_fields: int,
-            n_rolls: int
-    ) -> None:
-        """
-        Given experiment specifications, generates an experiment as well as a
-        number of game instances, then attaches the game instances to the
-        experiment.
-        
-        Args:
-            experiment_name (str): name of the experiment, which matches the
-                                   game variant
-            n_instances (int): the number of instances to be generated and
-                               attached to the experiment
-            dialogue_partners (list[tuple[str, str]]): the players in the game
-                                                       variant
-            prompt_name (str): the prompt associated with the desired game
-                               variant
-            n_tokens (int): the number of tokens to be given to each player
-            n_fields (int): the size of the board in the game
-            n_rolls (int): the number of rolls; also the maximum number of
-                           turns
-        """
-        # Creates an experiment
-        experiment: dict = self.add_experiment(experiment_name, dialogue_partners)
-
-        # Generates and attaches game instances to the experiment
-        for index in range(n_instances):
-            self._generate_instance(
-                experiment,
-                f"in{index + 1:03}",
-                dialogue_partners,
-                prompt_name,
-                n_tokens,
-                n_fields,
-                n_rolls
-            )
+    # def _generate_experiment(
+    #         self,
+    #         experiment_name: str,
+    #         n_instances: int,
+    #         dialogue_partners: list[tuple[str, str]],
+    #         prompt_name: str,
+    #         n_tokens: int,
+    #         n_fields: int,
+    #         n_rolls: int
+    # ) -> None:
+    #     """
+    #     Given experiment specifications, generates an experiment as well as a
+    #     number of game instances, then attaches the game instances to the
+    #     experiment.
+    #
+    #     Args:
+    #         experiment_name (str): name of the experiment, which matches the
+    #                                game variant
+    #         n_instances (int): the number of instances to be generated and
+    #                            attached to the experiment
+    #         dialogue_partners (list[tuple[str, str]]): the players in the game
+    #                                                    variant
+    #         prompt_name (str): the prompt associated with the desired game
+    #                            variant
+    #         n_tokens (int): the number of tokens to be given to each player
+    #         n_fields (int): the size of the board in the game
+    #         n_rolls (int): the number of rolls; also the maximum number of
+    #                        turns
+    #     """
+    #     # Creates an experiment
+    #     experiment: dict = self.add_experiment(experiment_name, dialogue_partners)
+    #
+    #     # Generates and attaches game instances to the experiment
+    #     for index in range(n_instances):
+    #         self._generate_instance(
+    #             experiment,
+    #             f"in{index + 1:03}",
+    #             dialogue_partners,
+    #             prompt_name,
+    #             n_tokens,
+    #             n_fields,
+    #             n_rolls
+    #         )
 
     def _generate_instance(
             self,
             experiment: dict,
             game_id: int,
-            dialogue_partners: dict[str: str],
             prompt_name: str,
             n_tokens: int,
             n_fields: int,
-            n_rolls: int
+            n_rolls: int,
+            num_players: int
     ) -> None:
         """
         Given an instantiated experiment dictionary and the various arguments
@@ -166,14 +223,14 @@ class LudoInstanceGenerator(GameInstanceGenerator):
                            turns
         """
         rolls, min_moves = self._get_rolls(
-            dialogue_partners=dialogue_partners,
             n_tokens=n_tokens,
             n_fields=n_fields,
-            n_rolls=n_rolls
+            n_rolls=n_rolls,
+            num_players=num_players
         )
         
         game_instance: dict = self.add_game_instance(experiment, game_id)
-        game_instance["dialogue_partners"] = dialogue_partners
+        game_instance["num_players"] = num_players
         game_instance["prompt_name"] = prompt_name
         game_instance["n_tokens"] = n_tokens
         game_instance["n_fields"] = n_fields
@@ -182,10 +239,10 @@ class LudoInstanceGenerator(GameInstanceGenerator):
 
     def _get_rolls(
             self,
-            dialogue_partners: dict[str: str],
             n_tokens: int,
             n_fields: int,
-            n_rolls: int
+            n_rolls: int,
+            num_players: int,
     ) -> tuple[list[int | tuple[int, int]], int]:
         """
         Generates valid die rolls resulting in a solvable sequence, depending
@@ -214,7 +271,7 @@ class LudoInstanceGenerator(GameInstanceGenerator):
             n_rolls=n_rolls
         )
         
-        match len(dialogue_partners):
+        match num_players:
             case 1:
                 rolls: list[int] = p1_rolls
 
@@ -467,25 +524,27 @@ def find_multitoken_minimum(
 
 if __name__ == '__main__':
     # Example experiment
-    experiments: list[dict] = [
-        {
-            "experiment_name": "single_player",
-            "n_instances": 1,
-            "dialogue_partners": ["llm"],
-            "n_tokens": 2,
-            "n_fields": 23,
-            "n_rolls": 20
-        },
-        {
-            "experiment_name": "multiplayer",
-            "n_instances": 1,
-            "dialogue_partners": ["llm", "programmatic"],
-            "n_tokens": 1,
-            "n_fields": 23,
-            "n_rolls": 20
-        }
-    ]
+    # experiments: list[dict] = [
+    #     {
+    #         "experiment_name": "single_player",
+    #         "n_instances": 1,
+    #         "dialogue_partners": ["llm"],
+    #         "n_tokens": 2,
+    #         "n_fields": 23,
+    #         "n_rolls": 20
+    #     },
+    #     {
+    #         "experiment_name": "multiplayer",
+    #         "n_instances": 1,
+    #         "dialogue_partners": ["llm", "programmatic"],
+    #         "n_tokens": 1,
+    #         "n_fields": 23,
+    #         "n_rolls": 20
+    #     }
+    # ]
 
     # Generates game instances
-    instance_generator: LudoInstanceGenerator = LudoInstanceGenerator()
-    instance_generator.generate(experiments=experiments)
+    #instance_generator: LudoInstanceGenerator = LudoInstanceGenerator()
+    #instance_generator.generate(experiments=experiments)
+
+    LudoInstanceGenerator().generate()
