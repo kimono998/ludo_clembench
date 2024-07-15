@@ -74,11 +74,10 @@ class LudoGameMaster(GameMaster):
         """
         # Loads the correct prompt, depending on chain-of-thought
         prompt_name: str = kwargs.get("prompt_name")
-        initial_prompt: str = self.load_template(
-            str(RESOURCE_PATH / f"{prompt_name}_cot.template")
-            if self.chain_of_thought
-            else str(RESOURCE_PATH / f"{prompt_name}.template")
-        )
+        prompt_name += '_multitoken' if kwargs.get("n_tokens") > 1 else '_monotoken'
+        if self.chain_of_thought:
+            prompt_name += '_cot' 
+        initial_prompt: str = self.load_template(str(RESOURCE_PATH / f"{prompt_name}"))
 
         # Creates the Game object
         self.game: Game = Game(
