@@ -310,6 +310,7 @@ class LudoGameMaster(GameMaster):
                 else:
                     if roll + current_position > n_fields:
                         check_list.append(True)
+
                         continue
                     self.error = ("not_moved", token)
                     self.game.error_count +=1
@@ -338,7 +339,9 @@ class LudoGameMaster(GameMaster):
                         token == moved_token
                         and current_position + roll == move[token]
                         and not self._is_taken(tokens, move[token])
+                        and current_position + roll <= self.game.n_fields
                     ):
+
                         check_list.append(True)
                         continue
                     elif token != moved_token:
@@ -447,7 +450,6 @@ class LudoGameMaster(GameMaster):
                             'content': 'update board state'
                         }
                     )
-
                     self._update_player_dict(move, player)
                     self.game.update_board(self.players_dic[player], move)
                     self.game.reprompt_attempts = 0
