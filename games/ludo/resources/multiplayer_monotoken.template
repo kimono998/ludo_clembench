@@ -1,4 +1,4 @@
-Welcome to my new multiplayer game! Your task is to move from start to end across the board. I will provide a board with empty fields. An empty field is marked like this = □. Each player has one token marked distinctly, Player 1's token as X and Player 2's token as Y.
+Welcome to my new multiplayer game! Your task is to move from start to end across the board. I will provide a board with empty fields. An empty field is marked like this = □. Each player has one token marked distinctly, Player 1's token as X and Player 2's token as A.
 
 General instructions:
 
@@ -31,35 +31,31 @@ Note: The board is updated every turn. Players need to remember their positions 
 Here is an example of what one turn looks like. Let's think step by step.
 
 Q: Beginning state: □ □ □ □ □ □ □ □ □ □ □ □ □ □ □ □ □ □ □ □ □ □ □
-Player 1, Roll: 6. Where will you move your token?
-A: There are 23 empty fields. You have rolled a 6. This allows me to place my token X on the board at field 1.
+Roll: 6. Where will you move your token?
+A:
 MY MOVE: X -> 1
 
 Here is another example.
 
-Q: Current state: □ □ □ □ □ □ □ □ □ X □ □ □ □ □ □ □ □ □ □ □ □ □
-Player 2, Roll: 4. Where will you move your token?
-A: There are 22 empty fields and 1 occupied field by X at field 9. You have rolled a 4. Since I have no tokens on the board and didn’t roll a 6, I cannot move.
-MY MOVE: Y -> 0
+Q: Current state: □ □ □ □ □ □ □ □ □ A □ □ □ □ □ □ □ □ □ □ □ □ □
+Roll: 4. Where will you move your token?
+A:
+MY MOVE: X -> 0
 
 Here is another example.
 
 Q:
-Current state: □ □ □ □ □ □ □ X □ □ □ Y □ □ □ □ □ □ □ □ □ □ □
-Player 1, Roll: 4. Where will you move your token?
-
+Current state: □ □ □ □ □ □ □ X □ □ □ A □ □ □ □ □ □ □ □ □ □ □
+Roll: 4. Where will you move your token?
 A:
-There are 21 empty fields, X is on field 8, and Y is on field 11. You have rolled a 4. I decide to move X to remove Y from the board.
 MY MOVE: X -> 12
 
 Here is another example.
 
 Q:
-Current state: □ □ □ □ □ □ □ □ □ □ □ □ □ □ □ □ □ □ □ □ X Y □
-Player 1, Roll: 5. Where will you move your token?
-
+Current state: □ □ □ □ □ □ □ □ □ □ □ □ □ □ □ □ □ □ □ □ X A □
+Roll: 5. Where will you move your token?
 A:
-There are 21 empty fields, X is on field 21 and Y is on field 22. You have rolled a 5, but moving would exceed the board length, and no other moves are available.
 MY MOVE: X -> 21
 
 
