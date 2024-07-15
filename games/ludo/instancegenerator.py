@@ -12,7 +12,7 @@ from clemgame.clemgame import GameInstanceGenerator
 
 N_FIELDS = 23
 N_INSTANCES = 5
-N_ROLLS = 25
+N_ROLLS = 30
 EXP_VARIANTS = ["single_player", "multiplayer"]
 COT = [True, False]
 REPROMPT = [True, False]
@@ -20,7 +20,7 @@ SINGLE_TOKEN = [True, False]
 NO_BOARD = [True, False]
 
 GAME_NAME: str = "ludo"
-RANDOM_SEED: int = 42
+RANDOM_SEED: int = 23
 
 np.random.seed(RANDOM_SEED)
 
@@ -36,33 +36,7 @@ class LudoInstanceGenerator(GameInstanceGenerator):
         Passes along the game name to the parent class.
         """
         super().__init__(GAME_NAME)
-    
-    # def on_generate(self, **kwargs) -> None:
-    #     """
-    #     Given a list of experiment configurations, generates the appropriate
-    #     amount of instances for each experiment, attaches them, then creates
-    #     the experiment.
-    #
-    #     Args:
-    #         experiments (list[dict]): contains a dictionary for each
-    #                                   experiment, detailing the experiment
-    #                                   name, the number of instances to be
-    #                                   generated, the initial prompt, the size
-    #                                   of the board, the number of rolls to be
-    #                                   generated, and the intended dialogue
-    #                                   partners for the experiment
-    #     """
-    #     experiments: list[dict] = kwargs.get("experiments")
-    #     for experiment in experiments:
-    #         self._generate_experiment(
-    #             experiment["experiment_name"],
-    #             experiment["n_instances"],
-    #             experiment["dialogue_partners"],
-    #             experiment["experiment_name"],
-    #             experiment["n_tokens"],
-    #             experiment["n_fields"],
-    #             experiment["n_rolls"]
-    #         )
+
 
 
     def on_generate(self):
@@ -153,50 +127,6 @@ class LudoInstanceGenerator(GameInstanceGenerator):
             return -1
 
         return min_moves
-
-    # def _generate_experiment(
-    #         self,
-    #         experiment_name: str,
-    #         n_instances: int,
-    #         dialogue_partners: list[tuple[str, str]],
-    #         prompt_name: str,
-    #         n_tokens: int,
-    #         n_fields: int,
-    #         n_rolls: int
-    # ) -> None:
-    #     """
-    #     Given experiment specifications, generates an experiment as well as a
-    #     number of game instances, then attaches the game instances to the
-    #     experiment.
-    #
-    #     Args:
-    #         experiment_name (str): name of the experiment, which matches the
-    #                                game variant
-    #         n_instances (int): the number of instances to be generated and
-    #                            attached to the experiment
-    #         dialogue_partners (list[tuple[str, str]]): the players in the game
-    #                                                    variant
-    #         prompt_name (str): the prompt associated with the desired game
-    #                            variant
-    #         n_tokens (int): the number of tokens to be given to each player
-    #         n_fields (int): the size of the board in the game
-    #         n_rolls (int): the number of rolls; also the maximum number of
-    #                        turns
-    #     """
-    #     # Creates an experiment
-    #     experiment: dict = self.add_experiment(experiment_name, dialogue_partners)
-    #
-    #     # Generates and attaches game instances to the experiment
-    #     for index in range(n_instances):
-    #         self._generate_instance(
-    #             experiment,
-    #             f"in{index + 1:03}",
-    #             dialogue_partners,
-    #             prompt_name,
-    #             n_tokens,
-    #             n_fields,
-    #             n_rolls
-    #         )
 
     def _generate_instance(
             self,
@@ -316,13 +246,20 @@ class LudoInstanceGenerator(GameInstanceGenerator):
                                    the sequence
         """
         while True:
+            six_randomizer = np.random.randint(0, 2)
+            random_sequence_len = np.random.randint(1,3)
             rolls: list[int] = [np.random.randint(1, 7) for _ in range(n_rolls)]
             min_moves: int = self._check_sequence(
                 n_fields=n_fields,
                 n_tokens=n_tokens,
                 rolls=rolls
             )
+
             if min_moves != -1:
+                if six_randomizer == 0:
+                    sequence = [np.random.randint(1,6) for _ in range(random_sequence_len)]
+                    rolls = sequence + [roll for roll in rolls[:-random_sequence_len]]
+                    min_moves += random_sequence_len
                 return rolls, min_moves
             
 

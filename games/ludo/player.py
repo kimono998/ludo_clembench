@@ -200,7 +200,8 @@ class ProgrammaticPlayer(LudoPlayer):
         Returns:
             str: programmatic player's response
         """
-        token_positions, turn, n_fields = self._parse_messages(messages)
+        # token_positions, turn, n_fields = self._parse_messages(messages)
+        token_positions, turn, n_fields, _ = messages
         move: tuple[str, int] = self._make_move(
             token_positions=token_positions,
             rolls=self.rolls,

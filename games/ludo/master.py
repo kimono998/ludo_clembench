@@ -78,9 +78,11 @@ class LudoGameMaster(GameMaster):
         prompt_name += '_multitoken' if kwargs.get("n_tokens") > 1 else '_monotoken'
         if self.chain_of_thought:
             prompt_name += '_cot'
+        if self.no_board:
+            prompt_name += '_no_board'
 
-        initial_prompt: str = self.load_template(str(RESOURCE_PATH / f"{prompt_name}"))
-
+        initial_prompt: str = self.load_template(str(RESOURCE_PATH / f"{prompt_name}.template"))
+        print(prompt_name)
         # Creates the Game object
         self.game: Game = Game(
             initial_prompt=initial_prompt,
@@ -139,9 +141,14 @@ class LudoGameMaster(GameMaster):
                     if len(self.players_dic.keys()) > 1
                     else self.game.rolls[self.game.turn]
                 )
-                message: str = self._build_message(roll, player)
+                if type(self.players_dic[player]) is LudoPlayer:
+                    message: str = self._build_message(roll, player)
+                else:
+                    message: list = [self.game.current_state_dict, self.game.turn,
+                                    self.game.n_fields, self.game.rolls[self.game.turn][1]]
+
                 logger.info(f"{GAME_NAME}: [GM->{player}]: {message}")
-                
+
                 # Checks if we can proceed with the game and logs Player to GM
                 can_proceed, response_text, move = self._does_game_proceed(
                     player=player,
