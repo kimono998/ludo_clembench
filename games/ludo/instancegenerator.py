@@ -76,19 +76,19 @@ class LudoInstanceGenerator(GameInstanceGenerator):
         """
         match n_tokens:
             case 1:
-                min_moves: int = find_monotoken_minimum(
+                min_moves, _ = find_monotoken_minimum(
                     rolls=rolls,
                     n_fields=n_fields,
                     memorized_moves=dict()
                 )
             case 2:
-                min_moves: int = find_multitoken_minimum(
+                min_moves, _ = find_multitoken_minimum(
                     rolls=rolls,
                     n_fields=n_fields,
                     memorized_moves=dict()
                 )
 
-        if min_moves[0] == float('inf'):
+        if min_moves == float('inf'):
             return -1
 
         return min_moves
@@ -471,9 +471,7 @@ if __name__ == '__main__':
         {
             "experiment_name": "single_player",
             "n_instances": 1,
-            "dialogue_partners": {
-                "player 1": "llm"
-            },
+            "dialogue_partners": ["llm"],
             "n_tokens": 2,
             "n_fields": 23,
             "n_rolls": 20
@@ -481,10 +479,7 @@ if __name__ == '__main__':
         {
             "experiment_name": "multiplayer",
             "n_instances": 1,
-            "dialogue_partners": {
-                "player 1": "llm",
-                "player 2": "programmatic"
-            },
+            "dialogue_partners": ["llm", "programmatic"],
             "n_tokens": 1,
             "n_fields": 23,
             "n_rolls": 20

@@ -8,12 +8,12 @@ from pathlib import Path
 
 sys.path.append(str(Path(__file__).parent.parent.parent))
 
-from minimax import GameSim, minimax
+from games.ludo.minimax import GameSim, minimax
 from clemgame.clemgame import GameScorer
 from clemgame.metrics import METRIC_REQUEST_COUNT, \
     METRIC_REQUEST_COUNT_PARSED, METRIC_REQUEST_COUNT_VIOLATED, \
         METRIC_REQUEST_SUCCESS, BENCH_SCORE, METRIC_PLAYED
-from instancegenerator import find_monotoken_minimum, find_multitoken_minimum
+from games.ludo.instancegenerator import find_monotoken_minimum, find_multitoken_minimum
 
 
 GAME_NAME: str = "ludo"
@@ -465,7 +465,7 @@ class LudoGameScorer(GameScorer):
                    '0.0' if not
         """
         memorized_moves: dict = {}
-        tokens: set[str] = current_state.keys()
+        tokens: set[str] = list(current_state.keys())
 
         match self.game_instance["n_tokens"]:
             case 1:

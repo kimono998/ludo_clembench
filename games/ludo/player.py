@@ -11,7 +11,7 @@ sys.path.append(str(Path(__file__).parent.parent.parent))
 
 from backends import CustomResponseModel, HumanModel, Model
 from clemgame.clemgame import Player
-from minimax import GameSim, minimax
+from games.ludo.minimax import GameSim, minimax
 
 
 GM_PATTERN: re.Pattern = re.compile(

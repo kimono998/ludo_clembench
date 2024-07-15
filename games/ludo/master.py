@@ -15,9 +15,9 @@ from clemgame.clemgame import GameBenchmark, GameMaster
 from clemgame.metrics import METRIC_ABORTED, METRIC_LOSE, \
     METRIC_REQUEST_COUNT, METRIC_REQUEST_COUNT_PARSED, \
         METRIC_REQUEST_COUNT_VIOLATED
-from game import Game
-from player import LudoPlayer, parse_text
-from scoring import LudoGameScorer
+from games.ludo.game import Game
+from games.ludo.player import LudoPlayer, parse_text
+from games.ludo.scoring import LudoGameScorer
 
 
 GAME_NAME: str = "ludo"
@@ -776,22 +776,22 @@ if __name__ == "__main__":
     experiment_name: str | None = "multiplayer"
     instances_name: str = "instances"
     results_dir: str = "results"
-    #
-    # benchmark.run(
-    #     game_name=game_name,
-    #     model_specs=read_model_specs(model_specs),
-    #     gen_args=gen_args,
-    #     experiment_name=experiment_name,
-    #     instances_name=instances_name,
-    #     results_dir=results_dir
-    # )
+
+    benchmark.run(
+        game_name=game_name,
+        model_specs=read_model_specs(model_specs),
+        gen_args=gen_args,
+        experiment_name=experiment_name,
+        instances_name=instances_name,
+        results_dir=results_dir
+    )
     benchmark.score(
         game_name=game_name,
         experiment_name=experiment_name,
         results_dir=results_dir
     )
-    # benchmark.transcripts(
-    #     game_name=game_name,
-    #     experiment_name=experiment_name,
-    #     results_dir=results_dir
-    # )
+    benchmark.transcripts(
+        game_name=game_name,
+        experiment_name=experiment_name,
+        results_dir=results_dir
+    )

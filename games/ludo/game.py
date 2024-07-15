@@ -10,7 +10,7 @@ sys.path.append(str(Path(__file__).parent.parent.parent))
 
 from backends import CustomResponseModel, HumanModel, Model
 from clemgame import get_logger
-from player import HumanPlayer, LudoPlayer, ProgrammaticPlayer
+from games.ludo.player import HumanPlayer, LudoPlayer, ProgrammaticPlayer
 
 
 GAME_NAME: str = "ludo"
