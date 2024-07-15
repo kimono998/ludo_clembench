@@ -123,27 +123,26 @@ class Game:
                     "The response format is not correct.\n"
                     f"Please make sure you are using tokens assigned to you: {list(self.player_1.tokens.keys())}! "
                     "Please state your answer in this format\n"
-                    "MY MOVE: X -> N ; Y -> N"
+                    "MY MOVE: X -> N ; Y -> N\n"
                 )
             case "simultaneous_move":
                 reason: str = (
-                    "Both of your in-play tokens were moved simultaneously."
-                    "Please re-count the positions and think this through! "
+                    "Both of your in-play tokens were moved simultaneously.\n"
+                    "Please re-count the positions and think this through! \n"
                 )
             case "not_moved_to_board":
-                reason: str = f"Token {token} can be played to the board but wasn't. "
+                reason: str = f"Token {token} can be played to the board but wasn't. \n"
             case "not_moved":
-                reason: str =  f"Token {token} can be moved but wasn't. "
+                reason: str =  f"Token {token} can be moved but wasn't. \n"
             case "incorrect_move":
-                reason: str =  f"Token {token} was moved incorrectly. "
+                reason: str =  f"Token {token} was moved incorrectly. \n"
 
         message += reason
-        message += "Please try again."
+        message += "Please try again.\n"
         message += msg
 
         self.add_message(message)
         logger.error(f"{GAME_NAME}: [MOVE ERROR] {reason}")
-
         self.reprompt_attempts += 1
 
     def update_board(self, player: LudoPlayer, move: dict[str: int]) -> None:
@@ -158,10 +157,12 @@ class Game:
         """
         split_board: list[str] = self._reset_board().split()
         # print(move)
-        for token in move.keys():
-            if player.tokens[token]["in_play"]:
-                split_board[move[token] -1] = token
+        for token in self.current_state_dict.keys():
+            # if player.tokens[token]["in_play"]:
+            #     split_board[move[token] -1] = token
             # self.current_state_dict[token] = move[token]
+            if self.current_state_dict[token] != 0:
+                split_board[self.current_state_dict[token]-1] = token
 
         self.current_state = " ".join(split_board).strip()
         # print('state dict')
