@@ -672,16 +672,12 @@ class LudoGameMaster(GameMaster):
         """
 
         player_tokens = list(self.players_dic[player].tokens.keys())
-        # print(f'player_tokens {player_tokens}')
         player_list = list(self.players_dic.keys())
-        # print(f'player_list {player_list}')
 
-        enemy_player = [p for p in player_list if p != player][0]
-        # print(f'enemy_player {enemy_player}')
-        enemy_tokens = list(self.players_dic[enemy_player].tokens.keys())
-        # print(f'enemy_tokens {enemy_tokens}')
 
         if len(player_list) > 1 :
+            enemy_player = [p for p in player_list if p != player][0]
+            enemy_tokens = list(self.players_dic[enemy_player].tokens.keys())
             for token in player_tokens:
                 self._kill_enemy(enemy_tokens, enemy_player, move[token])
 

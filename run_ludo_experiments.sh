@@ -9,21 +9,38 @@ results_dir="results"
 
 # Define the experiment lists
 single_player_experiments=(
-  "single_player_True_True_2"
-  "single_player_True_False_2"
-  "single_player_False_True_2"
-  "single_player_False_False_2"
+  "single_player_True_True_True_2"
+  "single_player_True_True_False_2"
+  "single_player_True_False_True_2"
+  "single_player_True_False_False_2"
+  "single_player_False_True_True_2"
+  "single_player_False_True_False_2"
+  "single_player_False_False_True_2"
+  "single_player_False_False_False_2"
+
+
+
+
 )
 
 multiplayer_experiments=(
-  "multiplayer_True_True_1"
-  "multiplayer_True_True_2"
-  "multiplayer_True_False_1"
-  "multiplayer_True_False_2"
-  "multiplayer_False_True_1"
-  "multiplayer_False_True_2"
-  "multiplayer_False_False_1"
-  "multiplayer_False_False_2"
+  "multiplayer_True_True_True_1"
+  "multiplayer_True_True_True_2"
+  "multiplayer_True_True_False_1"
+  "multiplayer_True_True_False_2"
+  "multiplayer_True_False_True_1"
+  "multiplayer_True_False_True_2"
+  "multiplayer_True_False_False_1"
+  "multiplayer_True_False_False_2"
+  "multiplayer_False_True_True_1"
+  "multiplayer_False_True_True_2"
+  "multiplayer_False_True_False_1"
+  "multiplayer_False_True_False_2"
+  "multiplayer_False_False_True_1"
+  "multiplayer_False_False_True_2"
+  "multiplayer_False_False_False_1"
+  "multiplayer_False_False_False_2"
+
 )
 
 # Define the player lists
