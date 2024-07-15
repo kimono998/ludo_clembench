@@ -59,9 +59,9 @@ run_experiment() {
 }
 
 # Run single-player experiments
-#for experiment in "${single_player_experiments[@]}"; do
-#  run_experiment "$experiment" "$single_player_model"
-#done
+for experiment in "${single_player_experiments[@]}"; do
+  run_experiment "$experiment" "$single_player_model"
+done
 
 # Run multiplayer experiments
 for experiment in "${multiplayer_experiments[@]}"; do
