@@ -18,7 +18,7 @@ COT = [True, False]
 REPROMPT = [True, False]
 SINGLE_TOKEN = [True, False]
 NO_BOARD = [True, False]
-
+MAX_MOVES = 20
 GAME_NAME: str = "ludo"
 RANDOM_SEED: int = 23
 
@@ -252,7 +252,7 @@ class LudoInstanceGenerator(GameInstanceGenerator):
                 n_tokens=n_tokens,
                 rolls=rolls
             )
-            if min_moves != -1:
+            if min_moves != -1 and min_moves < MAX_MOVES:
                 return rolls, min_moves
 
 
