@@ -100,12 +100,12 @@ class LudoInstanceGenerator(GameInstanceGenerator):
         """
         Given the size of the board and a sequence of rolls, checks that the
         sequence of rolls will result in a game instance that is solvable.
-        
+
         Args:
             n_fields (int): the size of the board
             n_tokens (int): the number of tokens to be given to each player
             rolls (list[int]): contains a sequence of die rolls
-        
+
         Returns:
             int: minimum number of moves required to solve the die sequence
         """
@@ -144,7 +144,7 @@ class LudoInstanceGenerator(GameInstanceGenerator):
         rolls, checks to make sure the sequence of die rolls results in a
         solvable game, then attaches the instance to the experiment, and
         configures the instance.
-        
+
         Args:
             experiment (dict): where the instance will be attached
             game_id (dict): the identifying marker for the game instance
@@ -162,7 +162,7 @@ class LudoInstanceGenerator(GameInstanceGenerator):
             n_rolls=n_rolls,
             num_players=num_players
         )
-        
+
         game_instance: dict = self.add_game_instance(experiment, game_id)
         game_instance["num_players"] = num_players
         game_instance["prompt_name"] = prompt_name
@@ -190,7 +190,7 @@ class LudoInstanceGenerator(GameInstanceGenerator):
             n_fields (int): the size of the board
             n_rolls (int): the number of rolls; also the maximum number of
                            turns
-        
+
         Returns:
             tuple[list[int | tuple[int, int]], int]: contains a list of either
                                                      single or pairs of die
@@ -204,7 +204,7 @@ class LudoInstanceGenerator(GameInstanceGenerator):
             n_fields=n_fields,
             n_rolls=n_rolls
         )
-        
+
         match num_players:
             case 1:
                 rolls: list[int] = p1_rolls
@@ -233,13 +233,13 @@ class LudoInstanceGenerator(GameInstanceGenerator):
         Generates a sequence of die rolls which result in a solvable game,
         then returns the die rolls and the minimum number of moves required to
         solve the sequence.
-        
+
         Args:
             n_tokens (int): the number of tokens to be given to each player
             n_fields (int): the size of the board
             n_rolls (int): the number of rolls; also the maximum number of
                            turns
-        
+
         Returns:
             tuple[list[int], int]: contains a list of die rolls and the
                                    minimum number of moves required to solve
@@ -248,20 +248,16 @@ class LudoInstanceGenerator(GameInstanceGenerator):
         while True:
             six_randomizer = np.random.randint(0, 2)
             random_sequence_len = np.random.randint(1,3)
+
             rolls: list[int] = [np.random.randint(1, 7) for _ in range(n_rolls)]
             min_moves: int = self._check_sequence(
                 n_fields=n_fields,
                 n_tokens=n_tokens,
                 rolls=rolls
             )
-
             if min_moves != -1:
-                if six_randomizer == 0:
-                    sequence = [np.random.randint(1,6) for _ in range(random_sequence_len)]
-                    rolls = sequence + [roll for roll in rolls[:-random_sequence_len]]
-                    min_moves += random_sequence_len
                 return rolls, min_moves
-            
+
 
 def find_monotoken_minimum(
             rolls: list[int],
