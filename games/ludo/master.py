@@ -166,6 +166,8 @@ class LudoGameMaster(GameMaster):
                         to="GM",
                         action={'type': 'accepted move', 'content': move}
                     )
+                    if self._check_game_status():
+                        break
                     continue
 
                 # If not, game is aborted, logged, and the inner loop breaks

@@ -175,6 +175,8 @@ class ProgrammaticPlayer(LudoPlayer):
         """
         # Creates and updates local token dictionary
         tokens: dict = copy.deepcopy(self.tokens)
+        print(tokens)
+        print(move)
         tokens[move[0]]["position"] = move[1]
         
         # Composes response
