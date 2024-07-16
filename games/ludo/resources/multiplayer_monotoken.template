@@ -7,12 +7,12 @@ General instructions:
 2) Your answers must contain the words "MY MOVE:", followed by the instruction of how you want to move your token.
 3) You must track the state of the board. Make sure you keep track of where your token is.
 4) You can only move one token in a single round.
-5) If the opponent places their token A on the position currently occupied by you token X, your token will be removed from the board.
-6) If you place your token X on the position occupied by the opponent's token A, token A will be removed from that position.
+5) If the opponent places their token A on the field currently occupied by you token X, your token will be removed from the board.
+6) If you place your token X on the field occupied by the opponent's token A, token A will be removed from that field.
 7) The number of fields is fixed at 23 throughout the game.
 8) Tokens can only move from left to right.
 9) When your token is not on the board, it will occupy field number 0.
-10) If only the opponent's token A is present on the board, it means that your token X is occupying position 0.
+10) If only the opponent's token A is present on the board, it means that your token X is occupying field 0.
 
 
 Adding tokens:

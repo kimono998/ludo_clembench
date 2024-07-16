@@ -1,91 +1,129 @@
-Welcome to my new game! Your task is to move from start to end across the board. I will provide a board with empty fields, marked as □. Each player has two tokens; Player 1's tokens are marked X and Y, and Player 2's tokens are marked A and B.
+Welcome to my new multiplayer game! Your task is to move from start to end across the board. I will provide a board with empty fields. An empty field is marked like this □. You are Player 1, your tokens are marked as X and Y. Your opponent is Player 2. Their tokens are marked as A and B. You are only allowed to move your tokens X and Y.
+
 
 General instructions:
+0) Field number 0 is not represented on the board. It is off the board.
+1) Each turn, I will give you the current state of the board. You must tell me what your next move is.
+2) Your answers must contain the words "MY MOVE:", followed by the instruction of how you want to move your token.
+3) You must track the state of the board. Make sure you keep track of where your tokens are.
+4) You can only move one token in a single round.
+5) If the opponent places their token A or B on the field currently occupied by you token X or Y, your token will be removed from the board.
+6) If you place your token X or Y on the field occupied by the opponent's token A or B, their token will be removed from that field.
+7) The number of fields is fixed at 23 throughout the game.
+8) Tokens can only move from left to right.
+9) When your token is not on the board, it will occupy field number 0.
+10) If only the opponent's tokens A and B are present on the board, it means that your tokens X and Y are occupying field 0.
+11) Unless your tokens are at field number 23, you are not allowed to place both of your tokens on the same field.
 
-1) Every turn I will give you the current state of the board, and it will be your turn to tell me your next move.
-2) Your answers must contain the words "MY MOVE:", followed by the instruction of how you want your token to move.
-3) Keep track of the board state. Check the positions of your tokens each turn before deciding your move.
-4) No two tokens, even from the same player, can occupy the same field.
-5) You can only move one of your tokens per round.
-6) A new token can be introduced to the board when you roll a 6.
-7) All tokens, once on the board, remain until they reach the end.
-8) The number of fields is fixed at 23 throughout the game.
-9) Tokens can only move from left to right.
-10) When a token is on the board, it occupies a field and makes it non-empty.
-11) A token can move on top of a token but two tokens cannot stay in the same field. The first token needs to be removed from the board.
+Adding tokens:
+1) A token can only be added to the board when a 6 is rolled. This token is added to the board on field number 1. If I do not roll a 6, you cannot move a token from field number 0 to any other field.
+2) You can only move from field number 0 to field number 1 if you roll a 6.
+3) If your token is already on the board, 6 is treated as any other number.
+4) You can only move to field number 1 from field number 0.
+5) If I do not roll a 6, you cannot add your token to the board. This means that you cannot move your token X from field number 0.
+6) If token X or Y is not at field 0, it is added to the board.
+7) If both tokens X and Y are occupying field number 0, you can freely choose which one you want to add to the board when 6 is rolled.
+8) If one of your tokens is on the board while the other is on field 0, you can freely choose whether to add a new token to the board, or move the one that is already on the board.
+9) Remember, a token can only be added if a 6 is rolled!
 
 Movement:
+1) You are only allowed to move if you have a token on the board.
+2) At the start of the game, no tokens are on the board.
+3) You are only allowed to move when I roll a die.
+4) You are only allowed to move the same number of fields as given by the roll.
+5) If I roll a 6, and both your tokens X and Y are on the board, you must move one of the tokens by 6 fields to the right.
+6) Tokens are not allowed to move to the left. This means you cannot e.g. move from field number 10 to field number 9. You can only move towards higher numbered fields.
+7) If a field is already occupied by one of your tokens, you are not allowed to move the second token to that position.
+8) Remember, your tokens are X and Y, and they cannot occupy the same field, unless the field number is 23.
+9) All of the other constraints apply at all times. Please consider them.
 
-1) Movement is allowed only if you have a token on the board.
-2) Initially, no tokens are on the board.
-3) A token is added to the board on the 1st field when a 6 is rolled.
-4) Without a roll of 6, and if you have tokens off the board, you cannot add a new one.
-5) Move the number of fields as indicated by your roll.
-6) Once a token is moved, the previously occupied field is marked with □ again.
-7) Tokens can only be moved from left to right. 
-8) If a token ends up on the same field with another token, The first token that arrived to the field needs to be removed from the board and start again. 
-
-
-When deciding which token to move:
-
-1) Consider your strategy carefully, whether to advance a token or block an opponent.
-2) If moving any token would exceed the board length or be less advantageous, consider moving the token that is farther from the start.
-3) Strategic moves to block the opponent's tokens should be considered to slow their progress.
+Skipping turns:
+1) If your token X or Y is at field number 0, you cannot move if 6 is not rolled.
+2) If the rolled number is higher than the number of remaining fields, you cannot move your token.
+3) If one of your tokens is occupying field number 1, and the other is occupying field number 0, and a 6 is rolled, you cannot add a new token to the board as field number 1 is alrady occupied.
+4) If you are not in a situation to move any of your tokens, you must skip a turn.
+5) These are the only two cases where you must skip a turn.
 
 Ending the game:
+1) The game ends when both of your tokens X and Y reach the last field on the board.
+2) If a rolled number is higher than the number of remaining fields away from one of your tokens, you cannot move that token.
 
-1) The game ends when both tokens of any player reach the last field on the grid.
-2) If a roll is higher than the number of remaining fields for any token and no move can be made, state "no move possible."
-3) Both tokens must reach the end to officially finish the game for that player.
-
-Note: The board is updated at every turn. It is one continuous game. You need to remember your position in the previous turn.
+Note: The board is updated at every turn. It is one continuous game. You need to keep track of both your and your opponents turns.
 The game begins when I give you the beginning state and roll the first number.
 Think through your every step.
 
-
 Here is an example of what one turn looks like. Let's think step by step.
+I need you to take a deep breath and provide step-by-step explanation for each move you make. See the examples how to do this.
+
+
+Here are some examples of what a turn looks like. Let's think step by step.
+
 
 Q:
 Beginning state: □ □ □ □ □ □ □ □ □ □ □ □ □ □ □ □ □ □ □ □ □ □ □
-Next turn number: 1, Roll: 6. Where will you move your token?
+Roll: 6. Where will you move your token?
 A:
-There are 23 empty fields and 0 occupied fields. In total: 23 + 0 = 23 fields. There are no tokens on the board. You have rolled a 6. This allows me to place my token X on the board at field 1.
+There are 23 empty fields and 0 occupied fields. In total: 23 + 0 = 23 fields. I have no tokens on the board. You have rolled a 6. This allows me to place my token X on the board at field 1.
 MY MOVE: X -> 1 ; Y -> 0
 
 Here is another example.
 
 Q:
-Current state: A □ □ □ □ □ □ □ □ □ □ □ □ □ □ □ □ □ □ □ □ □ □
-Next turn number: 2, Roll: 6. Where will you move your token?
+Current state: □ □ □ □ □ □ □ □ □ A □ □ □ □ □ □ □ □ □ □ □ □ □
+Roll: 1. Where will you move your token?
 A:
-There are 22 empty fields and 1 occupied fields. In total: 22 + 1 = 23 fields. I have no tokens on the board and my opponent has token A on field 1. You have rolled a 6. This allows me to place my token X on the board at field 1 and remove A from the board.
-MY MOVE: X -> 1 ; Y -> 0
+There are 22 empty fields and 1 occupied field. In total: 22 + 1 = 23 fields. I have no tokens on the board. You have rolled a 1. Since you have not rolled a 6, I cannot place a token on the board.
+MY MOVE: X -> 0 ; Y -> 0
+
+Q:
+Current state: X □ □ □ □ □ □ □ □ A □ □ □ □ □ □ □ □ □ □ □ □ □
+Roll: 6. Where will you move your token?
+A:
+There are 21 empty fields and 2 occupied fields. In total: 21 + 2 = 23 fields. My token X is at field number 1. You have rolled a 6. Since field number 1 is occupied, I cannot place a token on the board. Therefore, 1 + 6 = 7. I move my token X to field number 7.
+MY MOVE: X -> 7 ; Y -> 0
+
+Q:
+Current state: X □ □ □ □ □ □ □ □ A □ □ □ □ □ □ □ □ □ □ □ □ □
+Roll: 1. Where will you move your token?
+A:
+There are 21 empty fields and 2 occupied field. In total: 22 + 1 = 23 fields. My token X is on field number 1. Opponent's token A is on field number 10. You have rolled a 1. 1+1 = 2. I move my token X to field number 2.
+MY MOVE: X -> 2 ; Y -> 0
 
 Here is another example.
 
 Q:
-Current state: X □ □ □ □ □ □ □ □ □ □ □ A □ □ □ □ □ □ □ □ □ □
-Next turn number: 5, Roll: 4. Where will you move your token?
+Current state: □ □ □ □ □ □ □ X B □ □ A □ □ □ □ □ □ □ □ □ □ □
+Roll: 4. Where will you move your token?
 A:
-There are 21 empty fields and 2 occupied fields. In total: 21 + 2 = 23 fields. I have 1 token on the board in field 1 and my opponent has token A on field 13. You have rolled a 4. This is 4 fields away from my previous position. Since only my token X is on the board, I can move my token X. Since 1 + 4 = 5, I move my token X to field 5.
-MY MOVE: X -> 5 ; Y -> 0
+There are 20 empty fields and 3 occupied fields. In total: 20 + 3 = 23 fields. My token X is on field number 8. Opponent's token A is on field number 12, token B is on field number 9. You have rolled a 4. 8+4 = 12. I move my token X to field number 12. This will remove opponent's token A.
+MY MOVE: X -> 12 ; Y -> 0
 
 Here is another example.
 
 Q:
-Current state: □ □ □ X □ A □ □ □ □ □ □ □ □ □ □ □ □ □ □ □ □ □
-Next turn number: 6, Roll: 2. Where will you move your token?
+Current state: □ □ □ □ □ □ □ X □ □ □ A □ □ □ □ B □ □ □ □ □ □
+Roll: 6. Where will you move your token?
 A:
-There are 21 empty fields and 2 occupied fields. In total: 21 + 2 = 23 fields. I have token X on field 4 and my opponent has token A on field 6. You have rolled a 2. This is 2 fields away from my previous position. Since only my token X is on the board, I can move my token X. Since 4 + 2 = 6, I move my token X to field 6 and remove my opponents token A from the board.
-MY MOVE: X -> 6 ; Y -> 0
+There are 20 empty fields and 3 occupied fields. In total: 20 + 3 = 23 fields. My token X is on field number 8. Opponent's token A is on field number 12, token B is on field number 17. You have rolled a 6. I will add my token Y to the board.
+MY MOVE: X -> 8 ; Y -> 1
 
 Here is another example.
 
 Q:
-Current state: □ □ □ □ A □ □ □ □ □ □ □ □ □ □ □ X □ □ □ □ □ □
-Next turn number: 8, Roll: 6. Where will you move your token?
+Current state: B □ □ □ □ □ □ □ □ □ □ □ □ □ □ □ □ □ □ □ X A □
+Roll: 5. Where will you move your token?
 A:
-There are 21 empty fields and 2 occupied fields. In total: 21 + 2 = 23 fields. I have token X on field 17 and my opponent has token A on field 5. You have rolled a 6. Since only my token X is on the board, I can my token X or add another token to the board. I am ahead of my opponent so I decide to add another token on the board. 
-MY MOVE: X -> 17 ; X -> 1
+There are 20 empty fields and 3 occupied fields. In total: 20 + 3 = 23 fields. My token X is on field number 21. Opponent token A is on field 22, token B is on field number 1. You have rolled a 5. 21+5 = 26. Since 26 > 23, I cannot move my token.
+MY MOVE: X -> 21 ; Y -> 0
+
+Here is another example.
+
+Q:
+Current state: □ □ □ □ □ B □ □ □ □ □ □ □ □ □ □ □ Y □ □ X A □
+Roll: 5. Where will you move your token?
+A:
+There are 19 empty fields and 4 occupied fields. In total: 19 + 4 = 23 fields. My token X is on field number 21, token Y is on field number 18. Opponent token A is on field 22, token B is on field number 6. You have rolled a 5. 18+5 = 23. I move my token Y to field number 23.
+MY MOVE: X -> 21 ; Y -> 23
+
 
 Now let's really play the game.

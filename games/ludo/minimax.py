@@ -1,10 +1,3 @@
-"""
-Comprised of a class which simulates a game at a given time step, then feeds
-this to the minimax heuristic to calculate the optimal next move for the
-ProgrammaticPlayer.
-"""
-
-
 class GameSim:
     """
     Class that works to simulate a game for the ProgrammaticPlayer, ultimately
@@ -15,7 +8,7 @@ class GameSim:
             n_fields: int,
             n_tokens: int,
             token_positions: dict,
-            rolls: list[tuple],
+            rolls: list[tuple[int, int]],
             turn: int
     ) -> None:
         """
@@ -24,8 +17,8 @@ class GameSim:
         Args:
             n_fields (int): the number of fields in the game
             n_tokens (int): the number of tokens given to each player
-            player_tokens (dict): the tokens associated with the player
-            rolls (list[tuple]): the rolls for the game
+            token_positions (dict): the tokens associated with the player
+            rolls (list[tuple[int, int]]): the rolls for the game
             turn (int): the current turn number
         """
         self.n_fields: int = n_fields
@@ -62,13 +55,9 @@ class GameSim:
             self.n_tokens,
             new_token_positions,
             self.rolls,
-            (
-                self.turn + 1
-                if player == 1
-                else self.turn
-            )
+            self.turn + 1
         )
-    
+
     def get_possible_moves(self, player: int) -> list[tuple[str, int]]:
         """
         Gets the possible moves for the player.
@@ -80,7 +69,7 @@ class GameSim:
         Returns:
             list[tuple[str, int]]: possible moves for the player
         """
-        roll: int = self.rolls[self.turn][player]
+        roll: int = self.rolls[self.turn % len(self.rolls)][player]
         tokens: list[str] = self._get_tokens(player)
         moves: list[tuple[str, int]] = []
         for token in tokens:
@@ -124,19 +113,19 @@ class GameSim:
         )
         p2_terminal: bool = all(
             self.token_positions[token] == self.n_fields
-            for token in self._get_tokens(0)
+            for token in self._get_tokens(1)
         )
-        
+
         # Determines the winning player
         if p1_terminal:
             winner: int = 0
         elif p2_terminal:
             winner: int = 1
         else:
-            winner: None = None
+            winner = None
 
         return any((p1_terminal, p2_terminal)), winner
-    
+
     def score(self) -> int:
         """
         Calculates the score of the game, which is 100 if we win or -100 if
@@ -149,7 +138,7 @@ class GameSim:
         # If the game has finished, scores 100 if winner is p1, -100 if p2
         terminal, winner = self.is_terminal()
         if terminal:
-            return -100 if winner else 100
+            return 100 if winner == 1 else -100
 
         # Calculate the progress of each player's tokens otherwise
         progress: int = sum(
@@ -161,7 +150,7 @@ class GameSim:
             for token in self._get_tokens(1)
         )
 
-        return progress - opponent_progress
+        return opponent_progress - progress
 
     def _get_tokens(self, player: int) -> list[str]:
         """
@@ -178,7 +167,7 @@ class GameSim:
                 return ["A"] if player == 1 else ["X"]
             case 2:
                 return ['A', 'B'] if player == 1 else ['X', 'Y']
-        
+
     def _is_out(self, token: str) -> bool:
         """
         Checks if the token is out of the base.
@@ -190,7 +179,7 @@ class GameSim:
             bool: True if the token is out of the base, False otherwise
         """
         return self.token_positions[token] > 0
-    
+
     def _is_taken(self, tokens: list[str], pos: int) -> bool:
         """
         Checks if the position is occupied by any token.
@@ -231,29 +220,26 @@ def minimax(
     # If the game is at its terminal state, it is scored
     if (
         game_state.is_terminal()[0] or
-        game_state.turn > len(game_state.rolls) - 1
+        game_state.turn >= len(game_state.rolls)
     ):
         return game_state.score(), None
-    
+
     player: int = int(maximizing_player)
     best_move: tuple[str, int] | None = None
     best_score: float = float("-inf") if maximizing_player else float("inf")
 
     possible_moves: list[tuple[str, int]] = game_state.get_possible_moves(player)
-
     if maximizing_player:
         for move in possible_moves:
             child: GameSim = game_state.get_new_state(move, player)
             score: int = minimax(child, False, alpha, beta)[0]
-
             if score > best_score:
                 best_score = score
                 best_move = move
 
-            if best_score >= beta:
-                break
-
             alpha = max(alpha, best_score)
+            if alpha >= beta:
+                break
 
     else:
         for move in possible_moves:
@@ -264,13 +250,18 @@ def minimax(
                 best_score = score
                 best_move = move
 
-            if best_score <= beta:
+            beta = min(beta, best_score)
+            if beta <= alpha:
                 break
-
-            beta = min(alpha, best_score)
 
     return best_score, best_move
 
 
 if __name__ == '__main__':
-    pass
+    # Sample initial game state for testing
+    n_fields = 10
+    n_tokens = 2
+    token_positions = {"A": 0, "B": 0, "X": 0, "Y": 0}
+    rolls = [(6, 3), (2, 4), (5, 6)]
+    turn = 0
+
