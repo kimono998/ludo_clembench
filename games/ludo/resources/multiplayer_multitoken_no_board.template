@@ -59,7 +59,7 @@ Here is an example of what one turn looks like. Let's think step by step.
 
 
 Q:
-Beginning state: □ □ □ □ □ □ □ □ □ □ □ □ □ □ □ □ □ □ □ □ □ □ □
+Beginning state: {'X': 0, 'Y': 0, 'A': 0, 'B': 0}
 Roll: 6. Where will you move your token?
 A:
 MY MOVE: X -> 1 ; Y -> 0
@@ -67,19 +67,19 @@ MY MOVE: X -> 1 ; Y -> 0
 Here is another example.
 
 Q:
-Current state: □ □ □ □ □ □ □ □ □ A □ □ □ □ □ □ □ □ □ □ □ □ □
+Current state: {'X': 0, 'Y': 0, 'A': 10, 'B': 0}
 Roll: 1. Where will you move your token?
 A:
 MY MOVE: X -> 0 ; Y -> 0
 
 Q:
-Current state: X □ □ □ □ □ □ □ □ A □ □ □ □ □ □ □ □ □ □ □ □ □
+Current state: {'X': 1, 'Y': 0, 'A': 10, 'B': 0}
 Roll: 6. Where will you move your token?
 A:
 MY MOVE: X -> 7 ; Y -> 0
 
 Q:
-Current state: X □ □ □ □ □ □ □ □ A □ □ □ □ □ □ □ □ □ □ □ □ □
+Current state: {'X': 1, 'Y': 0, 'A': 10, 'B': 0}
 Roll: 1. Where will you move your token?
 A:
 MY MOVE: X -> 2 ; Y -> 0
@@ -87,7 +87,7 @@ MY MOVE: X -> 2 ; Y -> 0
 Here is another example.
 
 Q:
-Current state: □ □ □ □ □ □ □ X B □ □ A □ □ □ □ □ □ □ □ □ □ □
+Current state: {'X': 8, 'Y': 0, 'A': 12, 'B': 9}
 Roll: 4. Where will you move your token?
 A:
 MY MOVE: X -> 12 ; Y -> 0
@@ -95,7 +95,7 @@ MY MOVE: X -> 12 ; Y -> 0
 Here is another example.
 
 Q:
-Current state: □ □ □ □ □ □ □ X □ □ □ A □ □ □ □ B □ □ □ □ □ □
+Current state: {'X': 8, 'Y': 0, 'A': 12, 'B': 17}
 Roll: 6. Where will you move your token?
 A:
 MY MOVE: X -> 8 ; Y -> 1
@@ -103,19 +103,23 @@ MY MOVE: X -> 8 ; Y -> 1
 Here is another example.
 
 Q:
-Current state: B □ □ □ □ □ □ □ □ □ □ □ □ □ □ □ □ □ □ □ X A □
+Current state: {'X': 21, 'Y': 0, 'A': 22, 'B': 1}
 Roll: 5. Where will you move your token?
 A:
 MY MOVE: X -> 21 ; Y -> 0
 
+Here is another example.
+
 Q:
-Current state: □ □ □ □ □ B □ □ □ □ □ □ □ □ □ □ □ Y □ □ X A □
+Current state: {'X': 21, 'Y': 18, 'A': 22, 'B': 6}
 Roll: 5. Where will you move your token?
 A:
 MY MOVE: X -> 21 ; Y -> 23
 
+Here is another example.
+
 Q:
-Current state: □ □ □ □ □ □ □ □ □ □ □ A □ □ □ □ □ □ X □ □ □ □
+Current state: {'X': 19, 'Y': 0, 'A': 12, 'B': 0}
 Roll: 4. Where will you move your token?
 A:
 MY MOVE: X -> 23 ; Y -> 0

@@ -51,7 +51,7 @@ Think through your every step.
 Here is are some examples of what a turn looks like.
 
 Q:
-Beginning state: □ □ □ □ □ □ □ □ □ □ □ □ □ □ □ □ □ □ □ □ □ □ □
+Beginning state: {'X': 0, 'A': 0}
 Roll: 6. Where will you move your token?
 A:
 MY MOVE: X -> 1
@@ -59,13 +59,13 @@ MY MOVE: X -> 1
 Here is another example.
 
 Q:
-Current state: □ □ □ □ □ □ □ □ □ A □ □ □ □ □ □ □ □ □ □ □ □ □
+Current state: {'X': 0, 'A': 10}
 Roll: 1. Where will you move your token?
 A:
 MY MOVE: X -> 0
 
 Q:
-Current state: X □ □ □ □ □ □ □ □ A □ □ □ □ □ □ □ □ □ □ □ □ □
+Current state: {'X': 1, 'A': 10}
 Roll: 1. Where will you move your token?
 A:
 MY MOVE: X -> 2
@@ -73,7 +73,7 @@ MY MOVE: X -> 2
 Here is another example.
 
 Q:
-Current state: □ □ □ □ □ □ □ X □ □ □ A □ □ □ □ □ □ □ □ □ □ □
+Current state: {'X': 8, 'A': 12}
 Roll: 4. Where will you move your token?
 A:
 MY MOVE: X -> 12
@@ -81,13 +81,13 @@ MY MOVE: X -> 12
 Here is another example.
 
 Q:
-Current state: □ □ □ □ □ □ □ □ □ □ □ □ □ □ □ □ □ □ □ □ X A □
+Current state: {'X': 21, 'A': 22}
 Roll: 5. Where will you move your token?
 A:
 MY MOVE: X -> 21
 
 Q:
-Current state: □ □ □ □ □ □ □ □ □ □ □ A □ □ □ □ □ □ X □ □ □ □
+Current state: {'X': 19, 'A': 12}
 Roll: 4. Where will you move your token?
 A:
 MY MOVE: X -> 23
