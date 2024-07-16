@@ -246,9 +246,6 @@ class LudoInstanceGenerator(GameInstanceGenerator):
                                    the sequence
         """
         while True:
-            six_randomizer = np.random.randint(0, 2)
-            random_sequence_len = np.random.randint(1,3)
-
             rolls: list[int] = [np.random.randint(1, 7) for _ in range(n_rolls)]
             min_moves: int = self._check_sequence(
                 n_fields=n_fields,
@@ -336,6 +333,19 @@ def find_monotoken_minimum(
                     best_sequence = [('X', 1)] + sequence
 
         memorized_moves[(X, index)] = (min_move_count, best_sequence)
+
+        if roll != 6:
+            if X == 0:
+                next_moves, sequence = find_multitoken_minimum(
+                    rolls=rolls,
+                    n_fields=n_fields,
+                    memorized_moves=memorized_moves,
+                    X=X,
+                    index=next_index
+                )
+                if next_moves + 1 < min_move_count:
+                    min_move_count = next_moves + 1
+                    best_sequence = [('X', 0)] + sequence
 
         return min_move_count, best_sequence
 
@@ -454,34 +464,27 @@ def find_multitoken_minimum(
                     min_move_count = next_moves + 1
                     best_sequence = [('Y', 1)] + sequence
 
+        if roll != 6:
+            if X == 0 and Y == 0:
+                next_moves, sequence = find_multitoken_minimum(
+                    rolls=rolls,
+                    n_fields=n_fields,
+                    memorized_moves=memorized_moves,
+                    X=X,
+                    Y=Y,
+                    index=next_index
+                )
+                if next_moves + 1 < min_move_count:
+                    min_move_count = next_moves + 1
+                    best_sequence = [('X', 0)] + sequence
+
+
         memorized_moves[(X, Y, index)] = (min_move_count, best_sequence)
 
         return min_move_count, best_sequence
 
 
 if __name__ == '__main__':
-    # Example experiment
-    # experiments: list[dict] = [
-    #     {
-    #         "experiment_name": "single_player",
-    #         "n_instances": 1,
-    #         "dialogue_partners": ["llm"],
-    #         "n_tokens": 2,
-    #         "n_fields": 23,
-    #         "n_rolls": 20
-    #     },
-    #     {
-    #         "experiment_name": "multiplayer",
-    #         "n_instances": 1,
-    #         "dialogue_partners": ["llm", "programmatic"],
-    #         "n_tokens": 1,
-    #         "n_fields": 23,
-    #         "n_rolls": 20
-    #     }
-    # ]
 
-    # Generates game instances
-    #instance_generator: LudoInstanceGenerator = LudoInstanceGenerator()
-    #instance_generator.generate(experiments=experiments)
 
     LudoInstanceGenerator().generate()
