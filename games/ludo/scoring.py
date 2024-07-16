@@ -210,7 +210,8 @@ class LudoGameScorer(GameScorer):
         # Calculates count-based metrics
         efficiency: float = counts["accepted_moves"] / counts["requests"]
         reprompt_efficiency: float = counts["accepted_moves"] / counts["reprompts"] if counts['reprompts'] > 0 else None
-        violated_requests: int = counts["requests"] - counts["accepted_moves"]
+        # violated_requests: int = counts["requests"] - counts["accepted_moves"]
+        violated_requests: int = counts["parsing_errors"] # violated requests is the number of requests that could not be parsed
         parsing_error_share: int = (
             counts["parsing_errors"] / counts["errors"]
             if counts["errors"] > 0 else 0
