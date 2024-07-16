@@ -129,9 +129,8 @@ class LudoGameScorer(GameScorer):
 
         return {
             "speed": (
-                0 if counts["status"] == "ABORTED"
-                else self.game_instance["min_moves"] * 1.0 / (counts["final_turn"] + 1)
-            ),
+                self.game_instance["min_moves"] * 1.0 / (counts["final_turn"] + 1)
+            ) if counts["status"] == "WIN" else 0,
             "draw": 1 if counts["status"] == "DRAW" else 0,
             "efficiency": counts["total_accepted_moves"] / counts["total_requests"],
             "reprompt_efficiency": reprompt_efficiency,
