@@ -18,6 +18,7 @@ from games.ludo.instancegenerator import find_monotoken_minimum, find_multitoken
 
 GAME_NAME: str = "ludo"
 ATTEMPT_LIMIT: int = 3
+BOARD_SIZE = 23
 EPISODE_SCORE_NAMES: dict[str: str] = {
     "speed": "Episode Speed",
     "draw": "Draw",
@@ -25,7 +26,8 @@ EPISODE_SCORE_NAMES: dict[str: str] = {
     "reprompt_efficiency": "Episode Reprompt Efficiency",
     "accuracy": "Episode Accuracy",
     "parsing_error_share": "Episode Parsing Error Share",
-    "accepted_per_error": "Episode Accepted Moves per Error"
+    "accepted_per_error": "Episode Accepted Moves per Error",
+    "completion_score": "Percentage Completed"
 }
 TURN_SCORE_NAMES: dict[str: str] = {
     "accuracy": "Accuracy",
@@ -68,9 +70,17 @@ class LudoGameScorer(GameScorer):
                                           played episode, including the per
                                           turn interactions
         """
-        speed, accuracy, efficiency = self._score_episode(episode_interactions)
+
+
+
+        speed, accuracy, efficiency, completion_score = self._score_episode(episode_interactions)
+
         main_score: float = self._calculate_main_score(speed, accuracy, efficiency)
-        
+
+        # we want to give a better score to models that are closer to completion.
+        if episode_interactions["Final status"] == "ABORTED":
+            main_score = main_score*completion_score
+
         if BENCH_SCORE in self.scores["episode scores"]:
             self.logger.warning(f"{self.name}: Main score overwritten!")
 
@@ -127,10 +137,15 @@ class LudoGameScorer(GameScorer):
 
         reprompt_efficiency = reprompt_sum/counter if counter > 0 else None
 
+        # Speed needs to be capped at 1.
+        # if not Aborted, we have to consider how much of the game was completed
+        # so speed = speed * completion score
+
+        speed = (((self.game_instance["min_moves"]*1.0) / (counts["final_turn"] + 1))*counts['completion_score'])\
+            if counts["status"] != "ABORTED" else 0
+
         return {
-            "speed": (
-                self.game_instance["min_moves"] * 1.0 / (counts["final_turn"] + 1)
-            ) if counts["status"] == "WIN" else 0,
+            "speed": 1 if speed > 1 else speed,
             "draw": 1 if counts["status"] == "DRAW" else 0,
             "efficiency": counts["total_accepted_moves"] / counts["total_requests"],
             "reprompt_efficiency": reprompt_efficiency,
@@ -142,7 +157,8 @@ class LudoGameScorer(GameScorer):
             "accepted_per_error": (
                 counts["total_accepted_moves"] / counts["total_errors"]
                 if counts["total_errors"] > 0 else 0
-            )
+            ),
+            "completion_score": counts['completion_score']
         }
 
     def _calculate_main_score(
@@ -162,7 +178,9 @@ class LudoGameScorer(GameScorer):
         Returns:
             TODO float:
         """
-        return ((speed + accuracy) / 2) * efficiency
+        main_score = ((speed + accuracy) / 2) * efficiency
+
+        return 1 if main_score > 1 else main_score
     
     def _calculate_turn_scores(
             self,
@@ -312,6 +330,7 @@ class LudoGameScorer(GameScorer):
                 case 'reprompt':
                     counts["reprompts"] += 1
 
+
         return current_state, updated_state, counts
 
     def _log_episode_scores(self, scores: dict[str: int]) -> None:
@@ -363,7 +382,15 @@ class LudoGameScorer(GameScorer):
             total_errors += turn["Errors"]
             total_parsing_errors += turn['Parsing Errors']
             total_accuracy += turn['Accuracy']
-        # total_accuracy = total_accuracy/counter if counter > 0 else None
+
+        # Percentage of the game completed by the LLM
+        final_state = episode_interactions['Final State']
+        llm_tokens = episode_interactions['LLM Tokens']
+        completion_score = 0
+        for token in llm_tokens:
+            completion_score += final_state[token]/BOARD_SIZE
+        completion_score = completion_score/len(llm_tokens)
+
         return {
             "status": episode_interactions["Final status"],
             "final_turn": episode_interactions['Turns played'],
@@ -372,7 +399,8 @@ class LudoGameScorer(GameScorer):
             "total_requests": total_requests,
             "total_accuracy": total_accuracy,
             "total_parsing_errors": total_parsing_errors,
-            "total_errors": total_errors
+            "total_errors": total_errors,
+            "completion_score": completion_score
         }
 
     def _score_episode(self, episode_interactions: dict) -> tuple[float, float, float]:
@@ -389,15 +417,19 @@ class LudoGameScorer(GameScorer):
         Returns:
             TODO tuple[float, float, float]
         """
+        # calculate how much of the board was completed
+
+
+
         counts: dict = self._get_episode_counts(episode_interactions)
-        print(counts)
         scores: dict = self._calculate_episode_scores(counts)
         self._log_episode_scores(scores)
 
         return (
             self.scores["episode scores"][EPISODE_SCORE_NAMES["speed"]],
             self.scores["episode scores"][EPISODE_SCORE_NAMES["accuracy"]],
-            self.scores["episode scores"][EPISODE_SCORE_NAMES["efficiency"]]
+            self.scores["episode scores"][EPISODE_SCORE_NAMES["efficiency"]],
+            self.scores["episode scores"][EPISODE_SCORE_NAMES["completion_score"]]
         )
 
     def _score_multiplayer_move(

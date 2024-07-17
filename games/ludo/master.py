@@ -647,6 +647,7 @@ class LudoGameMaster(GameMaster):
         self.log_key('Multiplayer', int(bool(self.game.player_2)))
         self.log_key('Reprompting', int(self.reprompting))
         self.log_key('Chain of Thought', int(self.chain_of_thought))
+        self.log_key('Final State', self.game.current_state_dict)
 
     def _reprompt_player(self, player: str, message: str) -> None:
         """
