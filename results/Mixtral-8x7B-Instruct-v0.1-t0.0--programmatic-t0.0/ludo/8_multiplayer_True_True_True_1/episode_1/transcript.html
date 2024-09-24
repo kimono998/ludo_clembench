@@ -1,0 +1,806 @@
+
+<!DOCTYPE html>
+<html>
+<head>
+    <style>
+        /* This CSS is an adaptation from the answer by Roko C. Buljan in https://stackoverflow.com/a/71155446 */ 
+
+* {margin: 0; box-sizing: border-box;}
+
+body {background-color: rgb(157, 152, 150);}
+
+  /* dialogue header */
+
+.top-info {
+  text-align: center;
+  --rad: 20px;
+  --rad-sm: 3px;
+  font: 20px/1.5 sans-serif;
+  display: flex;
+  flex-direction: column;
+  padding: 20px;
+  max-width: 900px;
+  margin: auto;
+  background: #3f3e3e;
+  color: #fff;
+}
+
+.chat {
+    --rad: 20px;
+    --rad-sm: 3px;
+    font: 16px/1.5 sans-serif;
+    display: flex;
+    flex-direction: column;
+    padding: 20px;
+    max-width: 900px;
+    margin: auto;
+    background: #fff;
+  }
+  
+  .msg {
+    position: relative;
+    max-width: 75%;
+    padding: 7px 15px;
+    margin-bottom: 30px;
+  }
+  
+  /* 5 levels, two players to/from game master and meta messages form game master */
+
+  .msg.b-gm {
+    border-radius: var(--rad) var(--rad-sm) var(--rad-sm) var(--rad);
+    background: #874aaf;
+    color: #fff;
+    margin-left: 60%;
+  }
+
+  .msg.a-gm {
+    border-radius: var(--rad-sm) var(--rad) var(--rad) var(--rad-sm);
+    background: #f39109;
+    color: #fff;
+    margin-right: 60%;
+  }
+  
+  .msg.gm-a {
+    border-radius: var(--rad) var(--rad-sm) var(--rad-sm) var(--rad);
+    background: #c4c3c3;    
+    color: #0c0c0c;
+    margin-right: 40%;
+    margin-left: 20%;
+  }
+
+  .msg.gm-b {
+    border-radius: var(--rad-sm) var(--rad) var(--rad) var(--rad-sm);
+    background: #c4c3c3;
+    color: #0c0c0c;
+    margin-right: 20%;
+    margin-left: 40%;
+  }
+
+  .msg.gm-gm {
+    background: #f1f1f1;
+    color: #373636;
+    margin-left: 40%;
+    margin-right: 40%;
+    font-size: 0.8rem;
+
+  }
+  
+  /* speaker labels */
+  
+  .msg::before {
+    content: attr(speaker);
+    font-size: 0.8rem;
+    position: absolute;
+    bottom: 100%;
+    color: #888;
+    white-space: nowrap;
+
+  }
+  
+  .msg.b-gm::before {
+    right: 15px;
+  }
+
+  .msg.gm-a::before {
+    right: 15px;
+  }
+
+  .msg.a-gm::before {
+    left: 15px;
+  }
+
+  .msg.gm-b::before {
+    left: 15px;
+  }
+
+  .msg.gm-gm::before {
+    left: 0px;
+  }
+  
+
+    </style>
+</head>
+<body>
+
+<br/>
+
+<div class="top-info">
+    <p>Interaction Transcript for multiplayer_True_True_True_1, episode in002 with Mixtral-8x7B-Instruct-v0.1-t0.0--programmatic-t0.0.</p>
+</div>
+
+<br/>
+
+<div class="chat">
+
+    <div speaker="Game Master: current state" class="msg gm-gm">
+        <p>{&#x27;X&#x27;: 0, &#x27;A&#x27;: 0}</p>
+    </div>
+
+    <div speaker="Game Master to Player 1" class="msg gm-a">
+        <p>Current state: {&#x27;X&#x27;: 0, &#x27;A&#x27;: 0}<br/>Turn number: 0, Roll: 3. Where will you move your token?</p>
+    </div>
+
+    <div speaker="Player 1 to Game Master" class="msg a-gm">
+        <p>Given the current state of the board and the roll value, I cannot add or move my token. The reason is that I do not have any tokens on the board, and the roll value is not a 6. Therefore, I cannot place a new token or move an existing one. So, I will have to skip this turn.<br/><br/>MY MOVE: X -&gt; 0</p>
+    </div>
+
+    <div speaker="Game Master: parse" class="msg gm-gm">
+        <p>{&#x27;X&#x27;: 0}</p>
+    </div>
+
+    <div speaker="Game Master: metadata" class="msg gm-gm">
+        <p>update board state</p>
+    </div>
+
+    <div speaker="Game Master: accepted move" class="msg gm-gm">
+        <p>{&#x27;X&#x27;: 0}</p>
+    </div>
+
+    <div speaker="Player 2 to Game Master" class="msg b-gm">
+        <p>Player 2 Answered:<br/>MY MOVE: A -&gt; 0</p>
+    </div>
+
+    <div speaker="Game Master: parse" class="msg gm-gm">
+        <p>{&#x27;A&#x27;: 0}</p>
+    </div>
+
+    <div speaker="Game Master: metadata" class="msg gm-gm">
+        <p>update board state</p>
+    </div>
+
+    <div speaker="Game Master: accepted move" class="msg gm-gm">
+        <p>{&#x27;A&#x27;: 0}</p>
+    </div>
+
+    <div speaker="Game Master: current state" class="msg gm-gm">
+        <p>{&#x27;X&#x27;: 0, &#x27;A&#x27;: 0}</p>
+    </div>
+
+    <div speaker="Game Master to Player 1" class="msg gm-a">
+        <p>Current state: {&#x27;X&#x27;: 0, &#x27;A&#x27;: 0}<br/>Turn number: 1, Roll: 6. Where will you move your token?</p>
+    </div>
+
+    <div speaker="Player 1 to Game Master" class="msg a-gm">
+        <p>Since I have a token (X) on field 0, and you have rolled a 6, I can now place my token X on the board at field 1.<br/><br/>MY MOVE: X -&gt; 1</p>
+    </div>
+
+    <div speaker="Game Master: parse" class="msg gm-gm">
+        <p>{&#x27;X&#x27;: 1}</p>
+    </div>
+
+    <div speaker="Game Master: metadata" class="msg gm-gm">
+        <p>update board state</p>
+    </div>
+
+    <div speaker="Game Master: accepted move" class="msg gm-gm">
+        <p>{&#x27;X&#x27;: 1}</p>
+    </div>
+
+    <div speaker="Player 2 to Game Master" class="msg b-gm">
+        <p>Player 2 Answered:<br/>MY MOVE: A -&gt; 0</p>
+    </div>
+
+    <div speaker="Game Master: parse" class="msg gm-gm">
+        <p>{&#x27;A&#x27;: 0}</p>
+    </div>
+
+    <div speaker="Game Master: metadata" class="msg gm-gm">
+        <p>update board state</p>
+    </div>
+
+    <div speaker="Game Master: accepted move" class="msg gm-gm">
+        <p>{&#x27;A&#x27;: 0}</p>
+    </div>
+
+    <div speaker="Game Master: current state" class="msg gm-gm">
+        <p>{&#x27;X&#x27;: 1, &#x27;A&#x27;: 0}</p>
+    </div>
+
+    <div speaker="Game Master to Player 1" class="msg gm-a">
+        <p>Current state: {&#x27;X&#x27;: 1, &#x27;A&#x27;: 0}<br/>Turn number: 2, Roll: 6. Where will you move your token?</p>
+    </div>
+
+    <div speaker="Player 1 to Game Master" class="msg a-gm">
+        <p>Since I have a token (X) on the board, and you have rolled a 6, I will move my token X by 6 fields to the right. This will move my token X to field 7.<br/><br/>MY MOVE: X -&gt; 7</p>
+    </div>
+
+    <div speaker="Game Master: parse" class="msg gm-gm">
+        <p>{&#x27;X&#x27;: 7}</p>
+    </div>
+
+    <div speaker="Game Master: metadata" class="msg gm-gm">
+        <p>update board state</p>
+    </div>
+
+    <div speaker="Game Master: accepted move" class="msg gm-gm">
+        <p>{&#x27;X&#x27;: 7}</p>
+    </div>
+
+    <div speaker="Player 2 to Game Master" class="msg b-gm">
+        <p>Player 2 Answered:<br/>MY MOVE: A -&gt; 0</p>
+    </div>
+
+    <div speaker="Game Master: parse" class="msg gm-gm">
+        <p>{&#x27;A&#x27;: 0}</p>
+    </div>
+
+    <div speaker="Game Master: metadata" class="msg gm-gm">
+        <p>update board state</p>
+    </div>
+
+    <div speaker="Game Master: accepted move" class="msg gm-gm">
+        <p>{&#x27;A&#x27;: 0}</p>
+    </div>
+
+    <div speaker="Game Master: current state" class="msg gm-gm">
+        <p>{&#x27;X&#x27;: 7, &#x27;A&#x27;: 0}</p>
+    </div>
+
+    <div speaker="Game Master to Player 1" class="msg gm-a">
+        <p>Current state: {&#x27;X&#x27;: 7, &#x27;A&#x27;: 0}<br/>Turn number: 3, Roll: 5. Where will you move your token?</p>
+    </div>
+
+    <div speaker="Player 1 to Game Master" class="msg a-gm">
+        <p>Since I have a token (X) on the board, and you have rolled a 5, I will move my token X by 5 fields to the right. This will move my token X to field 12.<br/><br/>MY MOVE: X -&gt; 12</p>
+    </div>
+
+    <div speaker="Game Master: parse" class="msg gm-gm">
+        <p>{&#x27;X&#x27;: 12}</p>
+    </div>
+
+    <div speaker="Game Master: metadata" class="msg gm-gm">
+        <p>update board state</p>
+    </div>
+
+    <div speaker="Game Master: accepted move" class="msg gm-gm">
+        <p>{&#x27;X&#x27;: 12}</p>
+    </div>
+
+    <div speaker="Player 2 to Game Master" class="msg b-gm">
+        <p>Player 2 Answered:<br/>MY MOVE: A -&gt; 1</p>
+    </div>
+
+    <div speaker="Game Master: parse" class="msg gm-gm">
+        <p>{&#x27;A&#x27;: 1}</p>
+    </div>
+
+    <div speaker="Game Master: metadata" class="msg gm-gm">
+        <p>update board state</p>
+    </div>
+
+    <div speaker="Game Master: accepted move" class="msg gm-gm">
+        <p>{&#x27;A&#x27;: 1}</p>
+    </div>
+
+    <div speaker="Game Master: current state" class="msg gm-gm">
+        <p>{&#x27;X&#x27;: 12, &#x27;A&#x27;: 1}</p>
+    </div>
+
+    <div speaker="Game Master to Player 1" class="msg gm-a">
+        <p>Current state: {&#x27;X&#x27;: 12, &#x27;A&#x27;: 1}<br/>Turn number: 4, Roll: 1. Where will you move your token?</p>
+    </div>
+
+    <div speaker="Player 1 to Game Master" class="msg a-gm">
+        <p>Since I have a token (X) on the board, and you have rolled a 1, I will move my token X by 1 field to the right. This will move my token X to field 13.<br/><br/>MY MOVE: X -&gt; 13</p>
+    </div>
+
+    <div speaker="Game Master: parse" class="msg gm-gm">
+        <p>{&#x27;X&#x27;: 13}</p>
+    </div>
+
+    <div speaker="Game Master: metadata" class="msg gm-gm">
+        <p>update board state</p>
+    </div>
+
+    <div speaker="Game Master: accepted move" class="msg gm-gm">
+        <p>{&#x27;X&#x27;: 13}</p>
+    </div>
+
+    <div speaker="Player 2 to Game Master" class="msg b-gm">
+        <p>Player 2 Answered:<br/>MY MOVE: A -&gt; 4</p>
+    </div>
+
+    <div speaker="Game Master: parse" class="msg gm-gm">
+        <p>{&#x27;A&#x27;: 4}</p>
+    </div>
+
+    <div speaker="Game Master: metadata" class="msg gm-gm">
+        <p>update board state</p>
+    </div>
+
+    <div speaker="Game Master: accepted move" class="msg gm-gm">
+        <p>{&#x27;A&#x27;: 4}</p>
+    </div>
+
+    <div speaker="Game Master: current state" class="msg gm-gm">
+        <p>{&#x27;X&#x27;: 13, &#x27;A&#x27;: 4}</p>
+    </div>
+
+    <div speaker="Game Master to Player 1" class="msg gm-a">
+        <p>Current state: {&#x27;X&#x27;: 13, &#x27;A&#x27;: 4}<br/>Turn number: 5, Roll: 6. Where will you move your token?</p>
+    </div>
+
+    <div speaker="Player 1 to Game Master" class="msg a-gm">
+        <p>Since I have a token (X) on the board, and you have rolled a 6, I will move my token X by 6 fields to the right. This will move my token X to field 20.<br/><br/>MY MOVE: X -&gt; 20</p>
+    </div>
+
+    <div speaker="Game Master: parse" class="msg gm-gm">
+        <p>{&#x27;X&#x27;: 20}</p>
+    </div>
+
+    <div speaker="Game Master: error" class="msg gm-gm">
+        <p>incorrect_move</p>
+    </div>
+
+    <div speaker="Game Master to Player 1" class="msg gm-a">
+        <p>{&#x27;role&#x27;: &#x27;user&#x27;, &#x27;content&#x27;: &quot;INVALID MOVE: Token X was moved incorrectly. \nPlease try again.\nCurrent state: {&#x27;X&#x27;: 13, &#x27;A&#x27;: 4}\nTurn number: 5, Roll: 6. Where will you move your token?&quot;}</p>
+    </div>
+
+    <div speaker="Player 1 to Game Master" class="msg a-gm">
+        <p>I apologize for the mistake. Since I have a token (X) on the board, and you have rolled a 6, I will move my token X by 6 fields to the right. This will move my token X to field 19.<br/><br/>MY MOVE: X -&gt; 19</p>
+    </div>
+
+    <div speaker="Game Master: parse" class="msg gm-gm">
+        <p>{&#x27;X&#x27;: 19}</p>
+    </div>
+
+    <div speaker="Game Master: metadata" class="msg gm-gm">
+        <p>update board state</p>
+    </div>
+
+    <div speaker="Game Master: accepted move" class="msg gm-gm">
+        <p>{&#x27;X&#x27;: 19}</p>
+    </div>
+
+    <div speaker="Player 2 to Game Master" class="msg b-gm">
+        <p>Player 2 Answered:<br/>MY MOVE: A -&gt; 6</p>
+    </div>
+
+    <div speaker="Game Master: parse" class="msg gm-gm">
+        <p>{&#x27;A&#x27;: 6}</p>
+    </div>
+
+    <div speaker="Game Master: metadata" class="msg gm-gm">
+        <p>update board state</p>
+    </div>
+
+    <div speaker="Game Master: accepted move" class="msg gm-gm">
+        <p>{&#x27;A&#x27;: 6}</p>
+    </div>
+
+    <div speaker="Game Master: current state" class="msg gm-gm">
+        <p>{&#x27;X&#x27;: 19, &#x27;A&#x27;: 6}</p>
+    </div>
+
+    <div speaker="Game Master to Player 1" class="msg gm-a">
+        <p>Current state: {&#x27;X&#x27;: 19, &#x27;A&#x27;: 6}<br/>Turn number: 6, Roll: 3. Where will you move your token?</p>
+    </div>
+
+    <div speaker="Player 1 to Game Master" class="msg a-gm">
+        <p>Since I have a token (X) on the board, and you have rolled a 3, I will move my token X by 3 fields to the right. This will move my token X to field 22.<br/><br/>MY MOVE: X -&gt; 22</p>
+    </div>
+
+    <div speaker="Game Master: parse" class="msg gm-gm">
+        <p>{&#x27;X&#x27;: 22}</p>
+    </div>
+
+    <div speaker="Game Master: metadata" class="msg gm-gm">
+        <p>update board state</p>
+    </div>
+
+    <div speaker="Game Master: accepted move" class="msg gm-gm">
+        <p>{&#x27;X&#x27;: 22}</p>
+    </div>
+
+    <div speaker="Player 2 to Game Master" class="msg b-gm">
+        <p>Player 2 Answered:<br/>MY MOVE: A -&gt; 12</p>
+    </div>
+
+    <div speaker="Game Master: parse" class="msg gm-gm">
+        <p>{&#x27;A&#x27;: 12}</p>
+    </div>
+
+    <div speaker="Game Master: metadata" class="msg gm-gm">
+        <p>update board state</p>
+    </div>
+
+    <div speaker="Game Master: accepted move" class="msg gm-gm">
+        <p>{&#x27;A&#x27;: 12}</p>
+    </div>
+
+    <div speaker="Game Master: current state" class="msg gm-gm">
+        <p>{&#x27;X&#x27;: 22, &#x27;A&#x27;: 12}</p>
+    </div>
+
+    <div speaker="Game Master to Player 1" class="msg gm-a">
+        <p>Current state: {&#x27;X&#x27;: 22, &#x27;A&#x27;: 12}<br/>Turn number: 7, Roll: 6. Where will you move your token?</p>
+    </div>
+
+    <div speaker="Player 1 to Game Master" class="msg a-gm">
+        <p>Since I have a token (X) on the board, and you have rolled a 6, I will move my token X by 6 fields to the right. However, the board only has 23 fields, and my token X is already on field 22. Therefore, I will move my token X to the last field (23) and win the game.<br/><br/>MY MOVE: X -&gt; 23</p>
+    </div>
+
+    <div speaker="Game Master: parse" class="msg gm-gm">
+        <p>{&#x27;X&#x27;: 23}</p>
+    </div>
+
+    <div speaker="Game Master: error" class="msg gm-gm">
+        <p>incorrect_move</p>
+    </div>
+
+    <div speaker="Game Master to Player 1" class="msg gm-a">
+        <p>{&#x27;role&#x27;: &#x27;user&#x27;, &#x27;content&#x27;: &quot;INVALID MOVE: Token X was moved incorrectly. \nPlease try again.\nCurrent state: {&#x27;X&#x27;: 22, &#x27;A&#x27;: 12}\nTurn number: 7, Roll: 6. Where will you move your token?&quot;}</p>
+    </div>
+
+    <div speaker="Player 1 to Game Master" class="msg a-gm">
+        <p>I apologize for the confusion. Since I have a token (X) on the board, and you have rolled a 6, I will move my token X by 6 fields to the right. However, the board only has 23 fields, and my token X is already on field 22. I cannot move my token X to the last field (23) since it is already occupied by my opponent&#x27;s token A. Therefore, I will skip this turn.<br/><br/>MY MOVE: X -&gt; 22</p>
+    </div>
+
+    <div speaker="Game Master: parse" class="msg gm-gm">
+        <p>{&#x27;X&#x27;: 22}</p>
+    </div>
+
+    <div speaker="Game Master: metadata" class="msg gm-gm">
+        <p>update board state</p>
+    </div>
+
+    <div speaker="Game Master: accepted move" class="msg gm-gm">
+        <p>{&#x27;X&#x27;: 22}</p>
+    </div>
+
+    <div speaker="Player 2 to Game Master" class="msg b-gm">
+        <p>Player 2 Answered:<br/>MY MOVE: A -&gt; 14</p>
+    </div>
+
+    <div speaker="Game Master: parse" class="msg gm-gm">
+        <p>{&#x27;A&#x27;: 14}</p>
+    </div>
+
+    <div speaker="Game Master: metadata" class="msg gm-gm">
+        <p>update board state</p>
+    </div>
+
+    <div speaker="Game Master: accepted move" class="msg gm-gm">
+        <p>{&#x27;A&#x27;: 14}</p>
+    </div>
+
+    <div speaker="Game Master: current state" class="msg gm-gm">
+        <p>{&#x27;X&#x27;: 22, &#x27;A&#x27;: 14}</p>
+    </div>
+
+    <div speaker="Game Master to Player 1" class="msg gm-a">
+        <p>Current state: {&#x27;X&#x27;: 22, &#x27;A&#x27;: 14}<br/>Turn number: 8, Roll: 3. Where will you move your token?</p>
+    </div>
+
+    <div speaker="Player 1 to Game Master" class="msg a-gm">
+        <p>Since I have a token (X) on the board, and you have rolled a 3, I will move my token X by 3 fields to the right. This will move my token X to field 25. However, the board only has 23 fields, and field 25 is not a valid field. Therefore, I will move my token X to the last valid field (23).<br/><br/>MY MOVE: X -&gt; 23</p>
+    </div>
+
+    <div speaker="Game Master: parse" class="msg gm-gm">
+        <p>{&#x27;X&#x27;: 23}</p>
+    </div>
+
+    <div speaker="Game Master: error" class="msg gm-gm">
+        <p>incorrect_move</p>
+    </div>
+
+    <div speaker="Game Master to Player 1" class="msg gm-a">
+        <p>{&#x27;role&#x27;: &#x27;user&#x27;, &#x27;content&#x27;: &quot;INVALID MOVE: Token X was moved incorrectly. \nPlease try again.\nCurrent state: {&#x27;X&#x27;: 22, &#x27;A&#x27;: 14}\nTurn number: 8, Roll: 3. Where will you move your token?&quot;}</p>
+    </div>
+
+    <div speaker="Player 1 to Game Master" class="msg a-gm">
+        <p>I apologize for the mistake. Since I have a token (X) on the board, and you have rolled a 3, I will move my token X by 3 fields to the right. This will move my token X to field 25. However, the board only has 23 fields, and field 25 is not a valid field. I will keep my token X on field 22 since I cannot move it to a non-existent field.<br/><br/>MY MOVE: X -&gt; 22</p>
+    </div>
+
+    <div speaker="Game Master: parse" class="msg gm-gm">
+        <p>{&#x27;X&#x27;: 22}</p>
+    </div>
+
+    <div speaker="Game Master: metadata" class="msg gm-gm">
+        <p>update board state</p>
+    </div>
+
+    <div speaker="Game Master: accepted move" class="msg gm-gm">
+        <p>{&#x27;X&#x27;: 22}</p>
+    </div>
+
+    <div speaker="Player 2 to Game Master" class="msg b-gm">
+        <p>Player 2 Answered:<br/>MY MOVE: A -&gt; 20</p>
+    </div>
+
+    <div speaker="Game Master: parse" class="msg gm-gm">
+        <p>{&#x27;A&#x27;: 20}</p>
+    </div>
+
+    <div speaker="Game Master: metadata" class="msg gm-gm">
+        <p>update board state</p>
+    </div>
+
+    <div speaker="Game Master: accepted move" class="msg gm-gm">
+        <p>{&#x27;A&#x27;: 20}</p>
+    </div>
+
+    <div speaker="Game Master: current state" class="msg gm-gm">
+        <p>{&#x27;X&#x27;: 22, &#x27;A&#x27;: 20}</p>
+    </div>
+
+    <div speaker="Game Master to Player 1" class="msg gm-a">
+        <p>Current state: {&#x27;X&#x27;: 22, &#x27;A&#x27;: 20}<br/>Turn number: 9, Roll: 4. Where will you move your token?</p>
+    </div>
+
+    <div speaker="Player 1 to Game Master" class="msg a-gm">
+        <p>Since I have a token (X) on the board, and you have rolled a 4, I will move my token X by 4 fields to the right. This will move my token X to field 26. However, the board only has 23 fields, and field 26 is not a valid field. Therefore, I will move my token X to the last valid field (23).<br/><br/>MY MOVE: X -&gt; 23</p>
+    </div>
+
+    <div speaker="Game Master: parse" class="msg gm-gm">
+        <p>{&#x27;X&#x27;: 23}</p>
+    </div>
+
+    <div speaker="Game Master: error" class="msg gm-gm">
+        <p>incorrect_move</p>
+    </div>
+
+    <div speaker="Game Master to Player 1" class="msg gm-a">
+        <p>{&#x27;role&#x27;: &#x27;user&#x27;, &#x27;content&#x27;: &quot;INVALID MOVE: Token X was moved incorrectly. \nPlease try again.\nCurrent state: {&#x27;X&#x27;: 22, &#x27;A&#x27;: 20}\nTurn number: 9, Roll: 4. Where will you move your token?&quot;}</p>
+    </div>
+
+    <div speaker="Player 1 to Game Master" class="msg a-gm">
+        <p>I apologize for the mistake. Since I have a token (X) on the board, and you have rolled a 4, I will move my token X by 4 fields to the right. However, the board only has 23 fields, and field 26 is not a valid field. I will keep my token X on field 22 since I cannot move it to a non-existent field.<br/><br/>MY MOVE: X -&gt; 22</p>
+    </div>
+
+    <div speaker="Game Master: parse" class="msg gm-gm">
+        <p>{&#x27;X&#x27;: 22}</p>
+    </div>
+
+    <div speaker="Game Master: metadata" class="msg gm-gm">
+        <p>update board state</p>
+    </div>
+
+    <div speaker="Game Master: accepted move" class="msg gm-gm">
+        <p>{&#x27;X&#x27;: 22}</p>
+    </div>
+
+    <div speaker="Player 2 to Game Master" class="msg b-gm">
+        <p>Player 2 Answered:<br/>MY MOVE: A -&gt; 22</p>
+    </div>
+
+    <div speaker="Game Master: parse" class="msg gm-gm">
+        <p>{&#x27;A&#x27;: 22}</p>
+    </div>
+
+    <div speaker="Game Master: metadata" class="msg gm-gm">
+        <p>update board state</p>
+    </div>
+
+    <div speaker="Game Master: accepted move" class="msg gm-gm">
+        <p>{&#x27;A&#x27;: 22}</p>
+    </div>
+
+    <div speaker="Game Master: current state" class="msg gm-gm">
+        <p>{&#x27;X&#x27;: 0, &#x27;A&#x27;: 22}</p>
+    </div>
+
+    <div speaker="Game Master to Player 1" class="msg gm-a">
+        <p>Current state: {&#x27;X&#x27;: 0, &#x27;A&#x27;: 22}<br/>Turn number: 10, Roll: 2. Where will you move your token?</p>
+    </div>
+
+    <div speaker="Player 1 to Game Master" class="msg a-gm">
+        <p>Since I have no tokens on the board, and you have rolled a 2, I cannot make a move. I will skip this turn.<br/><br/>MY MOVE: X -&gt; 0</p>
+    </div>
+
+    <div speaker="Game Master: parse" class="msg gm-gm">
+        <p>{&#x27;X&#x27;: 0}</p>
+    </div>
+
+    <div speaker="Game Master: metadata" class="msg gm-gm">
+        <p>update board state</p>
+    </div>
+
+    <div speaker="Game Master: accepted move" class="msg gm-gm">
+        <p>{&#x27;X&#x27;: 0}</p>
+    </div>
+
+    <div speaker="Player 2 to Game Master" class="msg b-gm">
+        <p>Player 2 Answered:<br/>MY MOVE: A -&gt; 22</p>
+    </div>
+
+    <div speaker="Game Master: parse" class="msg gm-gm">
+        <p>{&#x27;A&#x27;: 22}</p>
+    </div>
+
+    <div speaker="Game Master: metadata" class="msg gm-gm">
+        <p>update board state</p>
+    </div>
+
+    <div speaker="Game Master: accepted move" class="msg gm-gm">
+        <p>{&#x27;A&#x27;: 22}</p>
+    </div>
+
+    <div speaker="Game Master: current state" class="msg gm-gm">
+        <p>{&#x27;X&#x27;: 0, &#x27;A&#x27;: 22}</p>
+    </div>
+
+    <div speaker="Game Master to Player 1" class="msg gm-a">
+        <p>Current state: {&#x27;X&#x27;: 0, &#x27;A&#x27;: 22}<br/>Turn number: 11, Roll: 6. Where will you move your token?</p>
+    </div>
+
+    <div speaker="Player 1 to Game Master" class="msg a-gm">
+        <p>Since I have a token (X) on field 0, and you have rolled a 6, I can now place my token X on the board at field 1.<br/><br/>MY MOVE: X -&gt; 1</p>
+    </div>
+
+    <div speaker="Game Master: parse" class="msg gm-gm">
+        <p>{&#x27;X&#x27;: 1}</p>
+    </div>
+
+    <div speaker="Game Master: metadata" class="msg gm-gm">
+        <p>update board state</p>
+    </div>
+
+    <div speaker="Game Master: accepted move" class="msg gm-gm">
+        <p>{&#x27;X&#x27;: 1}</p>
+    </div>
+
+    <div speaker="Player 2 to Game Master" class="msg b-gm">
+        <p>Player 2 Answered:<br/>MY MOVE: A -&gt; 22</p>
+    </div>
+
+    <div speaker="Game Master: parse" class="msg gm-gm">
+        <p>{&#x27;A&#x27;: 22}</p>
+    </div>
+
+    <div speaker="Game Master: metadata" class="msg gm-gm">
+        <p>update board state</p>
+    </div>
+
+    <div speaker="Game Master: accepted move" class="msg gm-gm">
+        <p>{&#x27;A&#x27;: 22}</p>
+    </div>
+
+    <div speaker="Game Master: current state" class="msg gm-gm">
+        <p>{&#x27;X&#x27;: 1, &#x27;A&#x27;: 22}</p>
+    </div>
+
+    <div speaker="Game Master to Player 1" class="msg gm-a">
+        <p>Current state: {&#x27;X&#x27;: 1, &#x27;A&#x27;: 22}<br/>Turn number: 12, Roll: 1. Where will you move your token?</p>
+    </div>
+
+    <div speaker="Player 1 to Game Master" class="msg a-gm">
+        <p>Since I have a token (X) on the board, and you have rolled a 1, I will move my token X by 1 field to the right. This will move my token X to field 2.<br/><br/>MY MOVE: X -&gt; 2</p>
+    </div>
+
+    <div speaker="Game Master: parse" class="msg gm-gm">
+        <p>{&#x27;X&#x27;: 2}</p>
+    </div>
+
+    <div speaker="Game Master: metadata" class="msg gm-gm">
+        <p>update board state</p>
+    </div>
+
+    <div speaker="Game Master: accepted move" class="msg gm-gm">
+        <p>{&#x27;X&#x27;: 2}</p>
+    </div>
+
+    <div speaker="Player 2 to Game Master" class="msg b-gm">
+        <p>Player 2 Answered:<br/>MY MOVE: A -&gt; 22</p>
+    </div>
+
+    <div speaker="Game Master: parse" class="msg gm-gm">
+        <p>{&#x27;A&#x27;: 22}</p>
+    </div>
+
+    <div speaker="Game Master: metadata" class="msg gm-gm">
+        <p>update board state</p>
+    </div>
+
+    <div speaker="Game Master: accepted move" class="msg gm-gm">
+        <p>{&#x27;A&#x27;: 22}</p>
+    </div>
+
+    <div speaker="Game Master: current state" class="msg gm-gm">
+        <p>{&#x27;X&#x27;: 2, &#x27;A&#x27;: 22}</p>
+    </div>
+
+    <div speaker="Game Master to Player 1" class="msg gm-a">
+        <p>Current state: {&#x27;X&#x27;: 2, &#x27;A&#x27;: 22}<br/>Turn number: 13, Roll: 2. Where will you move your token?</p>
+    </div>
+
+    <div speaker="Player 1 to Game Master" class="msg a-gm">
+        <p>Since I have a token (X) on the board, and you have rolled a 2, I will move my token X by 2 fields to the right. This will move my token X to field 4.<br/><br/>MY MOVE: X -&gt; 4</p>
+    </div>
+
+    <div speaker="Game Master: parse" class="msg gm-gm">
+        <p>{&#x27;X&#x27;: 4}</p>
+    </div>
+
+    <div speaker="Game Master: metadata" class="msg gm-gm">
+        <p>update board state</p>
+    </div>
+
+    <div speaker="Game Master: accepted move" class="msg gm-gm">
+        <p>{&#x27;X&#x27;: 4}</p>
+    </div>
+
+    <div speaker="Player 2 to Game Master" class="msg b-gm">
+        <p>Player 2 Answered:<br/>MY MOVE: A -&gt; 22</p>
+    </div>
+
+    <div speaker="Game Master: parse" class="msg gm-gm">
+        <p>{&#x27;A&#x27;: 22}</p>
+    </div>
+
+    <div speaker="Game Master: metadata" class="msg gm-gm">
+        <p>update board state</p>
+    </div>
+
+    <div speaker="Game Master: accepted move" class="msg gm-gm">
+        <p>{&#x27;A&#x27;: 22}</p>
+    </div>
+
+    <div speaker="Game Master: current state" class="msg gm-gm">
+        <p>{&#x27;X&#x27;: 4, &#x27;A&#x27;: 22}</p>
+    </div>
+
+    <div speaker="Game Master to Player 1" class="msg gm-a">
+        <p>Current state: {&#x27;X&#x27;: 4, &#x27;A&#x27;: 22}<br/>Turn number: 14, Roll: 2. Where will you move your token?</p>
+    </div>
+
+    <div speaker="Player 1 to Game Master" class="msg a-gm">
+        <p>Since I have a token (X) on the board, and you have rolled a 2, I will move my token X by 2 fields to the right. This will move my token X to field 6.<br/><br/>MY MOVE: X -&gt; 6</p>
+    </div>
+
+    <div speaker="Game Master: parse" class="msg gm-gm">
+        <p>{&#x27;X&#x27;: 6}</p>
+    </div>
+
+    <div speaker="Game Master: metadata" class="msg gm-gm">
+        <p>update board state</p>
+    </div>
+
+    <div speaker="Game Master: accepted move" class="msg gm-gm">
+        <p>{&#x27;X&#x27;: 6}</p>
+    </div>
+
+    <div speaker="Player 2 to Game Master" class="msg b-gm">
+        <p>Player 2 Answered:<br/>MY MOVE: A -&gt; 23</p>
+    </div>
+
+    <div speaker="Game Master: parse" class="msg gm-gm">
+        <p>{&#x27;A&#x27;: 23}</p>
+    </div>
+
+    <div speaker="Game Master: metadata" class="msg gm-gm">
+        <p>update board state</p>
+    </div>
+
+    <div speaker="Game Master: accepted move" class="msg gm-gm">
+        <p>{&#x27;A&#x27;: 23}</p>
+    </div>
+
+    <div speaker="Game Master: metadata" class="msg gm-gm">
+        <p>game_result = LOSE</p>
+    </div>
+
+</div>
+
+</body>
+</html>

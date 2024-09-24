@@ -1,0 +1,16 @@
+,"-, clemscore","all, Average % Played","all, Average Quality Score","ludo, % Played","ludo, Quality Score","ludo, Quality Score (std)"
+Llama-3-70B-chat-hf-t0.0--Llama-3-70B-chat-hf-t0.0,5.66,22.5,25.16,22.5,25.16,26.45
+Llama-3-70B-chat-hf-t0.0--programmatic-t0.0,14.36,37.97,37.82,37.97,37.82,33.87
+Meta-Llama-3-8B-Instruct-t0.0--Meta-Llama-3-8B-Instruct-t0.0,2.11,12.5,16.86,12.5,16.86,24.13
+Meta-Llama-3-8B-Instruct-t0.0--programmatic-t0.0,1.45,11.25,12.87,11.25,12.87,23.79
+Mixtral-8x22B-Instruct-v0.1-t0.0--Mixtral-8x22B-Instruct-v0.1-t0.0,0.75,5.0,15.09,5.0,15.09,17.2
+Mixtral-8x22B-Instruct-v0.1-t0.0--programmatic-t0.0,7.44,26.25,28.35,26.25,28.35,34.25
+Mixtral-8x7B-Instruct-v0.1-t0.0--Mixtral-8x7B-Instruct-v0.1-t0.0,0.0,0.0,6.52,0.0,6.52,8.48
+Mixtral-8x7B-Instruct-v0.1-t0.0--programmatic-t0.0,1.88,11.25,16.71,11.25,16.71,26.47
+gemma-2-27b-it-t0.0--gemma-2-27b-it-t0.0,2.06,12.5,16.51,12.5,16.51,23.9
+gemma-2-27b-it-t0.0--programmatic-t0.0,7.71,26.58,29.01,26.58,29.01,36.85
+gemma-2-9b-it-t0.0--gemma-2-9b-it-t0.0,0.3,2.5,11.89,2.5,11.89,12.86
+gemma-2-9b-it-t0.0--programmatic-t0.0,2.38,12.66,18.81,12.66,18.81,25.48
+gpt-3.5-turbo-1106-t0.0--gpt-3.5-turbo-1106-t0.0,0.36,2.5,14.55,2.5,14.55,12.74
+gpt-3.5-turbo-1106-t0.0--programmatic-t0.0,2.11,12.5,16.91,12.5,16.91,27.81
+gpt-4o-t0.0--gpt-4o-t0.0,18.02,38.89,46.34,38.89,46.34,24.96

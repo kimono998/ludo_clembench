@@ -1,0 +1,806 @@
+
+<!DOCTYPE html>
+<html>
+<head>
+    <style>
+        /* This CSS is an adaptation from the answer by Roko C. Buljan in https://stackoverflow.com/a/71155446 */ 
+
+* {margin: 0; box-sizing: border-box;}
+
+body {background-color: rgb(157, 152, 150);}
+
+  /* dialogue header */
+
+.top-info {
+  text-align: center;
+  --rad: 20px;
+  --rad-sm: 3px;
+  font: 20px/1.5 sans-serif;
+  display: flex;
+  flex-direction: column;
+  padding: 20px;
+  max-width: 900px;
+  margin: auto;
+  background: #3f3e3e;
+  color: #fff;
+}
+
+.chat {
+    --rad: 20px;
+    --rad-sm: 3px;
+    font: 16px/1.5 sans-serif;
+    display: flex;
+    flex-direction: column;
+    padding: 20px;
+    max-width: 900px;
+    margin: auto;
+    background: #fff;
+  }
+  
+  .msg {
+    position: relative;
+    max-width: 75%;
+    padding: 7px 15px;
+    margin-bottom: 30px;
+  }
+  
+  /* 5 levels, two players to/from game master and meta messages form game master */
+
+  .msg.b-gm {
+    border-radius: var(--rad) var(--rad-sm) var(--rad-sm) var(--rad);
+    background: #874aaf;
+    color: #fff;
+    margin-left: 60%;
+  }
+
+  .msg.a-gm {
+    border-radius: var(--rad-sm) var(--rad) var(--rad) var(--rad-sm);
+    background: #f39109;
+    color: #fff;
+    margin-right: 60%;
+  }
+  
+  .msg.gm-a {
+    border-radius: var(--rad) var(--rad-sm) var(--rad-sm) var(--rad);
+    background: #c4c3c3;    
+    color: #0c0c0c;
+    margin-right: 40%;
+    margin-left: 20%;
+  }
+
+  .msg.gm-b {
+    border-radius: var(--rad-sm) var(--rad) var(--rad) var(--rad-sm);
+    background: #c4c3c3;
+    color: #0c0c0c;
+    margin-right: 20%;
+    margin-left: 40%;
+  }
+
+  .msg.gm-gm {
+    background: #f1f1f1;
+    color: #373636;
+    margin-left: 40%;
+    margin-right: 40%;
+    font-size: 0.8rem;
+
+  }
+  
+  /* speaker labels */
+  
+  .msg::before {
+    content: attr(speaker);
+    font-size: 0.8rem;
+    position: absolute;
+    bottom: 100%;
+    color: #888;
+    white-space: nowrap;
+
+  }
+  
+  .msg.b-gm::before {
+    right: 15px;
+  }
+
+  .msg.gm-a::before {
+    right: 15px;
+  }
+
+  .msg.a-gm::before {
+    left: 15px;
+  }
+
+  .msg.gm-b::before {
+    left: 15px;
+  }
+
+  .msg.gm-gm::before {
+    left: 0px;
+  }
+  
+
+    </style>
+</head>
+<body>
+
+<br/>
+
+<div class="top-info">
+    <p>Interaction Transcript for multiplayer_True_True_False_1, episode in002 with Llama-3-70B-chat-hf-t0.0--programmatic-t0.0.</p>
+</div>
+
+<br/>
+
+<div class="chat">
+
+    <div speaker="Game Master: current state" class="msg gm-gm">
+        <p>{&#x27;X&#x27;: 0, &#x27;A&#x27;: 0}</p>
+    </div>
+
+    <div speaker="Game Master to Player 1" class="msg gm-a">
+        <p>Current state: □ □ □ □ □ □ □ □ □ □ □ □ □ □ □ □ □ □ □ □ □ □ □<br/>Turn number: 0, Roll: 6. Where will you move your token?</p>
+    </div>
+
+    <div speaker="Player 1 to Game Master" class="msg a-gm">
+        <p>Let&#x27;s start the game!<br/><br/>There are 23 empty fields and 0 occupied fields. In total: 23 + 0 = 23 fields. I have no tokens on the board. You have rolled a 6. This allows me to place my token X on the board at field 1.<br/><br/>MY MOVE: X -&gt; 1</p>
+    </div>
+
+    <div speaker="Game Master: parse" class="msg gm-gm">
+        <p>{&#x27;X&#x27;: 1}</p>
+    </div>
+
+    <div speaker="Game Master: metadata" class="msg gm-gm">
+        <p>update board state</p>
+    </div>
+
+    <div speaker="Game Master: accepted move" class="msg gm-gm">
+        <p>{&#x27;X&#x27;: 1}</p>
+    </div>
+
+    <div speaker="Player 2 to Game Master" class="msg b-gm">
+        <p>Player 2 Answered:<br/>MY MOVE: A -&gt; 0</p>
+    </div>
+
+    <div speaker="Game Master: parse" class="msg gm-gm">
+        <p>{&#x27;A&#x27;: 0}</p>
+    </div>
+
+    <div speaker="Game Master: metadata" class="msg gm-gm">
+        <p>update board state</p>
+    </div>
+
+    <div speaker="Game Master: accepted move" class="msg gm-gm">
+        <p>{&#x27;A&#x27;: 0}</p>
+    </div>
+
+    <div speaker="Game Master: current state" class="msg gm-gm">
+        <p>{&#x27;X&#x27;: 1, &#x27;A&#x27;: 0}</p>
+    </div>
+
+    <div speaker="Game Master to Player 1" class="msg gm-a">
+        <p>Current state: X □ □ □ □ □ □ □ □ □ □ □ □ □ □ □ □ □ □ □ □ □ □<br/>Turn number: 1, Roll: 4. Where will you move your token?</p>
+    </div>
+
+    <div speaker="Player 1 to Game Master" class="msg a-gm">
+        <p>Let&#x27;s analyze the situation!<br/><br/>There are 22 empty fields and 1 occupied field. In total: 22 + 1 = 23 fields. My token X is on field number 1. Opponent&#x27;s token A is not on the board (it&#x27;s at field 0). You have rolled a 4. 1+4 = 5. I move my token to field number 5.<br/><br/>MY MOVE: X -&gt; 5</p>
+    </div>
+
+    <div speaker="Game Master: parse" class="msg gm-gm">
+        <p>{&#x27;X&#x27;: 5}</p>
+    </div>
+
+    <div speaker="Game Master: metadata" class="msg gm-gm">
+        <p>update board state</p>
+    </div>
+
+    <div speaker="Game Master: accepted move" class="msg gm-gm">
+        <p>{&#x27;X&#x27;: 5}</p>
+    </div>
+
+    <div speaker="Player 2 to Game Master" class="msg b-gm">
+        <p>Player 2 Answered:<br/>MY MOVE: A -&gt; 0</p>
+    </div>
+
+    <div speaker="Game Master: parse" class="msg gm-gm">
+        <p>{&#x27;A&#x27;: 0}</p>
+    </div>
+
+    <div speaker="Game Master: metadata" class="msg gm-gm">
+        <p>update board state</p>
+    </div>
+
+    <div speaker="Game Master: accepted move" class="msg gm-gm">
+        <p>{&#x27;A&#x27;: 0}</p>
+    </div>
+
+    <div speaker="Game Master: current state" class="msg gm-gm">
+        <p>{&#x27;X&#x27;: 5, &#x27;A&#x27;: 0}</p>
+    </div>
+
+    <div speaker="Game Master to Player 1" class="msg gm-a">
+        <p>Current state: □ □ □ □ X □ □ □ □ □ □ □ □ □ □ □ □ □ □ □ □ □ □<br/>Turn number: 2, Roll: 6. Where will you move your token?</p>
+    </div>
+
+    <div speaker="Player 1 to Game Master" class="msg a-gm">
+        <p>Let&#x27;s analyze the situation!<br/><br/>There are 21 empty fields and 1 occupied field. In total: 21 + 1 = 22 fields. My token X is on field number 5. Opponent&#x27;s token A is not on the board (it&#x27;s at field 0). You have rolled a 6. Since my token X is already on the board, I must move it 6 fields to the right. 5+6 = 11. I move my token to field number 11.<br/><br/>MY MOVE: X -&gt; 11</p>
+    </div>
+
+    <div speaker="Game Master: parse" class="msg gm-gm">
+        <p>{&#x27;X&#x27;: 11}</p>
+    </div>
+
+    <div speaker="Game Master: metadata" class="msg gm-gm">
+        <p>update board state</p>
+    </div>
+
+    <div speaker="Game Master: accepted move" class="msg gm-gm">
+        <p>{&#x27;X&#x27;: 11}</p>
+    </div>
+
+    <div speaker="Player 2 to Game Master" class="msg b-gm">
+        <p>Player 2 Answered:<br/>MY MOVE: A -&gt; 0</p>
+    </div>
+
+    <div speaker="Game Master: parse" class="msg gm-gm">
+        <p>{&#x27;A&#x27;: 0}</p>
+    </div>
+
+    <div speaker="Game Master: metadata" class="msg gm-gm">
+        <p>update board state</p>
+    </div>
+
+    <div speaker="Game Master: accepted move" class="msg gm-gm">
+        <p>{&#x27;A&#x27;: 0}</p>
+    </div>
+
+    <div speaker="Game Master: current state" class="msg gm-gm">
+        <p>{&#x27;X&#x27;: 11, &#x27;A&#x27;: 0}</p>
+    </div>
+
+    <div speaker="Game Master to Player 1" class="msg gm-a">
+        <p>Current state: □ □ □ □ □ □ □ □ □ □ X □ □ □ □ □ □ □ □ □ □ □ □<br/>Turn number: 3, Roll: 1. Where will you move your token?</p>
+    </div>
+
+    <div speaker="Player 1 to Game Master" class="msg a-gm">
+        <p>Let&#x27;s analyze the situation!<br/><br/>There are 20 empty fields and 1 occupied field. In total: 20 + 1 = 21 fields. My token X is on field number 11. Opponent&#x27;s token A is not on the board (it&#x27;s at field 0). You have rolled a 1. 11+1 = 12. I move my token to field number 12.<br/><br/>MY MOVE: X -&gt; 12</p>
+    </div>
+
+    <div speaker="Game Master: parse" class="msg gm-gm">
+        <p>{&#x27;X&#x27;: 12}</p>
+    </div>
+
+    <div speaker="Game Master: metadata" class="msg gm-gm">
+        <p>update board state</p>
+    </div>
+
+    <div speaker="Game Master: accepted move" class="msg gm-gm">
+        <p>{&#x27;X&#x27;: 12}</p>
+    </div>
+
+    <div speaker="Player 2 to Game Master" class="msg b-gm">
+        <p>Player 2 Answered:<br/>MY MOVE: A -&gt; 1</p>
+    </div>
+
+    <div speaker="Game Master: parse" class="msg gm-gm">
+        <p>{&#x27;A&#x27;: 1}</p>
+    </div>
+
+    <div speaker="Game Master: metadata" class="msg gm-gm">
+        <p>update board state</p>
+    </div>
+
+    <div speaker="Game Master: accepted move" class="msg gm-gm">
+        <p>{&#x27;A&#x27;: 1}</p>
+    </div>
+
+    <div speaker="Game Master: current state" class="msg gm-gm">
+        <p>{&#x27;X&#x27;: 12, &#x27;A&#x27;: 1}</p>
+    </div>
+
+    <div speaker="Game Master to Player 1" class="msg gm-a">
+        <p>Current state: A □ □ □ □ □ □ □ □ □ □ X □ □ □ □ □ □ □ □ □ □ □<br/>Turn number: 4, Roll: 6. Where will you move your token?</p>
+    </div>
+
+    <div speaker="Player 1 to Game Master" class="msg a-gm">
+        <p>Let&#x27;s analyze the situation!<br/><br/>There are 19 empty fields and 2 occupied fields. In total: 19 + 2 = 21 fields. My token X is on field number 12. Opponent&#x27;s token A is on field number 1. You have rolled a 6. Since my token X is already on the board, I must move it 6 fields to the right. 12+6 = 18. I move my token to field number 18.<br/><br/>MY MOVE: X -&gt; 18</p>
+    </div>
+
+    <div speaker="Game Master: parse" class="msg gm-gm">
+        <p>{&#x27;X&#x27;: 18}</p>
+    </div>
+
+    <div speaker="Game Master: metadata" class="msg gm-gm">
+        <p>update board state</p>
+    </div>
+
+    <div speaker="Game Master: accepted move" class="msg gm-gm">
+        <p>{&#x27;X&#x27;: 18}</p>
+    </div>
+
+    <div speaker="Player 2 to Game Master" class="msg b-gm">
+        <p>Player 2 Answered:<br/>MY MOVE: A -&gt; 4</p>
+    </div>
+
+    <div speaker="Game Master: parse" class="msg gm-gm">
+        <p>{&#x27;A&#x27;: 4}</p>
+    </div>
+
+    <div speaker="Game Master: metadata" class="msg gm-gm">
+        <p>update board state</p>
+    </div>
+
+    <div speaker="Game Master: accepted move" class="msg gm-gm">
+        <p>{&#x27;A&#x27;: 4}</p>
+    </div>
+
+    <div speaker="Game Master: current state" class="msg gm-gm">
+        <p>{&#x27;X&#x27;: 18, &#x27;A&#x27;: 4}</p>
+    </div>
+
+    <div speaker="Game Master to Player 1" class="msg gm-a">
+        <p>Current state: □ □ □ A □ □ □ □ □ □ □ □ □ □ □ □ □ X □ □ □ □ □<br/>Turn number: 5, Roll: 4. Where will you move your token?</p>
+    </div>
+
+    <div speaker="Player 1 to Game Master" class="msg a-gm">
+        <p>Let&#x27;s analyze the situation!<br/><br/>There are 18 empty fields and 2 occupied fields. In total: 18 + 2 = 20 fields. My token X is on field number 18. Opponent&#x27;s token A is on field number 4. You have rolled a 4. 18+4 = 22. Since 22 is greater than the total number of fields (23), I cannot move my token. <br/><br/>MY MOVE: X -&gt; 18</p>
+    </div>
+
+    <div speaker="Game Master: parse" class="msg gm-gm">
+        <p>{&#x27;X&#x27;: 18}</p>
+    </div>
+
+    <div speaker="Game Master: error" class="msg gm-gm">
+        <p>not_moved</p>
+    </div>
+
+    <div speaker="Game Master to Player 1" class="msg gm-a">
+        <p>{&#x27;role&#x27;: &#x27;user&#x27;, &#x27;content&#x27;: &quot;INVALID MOVE: Token X can be moved but wasn&#x27;t. \nPlease try again.\nCurrent state: □ □ □ A □ □ □ □ □ □ □ □ □ □ □ □ □ X □ □ □ □ □\nTurn number: 5, Roll: 4. Where will you move your token?&quot;}</p>
+    </div>
+
+    <div speaker="Player 1 to Game Master" class="msg a-gm">
+        <p>I apologize for the mistake. Let me try again.<br/><br/>There are 18 empty fields and 2 occupied fields. In total: 18 + 2 = 20 fields. My token X is on field number 18. Opponent&#x27;s token A is on field number 4. You have rolled a 4. 18+4 = 22. Since I can move my token, I will move it to the maximum possible field, which is 22-1 = 21.<br/><br/>MY MOVE: X -&gt; 21</p>
+    </div>
+
+    <div speaker="Game Master: parse" class="msg gm-gm">
+        <p>{&#x27;X&#x27;: 21}</p>
+    </div>
+
+    <div speaker="Game Master: error" class="msg gm-gm">
+        <p>incorrect_move</p>
+    </div>
+
+    <div speaker="Game Master to Player 1" class="msg gm-a">
+        <p>{&#x27;role&#x27;: &#x27;user&#x27;, &#x27;content&#x27;: &#x27;INVALID MOVE: Token X was moved incorrectly. \nPlease try again.\nCurrent state: □ □ □ A □ □ □ □ □ □ □ □ □ □ □ □ □ X □ □ □ □ □\nTurn number: 5, Roll: 4. Where will you move your token?&#x27;}</p>
+    </div>
+
+    <div speaker="Player 1 to Game Master" class="msg a-gm">
+        <p>I apologize for the mistake. Let me try again.<br/><br/>There are 18 empty fields and 2 occupied fields. In total: 18 + 2 = 20 fields. My token X is on field number 18. Opponent&#x27;s token A is on field number 4. You have rolled a 4. 18+4 = 22. Since the total number of fields is 23, I can move my token to field number 22.<br/><br/>MY MOVE: X -&gt; 22</p>
+    </div>
+
+    <div speaker="Game Master: parse" class="msg gm-gm">
+        <p>{&#x27;X&#x27;: 22}</p>
+    </div>
+
+    <div speaker="Game Master: metadata" class="msg gm-gm">
+        <p>update board state</p>
+    </div>
+
+    <div speaker="Game Master: accepted move" class="msg gm-gm">
+        <p>{&#x27;X&#x27;: 22}</p>
+    </div>
+
+    <div speaker="Player 2 to Game Master" class="msg b-gm">
+        <p>Player 2 Answered:<br/>MY MOVE: A -&gt; 10</p>
+    </div>
+
+    <div speaker="Game Master: parse" class="msg gm-gm">
+        <p>{&#x27;A&#x27;: 10}</p>
+    </div>
+
+    <div speaker="Game Master: metadata" class="msg gm-gm">
+        <p>update board state</p>
+    </div>
+
+    <div speaker="Game Master: accepted move" class="msg gm-gm">
+        <p>{&#x27;A&#x27;: 10}</p>
+    </div>
+
+    <div speaker="Game Master: current state" class="msg gm-gm">
+        <p>{&#x27;X&#x27;: 22, &#x27;A&#x27;: 10}</p>
+    </div>
+
+    <div speaker="Game Master to Player 1" class="msg gm-a">
+        <p>Current state: □ □ □ □ □ □ □ □ □ A □ □ □ □ □ □ □ □ □ □ □ X □<br/>Turn number: 6, Roll: 2. Where will you move your token?</p>
+    </div>
+
+    <div speaker="Player 1 to Game Master" class="msg a-gm">
+        <p>Let&#x27;s analyze the situation!<br/><br/>There are 17 empty fields and 2 occupied fields. In total: 17 + 2 = 19 fields. My token X is on field number 22. Opponent&#x27;s token A is on field number 10. You have rolled a 2. 22+2 = 24. Since 24 is greater than the total number of fields (23), I cannot move my token to field 24. However, I can move my token to the maximum possible field, which is 23.<br/><br/>MY MOVE: X -&gt; 23</p>
+    </div>
+
+    <div speaker="Game Master: parse" class="msg gm-gm">
+        <p>{&#x27;X&#x27;: 23}</p>
+    </div>
+
+    <div speaker="Game Master: error" class="msg gm-gm">
+        <p>incorrect_move</p>
+    </div>
+
+    <div speaker="Game Master to Player 1" class="msg gm-a">
+        <p>{&#x27;role&#x27;: &#x27;user&#x27;, &#x27;content&#x27;: &#x27;INVALID MOVE: Token X was moved incorrectly. \nPlease try again.\nCurrent state: □ □ □ □ □ □ □ □ □ A □ □ □ □ □ □ □ □ □ □ □ X □\nTurn number: 6, Roll: 2. Where will you move your token?&#x27;}</p>
+    </div>
+
+    <div speaker="Player 1 to Game Master" class="msg a-gm">
+        <p>I apologize for the mistake. Let me try again.<br/><br/>There are 17 empty fields and 2 occupied fields. In total: 17 + 2 = 19 fields. My token X is on field number 22. Opponent&#x27;s token A is on field number 10. You have rolled a 2. Since I&#x27;m already at the end of the board, I can only move my token 2 fields to the right, which means I&#x27;ll stay at the same position.<br/><br/>MY MOVE: X -&gt; 22</p>
+    </div>
+
+    <div speaker="Game Master: parse" class="msg gm-gm">
+        <p>{&#x27;X&#x27;: 22}</p>
+    </div>
+
+    <div speaker="Game Master: metadata" class="msg gm-gm">
+        <p>update board state</p>
+    </div>
+
+    <div speaker="Game Master: accepted move" class="msg gm-gm">
+        <p>{&#x27;X&#x27;: 22}</p>
+    </div>
+
+    <div speaker="Player 2 to Game Master" class="msg b-gm">
+        <p>Player 2 Answered:<br/>MY MOVE: A -&gt; 12</p>
+    </div>
+
+    <div speaker="Game Master: parse" class="msg gm-gm">
+        <p>{&#x27;A&#x27;: 12}</p>
+    </div>
+
+    <div speaker="Game Master: metadata" class="msg gm-gm">
+        <p>update board state</p>
+    </div>
+
+    <div speaker="Game Master: accepted move" class="msg gm-gm">
+        <p>{&#x27;A&#x27;: 12}</p>
+    </div>
+
+    <div speaker="Game Master: current state" class="msg gm-gm">
+        <p>{&#x27;X&#x27;: 22, &#x27;A&#x27;: 12}</p>
+    </div>
+
+    <div speaker="Game Master to Player 1" class="msg gm-a">
+        <p>Current state: □ □ □ □ □ □ □ □ □ □ □ A □ □ □ □ □ □ □ □ □ X □<br/>Turn number: 7, Roll: 6. Where will you move your token?</p>
+    </div>
+
+    <div speaker="Player 1 to Game Master" class="msg a-gm">
+        <p>Let&#x27;s analyze the situation!<br/><br/>There are 16 empty fields and 2 occupied fields. In total: 16 + 2 = 18 fields. My token X is on field number 22. Opponent&#x27;s token A is on field number 12. You have rolled a 6. Since I&#x27;m already at the end of the board, I cannot move my token 6 fields to the right. I&#x27;ll stay at the same position.<br/><br/>MY MOVE: X -&gt; 22</p>
+    </div>
+
+    <div speaker="Game Master: parse" class="msg gm-gm">
+        <p>{&#x27;X&#x27;: 22}</p>
+    </div>
+
+    <div speaker="Game Master: metadata" class="msg gm-gm">
+        <p>update board state</p>
+    </div>
+
+    <div speaker="Game Master: accepted move" class="msg gm-gm">
+        <p>{&#x27;X&#x27;: 22}</p>
+    </div>
+
+    <div speaker="Player 2 to Game Master" class="msg b-gm">
+        <p>Player 2 Answered:<br/>MY MOVE: A -&gt; 16</p>
+    </div>
+
+    <div speaker="Game Master: parse" class="msg gm-gm">
+        <p>{&#x27;A&#x27;: 16}</p>
+    </div>
+
+    <div speaker="Game Master: metadata" class="msg gm-gm">
+        <p>update board state</p>
+    </div>
+
+    <div speaker="Game Master: accepted move" class="msg gm-gm">
+        <p>{&#x27;A&#x27;: 16}</p>
+    </div>
+
+    <div speaker="Game Master: current state" class="msg gm-gm">
+        <p>{&#x27;X&#x27;: 22, &#x27;A&#x27;: 16}</p>
+    </div>
+
+    <div speaker="Game Master to Player 1" class="msg gm-a">
+        <p>Current state: □ □ □ □ □ □ □ □ □ □ □ □ □ □ □ A □ □ □ □ □ X □<br/>Turn number: 8, Roll: 3. Where will you move your token?</p>
+    </div>
+
+    <div speaker="Player 1 to Game Master" class="msg a-gm">
+        <p>Let&#x27;s analyze the situation!<br/><br/>There are 15 empty fields and 2 occupied fields. In total: 15 + 2 = 17 fields. My token X is on field number 22. Opponent&#x27;s token A is on field number 16. You have rolled a 3. Since I&#x27;m already at the end of the board, I cannot move my token 3 fields to the right. I&#x27;ll stay at the same position.<br/><br/>MY MOVE: X -&gt; 22</p>
+    </div>
+
+    <div speaker="Game Master: parse" class="msg gm-gm">
+        <p>{&#x27;X&#x27;: 22}</p>
+    </div>
+
+    <div speaker="Game Master: metadata" class="msg gm-gm">
+        <p>update board state</p>
+    </div>
+
+    <div speaker="Game Master: accepted move" class="msg gm-gm">
+        <p>{&#x27;X&#x27;: 22}</p>
+    </div>
+
+    <div speaker="Player 2 to Game Master" class="msg b-gm">
+        <p>Player 2 Answered:<br/>MY MOVE: A -&gt; 21</p>
+    </div>
+
+    <div speaker="Game Master: parse" class="msg gm-gm">
+        <p>{&#x27;A&#x27;: 21}</p>
+    </div>
+
+    <div speaker="Game Master: metadata" class="msg gm-gm">
+        <p>update board state</p>
+    </div>
+
+    <div speaker="Game Master: accepted move" class="msg gm-gm">
+        <p>{&#x27;A&#x27;: 21}</p>
+    </div>
+
+    <div speaker="Game Master: current state" class="msg gm-gm">
+        <p>{&#x27;X&#x27;: 22, &#x27;A&#x27;: 21}</p>
+    </div>
+
+    <div speaker="Game Master to Player 1" class="msg gm-a">
+        <p>Current state: □ □ □ □ □ □ □ □ □ □ □ □ □ □ □ □ □ □ □ □ A X □<br/>Turn number: 9, Roll: 6. Where will you move your token?</p>
+    </div>
+
+    <div speaker="Player 1 to Game Master" class="msg a-gm">
+        <p>Let&#x27;s analyze the situation!<br/><br/>There are 14 empty fields and 2 occupied fields. In total: 14 + 2 = 16 fields. My token X is on field number 22. Opponent&#x27;s token A is on field number 21. You have rolled a 6. Since I&#x27;m already at the end of the board, I cannot move my token 6 fields to the right. I&#x27;ll stay at the same position.<br/><br/>MY MOVE: X -&gt; 22</p>
+    </div>
+
+    <div speaker="Game Master: parse" class="msg gm-gm">
+        <p>{&#x27;X&#x27;: 22}</p>
+    </div>
+
+    <div speaker="Game Master: metadata" class="msg gm-gm">
+        <p>update board state</p>
+    </div>
+
+    <div speaker="Game Master: accepted move" class="msg gm-gm">
+        <p>{&#x27;X&#x27;: 22}</p>
+    </div>
+
+    <div speaker="Player 2 to Game Master" class="msg b-gm">
+        <p>Player 2 Answered:<br/>MY MOVE: A -&gt; 21</p>
+    </div>
+
+    <div speaker="Game Master: parse" class="msg gm-gm">
+        <p>{&#x27;A&#x27;: 21}</p>
+    </div>
+
+    <div speaker="Game Master: metadata" class="msg gm-gm">
+        <p>update board state</p>
+    </div>
+
+    <div speaker="Game Master: accepted move" class="msg gm-gm">
+        <p>{&#x27;A&#x27;: 21}</p>
+    </div>
+
+    <div speaker="Game Master: current state" class="msg gm-gm">
+        <p>{&#x27;X&#x27;: 22, &#x27;A&#x27;: 21}</p>
+    </div>
+
+    <div speaker="Game Master to Player 1" class="msg gm-a">
+        <p>Current state: □ □ □ □ □ □ □ □ □ □ □ □ □ □ □ □ □ □ □ □ A X □<br/>Turn number: 10, Roll: 6. Where will you move your token?</p>
+    </div>
+
+    <div speaker="Player 1 to Game Master" class="msg a-gm">
+        <p>Let&#x27;s analyze the situation!<br/><br/>There are 14 empty fields and 2 occupied fields. In total: 14 + 2 = 16 fields. My token X is on field number 22. Opponent&#x27;s token A is on field number 21. You have rolled a 6. Since I&#x27;m already at the end of the board, I cannot move my token 6 fields to the right. I&#x27;ll stay at the same position.<br/><br/>MY MOVE: X -&gt; 23</p>
+    </div>
+
+    <div speaker="Game Master: parse" class="msg gm-gm">
+        <p>{&#x27;X&#x27;: 23}</p>
+    </div>
+
+    <div speaker="Game Master: error" class="msg gm-gm">
+        <p>incorrect_move</p>
+    </div>
+
+    <div speaker="Game Master to Player 1" class="msg gm-a">
+        <p>{&#x27;role&#x27;: &#x27;user&#x27;, &#x27;content&#x27;: &#x27;INVALID MOVE: Token X was moved incorrectly. \nPlease try again.\nCurrent state: □ □ □ □ □ □ □ □ □ □ □ □ □ □ □ □ □ □ □ □ A X □\nTurn number: 10, Roll: 6. Where will you move your token?&#x27;}</p>
+    </div>
+
+    <div speaker="Player 1 to Game Master" class="msg a-gm">
+        <p>I apologize for the mistake. Let me try again.<br/><br/>There are 14 empty fields and 2 occupied fields. In total: 14 + 2 = 16 fields. My token X is on field number 22. Opponent&#x27;s token A is on field number 21. You have rolled a 6. Since I&#x27;m already at the end of the board, I cannot move my token 6 fields to the right. I&#x27;ll stay at the same position.<br/><br/>MY MOVE: X -&gt; 22</p>
+    </div>
+
+    <div speaker="Game Master: parse" class="msg gm-gm">
+        <p>{&#x27;X&#x27;: 22}</p>
+    </div>
+
+    <div speaker="Game Master: metadata" class="msg gm-gm">
+        <p>update board state</p>
+    </div>
+
+    <div speaker="Game Master: accepted move" class="msg gm-gm">
+        <p>{&#x27;X&#x27;: 22}</p>
+    </div>
+
+    <div speaker="Player 2 to Game Master" class="msg b-gm">
+        <p>Player 2 Answered:<br/>MY MOVE: A -&gt; 21</p>
+    </div>
+
+    <div speaker="Game Master: parse" class="msg gm-gm">
+        <p>{&#x27;A&#x27;: 21}</p>
+    </div>
+
+    <div speaker="Game Master: metadata" class="msg gm-gm">
+        <p>update board state</p>
+    </div>
+
+    <div speaker="Game Master: accepted move" class="msg gm-gm">
+        <p>{&#x27;A&#x27;: 21}</p>
+    </div>
+
+    <div speaker="Game Master: current state" class="msg gm-gm">
+        <p>{&#x27;X&#x27;: 22, &#x27;A&#x27;: 21}</p>
+    </div>
+
+    <div speaker="Game Master to Player 1" class="msg gm-a">
+        <p>Current state: □ □ □ □ □ □ □ □ □ □ □ □ □ □ □ □ □ □ □ □ A X □<br/>Turn number: 11, Roll: 2. Where will you move your token?</p>
+    </div>
+
+    <div speaker="Player 1 to Game Master" class="msg a-gm">
+        <p>Let&#x27;s analyze the situation!<br/><br/>There are 14 empty fields and 2 occupied fields. In total: 14 + 2 = 16 fields. My token X is on field number 22. Opponent&#x27;s token A is on field number 21. You have rolled a 2. Since I&#x27;m already at the end of the board, I cannot move my token 2 fields to the right. I&#x27;ll stay at the same position.<br/><br/>MY MOVE: X -&gt; 22</p>
+    </div>
+
+    <div speaker="Game Master: parse" class="msg gm-gm">
+        <p>{&#x27;X&#x27;: 22}</p>
+    </div>
+
+    <div speaker="Game Master: metadata" class="msg gm-gm">
+        <p>update board state</p>
+    </div>
+
+    <div speaker="Game Master: accepted move" class="msg gm-gm">
+        <p>{&#x27;X&#x27;: 22}</p>
+    </div>
+
+    <div speaker="Player 2 to Game Master" class="msg b-gm">
+        <p>Player 2 Answered:<br/>MY MOVE: A -&gt; 21</p>
+    </div>
+
+    <div speaker="Game Master: parse" class="msg gm-gm">
+        <p>{&#x27;A&#x27;: 21}</p>
+    </div>
+
+    <div speaker="Game Master: metadata" class="msg gm-gm">
+        <p>update board state</p>
+    </div>
+
+    <div speaker="Game Master: accepted move" class="msg gm-gm">
+        <p>{&#x27;A&#x27;: 21}</p>
+    </div>
+
+    <div speaker="Game Master: current state" class="msg gm-gm">
+        <p>{&#x27;X&#x27;: 22, &#x27;A&#x27;: 21}</p>
+    </div>
+
+    <div speaker="Game Master to Player 1" class="msg gm-a">
+        <p>Current state: □ □ □ □ □ □ □ □ □ □ □ □ □ □ □ □ □ □ □ □ A X □<br/>Turn number: 12, Roll: 3. Where will you move your token?</p>
+    </div>
+
+    <div speaker="Player 1 to Game Master" class="msg a-gm">
+        <p>Let&#x27;s analyze the situation!<br/><br/>There are 14 empty fields and 2 occupied fields. In total: 14 + 2 = 16 fields. My token X is on field number 22. Opponent&#x27;s token A is on field number 21. You have rolled a 3. Since I&#x27;m already at the end of the board, I cannot move my token 3 fields to the right. I&#x27;ll stay at the same position.<br/><br/>MY MOVE: X -&gt; 22</p>
+    </div>
+
+    <div speaker="Game Master: parse" class="msg gm-gm">
+        <p>{&#x27;X&#x27;: 22}</p>
+    </div>
+
+    <div speaker="Game Master: metadata" class="msg gm-gm">
+        <p>update board state</p>
+    </div>
+
+    <div speaker="Game Master: accepted move" class="msg gm-gm">
+        <p>{&#x27;X&#x27;: 22}</p>
+    </div>
+
+    <div speaker="Player 2 to Game Master" class="msg b-gm">
+        <p>Player 2 Answered:<br/>MY MOVE: A -&gt; 22</p>
+    </div>
+
+    <div speaker="Game Master: parse" class="msg gm-gm">
+        <p>{&#x27;A&#x27;: 22}</p>
+    </div>
+
+    <div speaker="Game Master: metadata" class="msg gm-gm">
+        <p>update board state</p>
+    </div>
+
+    <div speaker="Game Master: accepted move" class="msg gm-gm">
+        <p>{&#x27;A&#x27;: 22}</p>
+    </div>
+
+    <div speaker="Game Master: current state" class="msg gm-gm">
+        <p>{&#x27;X&#x27;: 0, &#x27;A&#x27;: 22}</p>
+    </div>
+
+    <div speaker="Game Master to Player 1" class="msg gm-a">
+        <p>Current state: □ □ □ □ □ □ □ □ □ □ □ □ □ □ □ □ □ □ □ □ □ A □<br/>Turn number: 13, Roll: 4. Where will you move your token?</p>
+    </div>
+
+    <div speaker="Player 1 to Game Master" class="msg a-gm">
+        <p>Let&#x27;s analyze the situation!<br/><br/>There are 14 empty fields and 1 occupied field. In total: 14 + 1 = 15 fields. My token X is not on the board. Opponent&#x27;s token A is on field number 22. You have rolled a 4. Since my token X is not on the board, I cannot move it.<br/><br/>MY MOVE: X -&gt; 0</p>
+    </div>
+
+    <div speaker="Game Master: parse" class="msg gm-gm">
+        <p>{&#x27;X&#x27;: 0}</p>
+    </div>
+
+    <div speaker="Game Master: metadata" class="msg gm-gm">
+        <p>update board state</p>
+    </div>
+
+    <div speaker="Game Master: accepted move" class="msg gm-gm">
+        <p>{&#x27;X&#x27;: 0}</p>
+    </div>
+
+    <div speaker="Player 2 to Game Master" class="msg b-gm">
+        <p>Player 2 Answered:<br/>MY MOVE: A -&gt; 22</p>
+    </div>
+
+    <div speaker="Game Master: parse" class="msg gm-gm">
+        <p>{&#x27;A&#x27;: 22}</p>
+    </div>
+
+    <div speaker="Game Master: metadata" class="msg gm-gm">
+        <p>update board state</p>
+    </div>
+
+    <div speaker="Game Master: accepted move" class="msg gm-gm">
+        <p>{&#x27;A&#x27;: 22}</p>
+    </div>
+
+    <div speaker="Game Master: current state" class="msg gm-gm">
+        <p>{&#x27;X&#x27;: 0, &#x27;A&#x27;: 22}</p>
+    </div>
+
+    <div speaker="Game Master to Player 1" class="msg gm-a">
+        <p>Current state: □ □ □ □ □ □ □ □ □ □ □ □ □ □ □ □ □ □ □ □ □ A □<br/>Turn number: 14, Roll: 2. Where will you move your token?</p>
+    </div>
+
+    <div speaker="Player 1 to Game Master" class="msg a-gm">
+        <p>Let&#x27;s analyze the situation!<br/><br/>There are 14 empty fields and 1 occupied field. In total: 14 + 1 = 15 fields. My token X is not on the board. Opponent&#x27;s token A is on field number 22. You have rolled a 2. Since my token X is not on the board, I cannot move it.<br/><br/>MY MOVE: X -&gt; 0</p>
+    </div>
+
+    <div speaker="Game Master: parse" class="msg gm-gm">
+        <p>{&#x27;X&#x27;: 0}</p>
+    </div>
+
+    <div speaker="Game Master: metadata" class="msg gm-gm">
+        <p>update board state</p>
+    </div>
+
+    <div speaker="Game Master: accepted move" class="msg gm-gm">
+        <p>{&#x27;X&#x27;: 0}</p>
+    </div>
+
+    <div speaker="Player 2 to Game Master" class="msg b-gm">
+        <p>Player 2 Answered:<br/>MY MOVE: A -&gt; 23</p>
+    </div>
+
+    <div speaker="Game Master: parse" class="msg gm-gm">
+        <p>{&#x27;A&#x27;: 23}</p>
+    </div>
+
+    <div speaker="Game Master: metadata" class="msg gm-gm">
+        <p>update board state</p>
+    </div>
+
+    <div speaker="Game Master: accepted move" class="msg gm-gm">
+        <p>{&#x27;A&#x27;: 23}</p>
+    </div>
+
+    <div speaker="Game Master: metadata" class="msg gm-gm">
+        <p>game_result = LOSE</p>
+    </div>
+
+</div>
+
+</body>
+</html>
